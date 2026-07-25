@@ -3,10 +3,6 @@ import { news } from '@/data/club'
 import { SectionHeading } from '@/components/SectionHeading'
 import { PhotoTile } from '@/components/PhotoTile'
 
-export const Route = createFileRoute('/actualites')({
-  component: NewsPage,
-})
-
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('fr-FR', {
     weekday: 'long',
