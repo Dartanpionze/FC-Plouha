@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { Link } from 'react-router-dom'
 import { Users } from 'lucide-react'
 import { teams } from '@/data/club'
 import { PhotoTile } from '@/components/PhotoTile'
