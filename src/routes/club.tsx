@@ -4,10 +4,6 @@ import { club, teams } from '@/data/club'
 import { SectionHeading } from '@/components/SectionHeading'
 import { PhotoTile } from '@/components/PhotoTile'
 
-export const Route = createFileRoute('/club')({
-  component: ClubPage,
-})
-
 const timeline = [
   { year: '1968', text: "Création du club par d'anciens joueurs du bourg de Plouha." },
   { year: '1984', text: 'Inauguration du stade de Kermarquer et de son premier vestiaire en dur.' },
