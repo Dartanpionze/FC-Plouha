@@ -1,4 +1,4 @@
-import { Link, createFileRoute } from '@tanstack/react-router'
+import { Link } from 'react-router-dom'
 import {
   ArrowRight,
   CalendarDays,
@@ -11,10 +11,6 @@ import { club, gallery, matches, news, sponsors, teams } from '@/data/club'
 import { SectionHeading } from '@/components/SectionHeading'
 import { PhotoTile } from '@/components/PhotoTile'
 import { ClubCrest } from '@/components/ClubCrest'
-
-export const Route = createFileRoute('/')({
-  component: Home,
-})
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('fr-FR', {
@@ -310,4 +306,5 @@ function Home() {
       </section>
     </div>
   )
+  export default Home
 }
