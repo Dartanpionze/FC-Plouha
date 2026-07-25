@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { Link } from 'react-router-dom'
 import { useState } from 'react'
 import { Clock, Mail, MapPin, Phone } from 'lucide-react'
 import { club } from '@/data/club'
