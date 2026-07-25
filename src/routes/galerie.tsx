@@ -46,3 +46,5 @@ function GalleryPage() {
     </div>
   )
 }
+
+export default GalleryPage
