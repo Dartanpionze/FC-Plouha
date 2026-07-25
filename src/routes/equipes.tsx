@@ -3,10 +3,6 @@ import { Users } from 'lucide-react'
 import { teams } from '@/data/club'
 import { PhotoTile } from '@/components/PhotoTile'
 
-export const Route = createFileRoute('/equipes')({
-  component: TeamsPage,
-})
-
 function TeamsPage() {
   return (
     <div>
