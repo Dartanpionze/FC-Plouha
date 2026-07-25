@@ -2,10 +2,6 @@ import { Link } from 'react-router-dom'
 import { CalendarDays, MapPin } from 'lucide-react'
 import { matches } from '@/data/club'
 
-export const Route = createFileRoute('/calendrier')({
-  component: CalendarPage,
-})
-
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('fr-FR', {
     weekday: 'short',
