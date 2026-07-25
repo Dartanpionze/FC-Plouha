@@ -110,4 +110,4 @@ function ClubPage() {
   )
 }
 
-export default Club
+export default ClubPage
