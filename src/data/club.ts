@@ -6,7 +6,7 @@ export const club = {
   region: 'Côtes-d\'Armor, Bretagne',
   stadium: 'Stade de Kermarquer',
   address: 'Rue du Stade, 22580 Plouha',
-  email: 'contact@fc-plouha-lesfalaises.bzh',
+  email: 'lfludovic@hotmail.fr',
   phone: '02 96 22 47 13',
 }
 
