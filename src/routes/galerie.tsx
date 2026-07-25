@@ -3,10 +3,6 @@ import { useState } from 'react'
 import { gallery } from '@/data/club'
 import { PhotoTile } from '@/components/PhotoTile'
 
-export const Route = createFileRoute('/galerie')({
-  component: GalleryPage,
-})
-
 const categories = ['Tous', ...Array.from(new Set(gallery.map((g) => g.category)))]
 
 function GalleryPage() {
