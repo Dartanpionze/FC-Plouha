@@ -3,7 +3,7 @@ import Layout from './Layout'
 
 import Home from './routes/index'
 import Club from './routes/club'
-import Equipes from './routes/equipes'
+import TeamsPage from './routes/equipes'
 import Calendrier from './routes/calendrier'
 import Actualites from './routes/actualites'
 import Galerie from './routes/galerie'
