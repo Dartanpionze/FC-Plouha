@@ -53,3 +53,5 @@ function TeamsPage() {
     </div>
   )
 }
+
+export default TeamsPage
