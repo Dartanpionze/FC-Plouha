@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { Link } from 'react-router-dom'
 import { useState } from 'react'
 import { gallery } from '@/data/club'
 import { PhotoTile } from '@/components/PhotoTile'
