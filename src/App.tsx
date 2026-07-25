@@ -6,7 +6,7 @@ import Club from './routes/club'
 import TeamsPage from './routes/equipes'
 import CalendarPage from './routes/calendrier'
 import NewsPage from './routes/actualites'
-import Galerie from './routes/galerie'
+import GalleryPage from './routes/galerie'
 import Partenaires from './routes/partenaires'
 import Contact from './routes/contact'
 
