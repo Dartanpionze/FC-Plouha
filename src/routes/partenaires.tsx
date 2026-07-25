@@ -3,10 +3,6 @@ import { Handshake } from 'lucide-react'
 import { sponsors } from '@/data/club'
 import { SectionHeading } from '@/components/SectionHeading'
 
-export const Route = createFileRoute('/partenaires')({
-  component: SponsorsPage,
-})
-
 const tiers: Array<'Or' | 'Argent' | 'Bronze'> = ['Or', 'Argent', 'Bronze']
 
 const tierStyle: Record<string, string> = {
