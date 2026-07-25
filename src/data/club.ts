@@ -109,7 +109,7 @@ export const teams: Array<Team> = [
     category: 'Plateaux district',
     coach: 'Katell Morvan',
     training: 'Mercredi, 14h00',
-    players: 41,
+    players: 1,
   },
 ]
 
