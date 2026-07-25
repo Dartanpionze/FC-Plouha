@@ -109,3 +109,5 @@ function ClubPage() {
     </div>
   )
 }
+
+export default Club
