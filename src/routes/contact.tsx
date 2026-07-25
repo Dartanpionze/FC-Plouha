@@ -3,10 +3,6 @@ import { useState } from 'react'
 import { Clock, Mail, MapPin, Phone } from 'lucide-react'
 import { club } from '@/data/club'
 
-export const Route = createFileRoute('/contact')({
-  component: ContactPage,
-})
-
 function encode(data: Record<string, string>) {
   return Object.entries(data)
     .map(([key, val]) => `${encodeURIComponent(key)}=${encodeURIComponent(val)}`)
