@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { Link } from 'react-router-dom'
 import { Award, HeartHandshake, ShieldHalf, Users2 } from 'lucide-react'
 import { club, teams } from '@/data/club'
 import { SectionHeading } from '@/components/SectionHeading'
