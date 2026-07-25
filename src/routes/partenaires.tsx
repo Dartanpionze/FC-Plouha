@@ -71,3 +71,5 @@ function SponsorsPage() {
     </div>
   )
 }
+
+export default SponsorsPage
