@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { Link } from 'react-router-dom'
 import { news } from '@/data/club'
 import { SectionHeading } from '@/components/SectionHeading'
 import { PhotoTile } from '@/components/PhotoTile'
