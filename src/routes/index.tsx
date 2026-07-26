@@ -24,10 +24,6 @@ function Home() {
   const upcoming = matches.filter((m) => !m.played).slice(0, 3)
 
   return (
-    function Home() {
-  const upcoming = matches.filter((m) => !m.played).slice(0, 3)
-
-  return (
     <div>
       <h1 style={{color:"red", fontSize:"50px"}}>
         TEST VERCEL
