@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { useState } from 'react'
 import { Menu, X } from 'lucide-react'
 import { ClubCrest } from './ClubCrest'
@@ -16,7 +16,7 @@ const links = [
 
 export function Navbar() {
   const [open, setOpen] = useState(false)
-  const pathname = useRouterState({ select: (s) => s.location.pathname })
+  const { pathname } = useLocation()
 
   return (
     <header className="sticky top-0 z-50 bg-[var(--club-navy)] shadow-lg shadow-black/20">
