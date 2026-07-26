@@ -28,7 +28,7 @@ function Home() {
       {/* HERO */}
       <section className="relative overflow-hidden bg-[var(--club-navy-deep)] grain-overlay">
         {/* Image de fond côté droit */}
-        <div className="absolute inset-y-0 right-0 w-1/2">
+        <div className="absolute top-0 right-0 bottom-2 w-1/2">
           <img
             src="/fond-foot.jpg"
             alt=""
@@ -113,7 +113,7 @@ function Home() {
           </div>
         </div>
 
-        <div className="h-2 stripe-diagonal" />
+        <div className="relative z-10 h-2 stripe-diagonal" />
       </section>
 
       {/* PRESENTATION */}
