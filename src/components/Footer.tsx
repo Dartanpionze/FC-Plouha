@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { Facebook, Instagram, Mail, MapPin, Phone } from 'lucide-react'
 import { ClubCrest } from './ClubCrest'
 import { club } from '@/data/club'
