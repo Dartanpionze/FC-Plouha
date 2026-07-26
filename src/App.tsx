@@ -16,11 +16,11 @@ function App() {
       <Route element={<Layout />}>
         <Route path="/" element={<Home />} />
         <Route path="/club" element={<Club />} />
-        <Route path="/equipes" element={<Equipes />} />
-        <Route path="/calendrier" element={<Calendrier />} />
-        <Route path="/actualites" element={<Actualites />} />
-        <Route path="/galerie" element={<Galerie />} />
-        <Route path="/partenaires" element={<Partenaires />} />
+        <Route path="/equipes" element={<TeamsPage />} />
+        <Route path="/calendrier" element={<CalendarPage />} />
+        <Route path="/actualites" element={<NewsPage />} />
+        <Route path="/galerie" element={<GalleryPage />} />
+        <Route path="/partenaires" element={<SponsorsPage />} />
         <Route path="/contact" element={<Contact />} />
       </Route>
     </Routes>
