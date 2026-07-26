@@ -27,23 +27,19 @@ function Home() {
     <div>
       {/* HERO */}
       <section className="relative overflow-hidden bg-[var(--club-navy-deep)] grain-overlay">
+        {/* Image de fond côté droit */}
+        <div className="absolute inset-y-0 right-0 w-1/2">
+          <img
+            src="/fond-foot.jpg"
+            alt=""
+            className="w-full h-full object-cover"
+          />
+        {/* Fondu bleu vers la gauche */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[var(--club-navy-deep)] via-[var(--club-navy-deep)]/70 to-transparent" />
+        </div>
+        {/* Tes effets actuels */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_20%,rgba(29,79,145,0.55),transparent_55%),radial-gradient(circle_at_85%_75%,rgba(200,32,47,0.35),transparent_55%)]" />
         
-        {/* Image fond droite si besoin */}
-        <img
-          src="/fond-foot.jpg"
-          alt=""
-          className="absolute -right-24 -top-24 w-[560px] h-[560px] object-cover rounded-full opacity-20 blur-[1px]"
-        />
-        
-        {/* Fondu pour garder le style */}
-        <div className="absolute -right-24 -top-24 w-[560px] h-[560px] rounded-full bg-gradient-to-l from-transparent to-[var(--club-navy-deep)] opacity-80" />
-        
-        {/* Motif terrain conservé */}
-        <svg
-          className="absolute -right-24 -top-24 w-[560px] h-[560px] opacity-[0.07]"
-          viewBox="0 0 200 200"
-        >
           <circle cx="100" cy="100" r="94" fill="none" stroke="white" strokeWidth="1.5" />
           <circle cx="100" cy="100" r="40" fill="none" stroke="white" strokeWidth="1.5" />
           <line x1="100" y1="6" x2="100" y2="194" stroke="white" strokeWidth="1.5" />
