@@ -8,6 +8,8 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
+    console.log('BODY:', req.body)
+
     const { name, email, subject, message } = req.body
 
     await resend.emails.send({
