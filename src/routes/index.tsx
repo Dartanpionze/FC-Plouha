@@ -28,37 +28,16 @@ function Home() {
       {/* HERO */}
       <section className="relative overflow-hidden bg-[var(--club-navy-deep)] grain-overlay">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_20%,rgba(29,79,145,0.55),transparent_55%),radial-gradient(circle_at_85%_75%,rgba(200,32,47,0.35),transparent_55%)]" />
-
-        <div className="relative w-full h-full overflow-hidden rounded-full">
-
-        {/* Image de fond */}
-          <img
-            src="/fond-foot.jpg"
-            alt=""
-            className="absolute inset-0 w-full h-full object-cover opacity-40"
-          />
-
-        {/* Fondu vers le fond du site */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[var(--club-navy-deep)] via-transparent to-transparent"></div>
-
-        {/* Logo au-dessus */}
-        <img
-          src="/logo.png"
-          alt="FC Plouha"
-          className="relative z-10 w-full h-full object-contain p-8"
-        />
-
-        </div>
         
         {/* Image fond droite si besoin */}
-        {/*<svg
+        <svg
           className="absolute -right-24 -top-24 w-[560px] h-[560px] opacity-[0.07]"
           viewBox="0 0 200 200"
         >
           <circle cx="100" cy="100" r="94" fill="none" stroke="white" strokeWidth="1.5" />
           <circle cx="100" cy="100" r="40" fill="none" stroke="white" strokeWidth="1.5" />
           <line x1="100" y1="6" x2="100" y2="194" stroke="white" strokeWidth="1.5" />
-        </svg>*/}
+        </svg>
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-8 pb-10 sm:pt-12 sm:pb-12 grid lg:grid-cols-[1.2fr_0.8fr] gap-12 items-center">
           <div className="animate-rise">
