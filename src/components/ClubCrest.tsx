@@ -1,4 +1,4 @@
-export function ClubCrest({ className = 'w-14 h-14' }: { className?: string }) {
+export function ClubCrest({ className = 'w-12 h-12' }: { className?: string }) {
   return (
     <img
       src="/logo.png"
