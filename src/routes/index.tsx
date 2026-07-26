@@ -74,8 +74,8 @@ function Home() {
           </div>
 
           <div className="relative flex justify-center lg:justify-end animate-rise" style={{ animationDelay: '0.15s' }}>
-            <div className="relative bg-white/[0.04] border border-white/10 rounded-3xl p-14 backdrop-blur-sm w-full max-w-md">
-              <ClubCrest className="w-64 h-64 mx-auto drop-shadow-[0_10px_30px_rgba(0,0,0,0.4)]" />
+            <div className="relative bg-white/[0.04] border border-white/10 rounded-3xl p-14 backdrop-blur-sm w-full max-w-lg">
+              <ClubCrest className="w-48 h-48 sm:w-64 sm:h-64 lg:w-96 lg:h-96 mx-auto drop-shadow-[0_10px_30px_rgba(0,0,0,0.4)]" />
               <div className="mt-10 grid grid-cols-2 gap-4 text-center">
                 <div>
                   <div className="font-display text-3xl text-[var(--club-yellow)]">{club.founded}</div>
