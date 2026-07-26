@@ -23,7 +23,7 @@ export function Navbar() {
       <div className="h-1.5 stripe-diagonal" />
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between h-20">
         <Link to="/" className="flex items-center gap-3 shrink-0">
-          <ClubCrest className="w-11 h-11" />
+          <ClubCrest className="w-14 h-14" />
           <span className="text-white leading-tight">
             <span className="block font-display text-lg tracking-wide">
               FC Plouha
