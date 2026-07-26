@@ -74,7 +74,7 @@ function Home() {
           </div>
 
           <div className="relative flex justify-center lg:justify-end animate-rise" style={{ animationDelay: '0.15s' }}>
-            <div className="relative bg-white/[0.04] border border-white/10 rounded-3xl p-4 lg:p-6 backdrop-blur-sm w-full max-w-xl">
+            <div className="relative bg-white/[0.04] border border-white/10 rounded-3xl p-6 backdrop-blur-sm w-full max-w-xl">
               <ClubCrest className="w-56 h-56 sm:w-72 sm:h-72 lg:w-[560px] lg:h-[560px] mx-auto -mt-10 drop-shadow-[0_10px_30px_rgba(0,0,0,0.4)]" />
               <div className="mt-0 grid grid-cols-2 gap-4 text-center">
                 <div>
