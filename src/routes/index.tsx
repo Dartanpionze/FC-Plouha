@@ -25,10 +25,10 @@ function Home() {
 
   return (
     <div>
-      <h1 style={{color:"red", fontSize:"50px"}}>
+      <h1 style={{ color: "red", fontSize: "50px" }}>
         TEST VERCEL
       </h1>
-    <div>
+
       {/* HERO */}
       <section className="relative overflow-hidden bg-[var(--club-navy-deep)] grain-overlay">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_20%,rgba(29,79,145,0.55),transparent_55%),radial-gradient(circle_at_85%_75%,rgba(200,32,47,0.35),transparent_55%)]" />
