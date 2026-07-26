@@ -28,6 +28,27 @@ function Home() {
       {/* HERO */}
       <section className="relative overflow-hidden bg-[var(--club-navy-deep)] grain-overlay">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_20%,rgba(29,79,145,0.55),transparent_55%),radial-gradient(circle_at_85%_75%,rgba(200,32,47,0.35),transparent_55%)]" />
+
+        <div className="relative w-full h-full overflow-hidden rounded-full">
+
+        {/* Image de fond */}
+          <img
+            src="/fond-foot.jpg"
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover opacity-40"
+          />
+
+        {/* Fondu vers le fond du site */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[var(--club-navy-deep)] via-transparent to-transparent"></div>
+
+        {/* Logo au-dessus */}
+        <img
+          src="/logo.png"
+          alt="FC Plouha"
+          className="relative z-10 w-full h-full object-contain p-8"
+        />
+
+        </div>
         
         {/* Image fond droite si besoin */}
         {/*<svg
