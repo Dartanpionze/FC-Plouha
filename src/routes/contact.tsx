@@ -3,12 +3,6 @@ import { useState } from 'react'
 import { Clock, Mail, MapPin, Phone } from 'lucide-react'
 import { club } from '@/data/club'
 
-function encode(data: Record<string, string>) {
-  return Object.entries(data)
-    .map(([key, val]) => `${encodeURIComponent(key)}=${encodeURIComponent(val)}`)
-    .join('&')
-}
-
 function ContactPage() {
   const [fields, setFields] = useState({ name: '', email: '', subject: '', message: '' })
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
@@ -21,11 +15,11 @@ function ContactPage() {
     e.preventDefault()
     setStatus('sending')
     try {
-      await fetch('/contact-form.html', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: encode({ 'form-name': 'contact', ...fields }),
-      })
+      await fetch('/api/contact', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(fields),
+    })
       setStatus('sent')
       setFields({ name: '', email: '', subject: '', message: '' })
     } catch {
