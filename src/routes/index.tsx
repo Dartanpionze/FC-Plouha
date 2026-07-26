@@ -30,6 +30,16 @@ function Home() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_20%,rgba(29,79,145,0.55),transparent_55%),radial-gradient(circle_at_85%_75%,rgba(200,32,47,0.35),transparent_55%)]" />
         
         {/* Image fond droite si besoin */}
+        <img
+          src="/fond-foot.jpg"
+          alt=""
+          className="absolute -right-24 -top-24 w-[560px] h-[560px] object-cover rounded-full opacity-20 blur-[1px]"
+        />
+        
+        {/* Fondu pour garder le style */}
+        <div className="absolute -right-24 -top-24 w-[560px] h-[560px] rounded-full bg-gradient-to-l from-transparent to-[var(--club-navy-deep)] opacity-80" />
+        
+        {/* Motif terrain conservé */}
         <svg
           className="absolute -right-24 -top-24 w-[560px] h-[560px] opacity-[0.07]"
           viewBox="0 0 200 200"
