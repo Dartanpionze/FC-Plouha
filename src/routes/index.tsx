@@ -40,6 +40,11 @@ function Home() {
         {/* Tes effets actuels */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_20%,rgba(29,79,145,0.55),transparent_55%),radial-gradient(circle_at_85%_75%,rgba(200,32,47,0.35),transparent_55%)]" />
         
+        {/* Décoration terrain */}
+        <svg
+          className="absolute -right-24 -top-24 w-[560px] h-[560px] opacity-[0.07]"
+          viewBox="0 0 200 200"
+        >
           <circle cx="100" cy="100" r="94" fill="none" stroke="white" strokeWidth="1.5" />
           <circle cx="100" cy="100" r="40" fill="none" stroke="white" strokeWidth="1.5" />
           <line x1="100" y1="6" x2="100" y2="194" stroke="white" strokeWidth="1.5" />
