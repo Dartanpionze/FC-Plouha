@@ -15,6 +15,7 @@ export default async function handler(req: any, res: any) {
     const result = await resend.emails.send({
       from: 'FC Plouha <onboarding@resend.dev>',
       to: 'dartanpion@gmail.com',
+      replyTo: email,
       subject: `[FC Plouha] ${subject}`,
       html: `
         <h2>Nouveau message depuis le site FC Plouha</h2>
