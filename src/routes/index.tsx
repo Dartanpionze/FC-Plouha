@@ -37,9 +37,9 @@ function Home() {
           <line x1="100" y1="6" x2="100" y2="194" stroke="white" strokeWidth="1.5" />
         </svg>
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-8 pb-12 sm:pt-12 sm:pb-16 grid lg:grid-cols-[1.2fr_0.8fr] gap-12 items-center">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-2 pb-20 sm:pt-4 sm:pb-24 grid lg:grid-cols-[1.2fr_0.8fr] gap-12 items-center">
           <div className="animate-rise">
-            <div className="flex items-center gap-3 mb-6">
+            <div className="flex items-center gap-3 mb-4">
               <span className="h-px w-10 bg-[var(--club-yellow)]" />
               <span className="font-condensed text-[var(--club-yellow)] text-sm font-semibold tracking-[0.3em]">
                 {club.city.toUpperCase()} · {club.region.toUpperCase()}
