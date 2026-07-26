@@ -12,23 +12,35 @@ export default async function handler(req: any, res: any) {
 
     const { name, email, subject, message } = req.body
 
-    await resend.emails.send({
+    const result = await resend.emails.send({
       from: 'FC Plouha <onboarding@resend.dev>',
       to: 'lfludovic@gmail.com',
       subject: `[FC Plouha] ${subject}`,
       html: `
         <h2>Nouveau message depuis le site FC Plouha</h2>
+
         <p><strong>Nom :</strong> ${name}</p>
         <p><strong>Email :</strong> ${email}</p>
         <p><strong>Sujet :</strong> ${subject}</p>
+
         <p><strong>Message :</strong></p>
         <p>${message}</p>
       `,
     })
 
-    return res.status(200).json({ success: true })
+    console.log('RESEND RESULT:', result)
+
+    return res.status(200).json({ 
+      success: true,
+      result
+    })
+
   } catch (error) {
-    console.error(error)
-    return res.status(500).json({ error: 'Erreur serveur' })
+    console.error('RESEND ERROR:', error)
+
+    return res.status(500).json({ 
+      error: 'Erreur serveur',
+      details: error
+    })
   }
 }
