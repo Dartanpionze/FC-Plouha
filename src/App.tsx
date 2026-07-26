@@ -7,7 +7,7 @@ import TeamsPage from './routes/equipes'
 import CalendarPage from './routes/calendrier'
 import NewsPage from './routes/actualites'
 import GalleryPage from './routes/galerie'
-import Partenaires from './routes/partenaires'
+import SponsorsPage from './routes/partenaires'
 import Contact from './routes/contact'
 
 function App() {
