@@ -16,6 +16,7 @@ export interface NewsItem {
   date: string
   category: string
   excerpt: string
+  image: string
 }
 
 export const news: Array<NewsItem> = [
@@ -26,6 +27,7 @@ export const news: Array<NewsItem> = [
     category: 'Club',
     excerpt:
       "Les dirigeants travaillent actuellement à la reconstruction du club et à la préparation de la prochaine saison.",
+    image: '/public/retour-club.jpg',
   },
   // Actualité temporairement désactivée
   /*
