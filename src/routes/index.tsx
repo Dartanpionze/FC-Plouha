@@ -205,10 +205,11 @@ function Home() {
           </div>
           <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-6">
             {news.map((item, i) => (
-              <article
+              <Link
                 key={item.id}
-                className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-shadow border border-black/5"
-              >
+                to={`/actualites/${item.id}`}
+                className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-shadow border border-black/5 block"
+                >
                 <div className="h-36 overflow-hidden">
                   <img
                     src={item.image_url}
@@ -227,7 +228,7 @@ function Home() {
                     {item.excerpt}
                   </p>
                 </div>
-              </article>
+              </Link>
             ))}
           </div>
         </div>
