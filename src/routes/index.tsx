@@ -7,7 +7,9 @@ import {
   Trophy,
   Users,
 } from 'lucide-react'
-import { club, gallery, matches, news, sponsors, teams } from '@/data/club'
+import { useEffect, useState } from 'react'
+import { supabase } from '@/lib/supabase'
+import { club, gallery, matches, sponsors, teams } from '@/data/club'
 import { SectionHeading } from '@/components/SectionHeading'
 import { PhotoTile } from '@/components/PhotoTile'
 import { ClubCrest } from '@/components/ClubCrest'
@@ -21,6 +23,26 @@ function formatDate(iso: string) {
 }
 
 function Home() {
+  const [news, setNews] = useState<any[]>([])
+
+  useEffect(() => {
+    const fetchNews = async () => {
+      const { data, error } = await supabase
+        .from('news')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error(error)
+        return
+      }
+
+      setNews(data || [])
+    }
+
+    fetchNews()
+  }, [])
+
   const upcoming = matches.filter((m) => !m.played).slice(0, 3)
 
   return (
@@ -188,14 +210,14 @@ function Home() {
               >
                 <div className="h-36 overflow-hidden">
                   <img
-                    src={item.image}
+                    src={item.image_url}
                     alt={item.title}
                     className="w-full h-full object-cover"
                     />
                 </div>
                 <div className="p-5">
                   <div className="text-xs font-condensed font-semibold text-[var(--club-navy)]/60 tracking-wide">
-                    {formatDate(item.date)}
+                    {formatDate(item.created_at)}
                   </div>
                   <h3 className="mt-2 font-condensed font-bold text-lg leading-snug normal-case">
                     {item.title}
