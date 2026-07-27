@@ -317,6 +317,34 @@ function Home() {
           </div>
         </div>
       </section>
+            {/* CALL TO ACTION */}
+      <section className="bg-[var(--club-yellow)]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-14 flex flex-col lg:flex-row items-center justify-between gap-8">
+          <div>
+            <p className="font-condensed uppercase tracking-[0.25em] text-sm text-[var(--club-navy-deep)]/70">
+              FC Plouha • Les Falaises
+            </p>
+
+            <h2 className="mt-2 text-3xl sm:text-4xl font-display text-[var(--club-navy-deep)]">
+              Rejoignez l'aventure.
+            </h2>
+
+            <p className="mt-3 max-w-2xl text-[var(--club-navy-deep)]/80 text-lg font-condensed">
+              Joueur, bénévole, éducateur ou partenaire, chacun peut contribuer
+              à faire grandir le Football Club Plouha. Venez écrire la suite de
+              l'histoire avec nous.
+            </p>
+          </div>
+
+          <Link
+            to="/contact"
+            className="inline-flex items-center gap-2 bg-[var(--club-navy-deep)] text-white px-7 py-4 rounded-xl font-condensed font-bold hover:bg-[var(--club-navy)] transition-colors"
+          >
+            Nous contacter
+            <ArrowRight size={18} />
+          </Link>
+        </div>
+      </section>
     </div>
   )
 }
