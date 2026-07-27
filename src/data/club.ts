@@ -21,12 +21,12 @@ export interface NewsItem {
 export const news: Array<NewsItem> = [
   {
     id: 1,
-    title: 'Les Falaises accrochent le nul à Lanvollon (2-2)',
-    date: '2026-07-19',
-    category: 'Match',
+    title: 'Le FC Plouha prépare son retour',
+    date: '2026-07-20',
+    category: 'Club',
     excerpt:
-      "Menés 2-0 à la pause, les Séniors A ont renversé la vapeur grâce à un doublé de Yannick Le Guennec. Un point précieux avant la trêve.",
-  },
+      "Les dirigeants travaillent actuellement à la reconstruction du club et à la préparation de la prochaine saison.",
+  },{/*
   {
     id: 2,
     title: 'Ouverture des inscriptions pour la saison 2026-2027',
@@ -50,7 +50,7 @@ export const news: Array<NewsItem> = [
     category: 'Club',
     excerpt:
       "En jaune et bleu marine, le nouveau maillot rend hommage aux falaises du Bréhat et sera porté dès la reprise face à Étables.",
-  },
+  },*/}
 ]
 
 export interface Team {
