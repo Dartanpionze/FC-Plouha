@@ -72,7 +72,7 @@ export const teams: Array<Team> = [
     id: 'seniors-a',
     name: 'Séniors A',
     category: 'District 4',
-    coach: 'Erwan Le Bihan',
+    coach: 'Stéphane Quilin',
     training: 'Dimanche, 15h00',
     players: 5,
   },
