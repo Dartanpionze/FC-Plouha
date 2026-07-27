@@ -3,6 +3,7 @@ import {
   ArrowRight,
   CalendarDays,
   MapPin,
+  ShieldHalf,
   GraduationCap,
   Trophy,
   Users,
