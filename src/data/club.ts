@@ -27,6 +27,7 @@ export const news: Array<NewsItem> = [
     excerpt:
       "Les dirigeants travaillent actuellement à la reconstruction du club et à la préparation de la prochaine saison.",
   },
+  // Actualité temporairement désactivée
   /*
   {
     id: 2,
@@ -73,6 +74,7 @@ export const teams: Array<Team> = [
     training: 'Dimanche, 15h00',
     players: 5,
   },
+  // Équipe temporairement désactivée
   /*
   {
     id: 'seniors-b',
