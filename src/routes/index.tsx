@@ -65,9 +65,10 @@ function Home() {
               </span>
             </h1>
             <p className="mt-6 text-white/70 text-lg max-w-xl font-condensed">
-              Depuis {club.founded}, un club amateur porté par la passion du
-              ballon rond sur la côte du Goëlo. Onze équipes, un seul
-              maillot : celui des Falaises.
+              Le FC Plouha ouvre une nouvelle page de son histoire.
+              Une aventure humaine et sportive portée par la passion du football,
+              l'engagement des bénévoles et l'envie de construire ensemble
+              l'avenir des Falaises.
             </p>
             <div className="mt-9 flex flex-wrap gap-4">
               <Link
