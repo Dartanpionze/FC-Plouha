@@ -334,15 +334,23 @@ function Home() {
         <div className="absolute inset-0 bg-[linear-gradient(135deg,transparent_0%,rgba(255,255,255,0.03)_50%,transparent_100%)]" />
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.03] backdrop-blur-md shadow-2xl">
+          <div className="relative overflow-hidden rounded-[2rem] border border-white/10 shadow-2xl bg-transparent">
 
             {/* Accent jaune */}
             <div className="absolute top-0 left-0 h-full w-2 bg-[var(--club-yellow)]" />
 
-            <div className="px-8 py-12 lg:px-14 lg:py-14 flex flex-col lg:flex-row items-center justify-between gap-12">
+            <div className="relative flex flex-col lg:flex-row items-stretch gap-0">
+
+              <div className="hidden lg:block lg:w-5/12 min-h-[420px]">
+                <img
+                  src="/rejoignez-nous.jpg"
+                  alt=""
+                  className="w-full h-full object-cover"
+                  />
+              </div>
 
               {/* Texte */}
-              <div className="max-w-2xl">
+              <div className="w-full lg:w-7/12 p-8 lg:p-14 bg-white/[0.05] backdrop-blur-md">
 
                 <span className="inline-flex items-center gap-2 rounded-full bg-[var(--club-yellow)]/15 border border-[var(--club-yellow)]/30 px-4 py-2 text-[var(--club-yellow)] text-xs font-condensed font-bold uppercase tracking-[0.2em]">
                   Ensemble, écrivons la suite
