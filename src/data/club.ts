@@ -26,7 +26,8 @@ export const news: Array<NewsItem> = [
     category: 'Club',
     excerpt:
       "Les dirigeants travaillent actuellement à la reconstruction du club et à la préparation de la prochaine saison.",
-  },{/*
+  },
+  /*
   {
     id: 2,
     title: 'Ouverture des inscriptions pour la saison 2026-2027',
@@ -50,7 +51,8 @@ export const news: Array<NewsItem> = [
     category: 'Club',
     excerpt:
       "En jaune et bleu marine, le nouveau maillot rend hommage aux falaises du Bréhat et sera porté dès la reprise face à Étables.",
-  },*/}
+  },
+  */
 ]
 
 export interface Team {
@@ -71,7 +73,7 @@ export const teams: Array<Team> = [
     training: 'Dimanche, 15h00',
     players: 5,
   },
-  {/*
+  /*
   {
     id: 'seniors-b',
     name: 'Séniors B',
@@ -111,7 +113,8 @@ export const teams: Array<Team> = [
     coach: 'Katell Morvan',
     training: 'Mercredi, 14h00',
     players: 1,
-  },*/}
+  },
+  */
 ]
 *]
 export interface Match {
