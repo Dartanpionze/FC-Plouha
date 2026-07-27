@@ -38,6 +38,7 @@ function Home() {
       }
 
       setNews(data || [])
+      console.log(data)
     }
 
     fetchNews()
