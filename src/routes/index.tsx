@@ -319,6 +319,19 @@ function Home() {
       </section>
       {/* CALL TO ACTION */}
       <section className="relative overflow-hidden bg-[var(--club-navy-deep)] py-24">
+        
+        {/* Image de fond côté gauche */}
+        <div className="absolute top-0 left-0 bottom-0 w-1/2">
+          <img
+            src="/rejoignez-nous.jpg"
+            alt=""
+            className="w-full h-full object-cover"
+            />
+          
+          {/* Fondu bleu vers la droite */}
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[var(--club-navy-deep)]/70 to-[var(--club-navy-deep)]" />
+        </div>
+        
         {/* Effets de fond */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_left,rgba(255,199,44,0.15),transparent_45%),radial-gradient(circle_at_right,rgba(29,79,145,0.45),transparent_50%)]" />
         <div className="absolute inset-0 bg-[linear-gradient(135deg,transparent_0%,rgba(255,255,255,0.03)_50%,transparent_100%)]" />
