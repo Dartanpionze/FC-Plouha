@@ -71,6 +71,7 @@ export const teams: Array<Team> = [
     training: 'Dimanche, 15h00',
     players: 5,
   },
+  {/*
   {
     id: 'seniors-b',
     name: 'Séniors B',
@@ -110,9 +111,9 @@ export const teams: Array<Team> = [
     coach: 'Katell Morvan',
     training: 'Mercredi, 14h00',
     players: 1,
-  },
+  },*/}
 ]
-
+*]
 export interface Match {
   id: number
   competition: string
