@@ -50,9 +50,9 @@ function ArticlePage() {
           {article.title}
         </h1>
 
-        <p className="mt-6 text-lg leading-relaxed">
-          {article.excerpt}
-        </p>
+        <div className="mt-6 text-lg leading-relaxed whitespace-pre-line">
+          {article.content}
+          </div>
       </div>
     </article>
   )
