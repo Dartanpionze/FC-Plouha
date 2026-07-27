@@ -27,7 +27,7 @@ export const news: Array<NewsItem> = [
     category: 'Club',
     excerpt:
       "Les dirigeants travaillent actuellement à la reconstruction du club et à la préparation de la prochaine saison.",
-    image: '/public/retour-club.jpg',
+    image: '/actualites/retour-club.jpg',
   },
   // Actualité temporairement désactivée
   /*
