@@ -317,49 +317,30 @@ function Home() {
           </div>
         </div>
       </section>
-            {/* CALL TO ACTION */}
+      {/* CALL TO ACTION */}
       <section className="relative overflow-hidden bg-[var(--club-navy-deep)] py-24">
-        {/* Image côté gauche */}
-        <div className="absolute top-0 left-0 bottom-0 w-1/2">
-          <img
-            src="/rejoignez-nous.jpg"
-            alt=""
-            className="w-full h-full object-cover"
-            />
-          {/* Fondu vers le bleu */}
-          <div className="absolute inset-0 bg-gradient-to-l from-[var(--club-navy-deep)] via-[var(--club-navy-deep)]/80 to-transparent" />
-        </div>
         {/* Effets de fond */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_left,rgba(255,199,44,0.15),transparent_45%),radial-gradient(circle_at_right,rgba(29,79,145,0.45),transparent_50%)]" />
         <div className="absolute inset-0 bg-[linear-gradient(135deg,transparent_0%,rgba(255,255,255,0.03)_50%,transparent_100%)]" />
-
+        
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="relative overflow-hidden rounded-[2rem] border border-white/10 shadow-2xl bg-transparent">
-
+          <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.05] backdrop-blur-md shadow-2xl">
+            
             {/* Accent jaune */}
             <div className="absolute top-0 left-0 h-full w-2 bg-[var(--club-yellow)]" />
-
-            <div className="relative flex flex-col lg:flex-row items-stretch gap-0">
-
-              <div className="hidden lg:block lg:w-5/12 min-h-[420px]">
-                <img
-                  src="/rejoignez-nous.jpg"
-                  alt=""
-                  className="w-full h-full object-cover"
-                  />
-              </div>
-
+            <div className="px-8 py-12 lg:px-14 lg:py-14 flex flex-col lg:flex-row items-center justify-between gap-12">
+              
               {/* Texte */}
-              <div className="w-full lg:w-7/12 p-8 lg:p-14 bg-white/[0.05] backdrop-blur-md">
-
+              <div className="max-w-2xl">
+                
                 <span className="inline-flex items-center gap-2 rounded-full bg-[var(--club-yellow)]/15 border border-[var(--club-yellow)]/30 px-4 py-2 text-[var(--club-yellow)] text-xs font-condensed font-bold uppercase tracking-[0.2em]">
                   Ensemble, écrivons la suite
                 </span>
-
+                
                 <h2 className="mt-6 text-4xl lg:text-5xl text-white leading-tight">
                   Le FC Plouha a besoin de vous.
                 </h2>
-
+                
                 <p className="mt-6 text-lg leading-relaxed text-white/75 font-condensed">
                   Le FC Plouha écrit une nouvelle page de son histoire.
                   <br /><br />
@@ -367,31 +348,31 @@ function Home() {
                   <br /><br />
                   Rejoignez une aventure humaine portée par la passion du football et les couleurs des Falaises.
                 </p>
-
-               <div className="mt-8 h-px w-24 bg-[var(--club-yellow)]" />
-
+                
+                <div className="mt-8 h-px w-24 bg-[var(--club-yellow)]" />
+                
               </div>
-
+              
               {/* Boutons */}
               <div className="flex flex-col gap-4 w-full lg:w-auto shrink-0">
-
+                
                 <Link
                   to="/contact"
                   className="inline-flex items-center justify-center gap-2 bg-[var(--club-yellow)] text-[var(--club-navy-deep)] px-8 py-4 rounded-xl font-condensed font-bold shadow-lg hover:bg-white hover:scale-105 transition-all duration-300"
-                >
+                  >
                   Nous rejoindre
                   <ArrowRight size={18} />
                 </Link>
-
+                
                 <Link
                   to="/partenaires"
                   className="inline-flex items-center justify-center gap-2 border border-white/20 text-white px-8 py-4 rounded-xl font-condensed font-bold hover:bg-white/10 transition-all duration-300"
-                >
+                  >
                   Devenir partenaire
                 </Link>
-
+                
               </div>
-
+              
             </div>
           </div>
         </div>
