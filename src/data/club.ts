@@ -116,7 +116,7 @@ export const teams: Array<Team> = [
   },
   */
 ]
-*]
+
 export interface Match {
   id: number
   competition: string
