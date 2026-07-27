@@ -186,7 +186,13 @@ function Home() {
                 key={item.id}
                 className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-shadow border border-black/5"
               >
-                <PhotoTile hue={i % 2 === 0 ? 214 : 0} caption={item.category} className="h-36" />
+                <div className="h-36 overflow-hidden">
+                  <img
+                    src={item.image}
+                    alt={item.title}
+                    className="w-full h-full object-cover"
+                    />
+                </div>
                 <div className="p-5">
                   <div className="text-xs font-condensed font-semibold text-[var(--club-navy)]/60 tracking-wide">
                     {formatDate(item.date)}
