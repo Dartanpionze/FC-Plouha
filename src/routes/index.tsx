@@ -348,36 +348,12 @@ function Home() {
                 <p className="mt-6 text-lg leading-relaxed text-white/75 font-condensed">
                   Le FC Plouha écrit une nouvelle page de son histoire.
                   <br /><br />
-                  Joueurs, bénévoles, éducateurs ou partenaires :
-                  chacun peut contribuer à faire grandir le club.
+                  Joueurs, bénévoles, éducateurs ou partenaires, chacun peut contribuer à faire grandir le club.
                   <br /><br />
-                  Rejoignez une aventure humaine portée par la passion du football
-                  et les couleurs des Falaises.
+                  Rejoignez une aventure humaine portée par la passion du football et les couleurs des Falaises.
                 </p>
 
-                <div className="mt-8 flex flex-wrap gap-3">
-
-                  <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 text-white/80 text-sm font-condensed">
-                    <Users size={16} />
-                    Joueurs
-                  </span>
-
-                  <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 text-white/80 text-sm font-condensed">
-                    <Handshake size={16} />
-                    Bénévoles
-                  </span>
-
-                  <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 text-white/80 text-sm font-condensed">
-                    <GraduationCap size={16} />
-                    Éducateurs
-                  </span>
-
-                  <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 text-white/80 text-sm font-condensed">
-                    <BriefcaseBusiness size={16} />
-                    Partenaires
-                  </span>
-
-                </div>
+               <div className="mt-8 h-px w-24 bg-[var(--club-yellow)]" />
 
               </div>
 
