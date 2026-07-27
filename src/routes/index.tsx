@@ -3,7 +3,7 @@ import {
   ArrowRight,
   CalendarDays,
   MapPin,
-  ShieldHalf,
+  GraduationCap,
   Trophy,
   Users,
   Handshake,
@@ -345,14 +345,13 @@ function Home() {
                 </h2>
 
                 <p className="mt-6 text-lg leading-relaxed text-white/75 font-condensed">
-                  Le club est en pleine reconstruction et chaque personne peut
-                  contribuer à son développement. Que vous soyez
-                  <span className="text-white font-semibold"> joueur</span>,
-                  <span className="text-white font-semibold"> bénévole</span>,
-                  <span className="text-white font-semibold"> éducateur</span> ou
-                  <span className="text-white font-semibold"> partenaire</span>,
-                  rejoignez une aventure humaine portée par la passion du
-                  football, le plaisir de partager et les couleurs des Falaises.
+                  Le FC Plouha écrit une nouvelle page de son histoire.
+                  <br /><br />
+                  Joueurs, bénévoles, éducateurs ou partenaires :
+                  chacun peut contribuer à faire grandir le club.
+                  <br /><br />
+                  Rejoignez une aventure humaine portée par la passion du football
+                  et les couleurs des Falaises.
                 </p>
 
                 <div className="mt-8 flex flex-wrap gap-3">
@@ -368,7 +367,7 @@ function Home() {
                   </span>
 
                   <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 text-white/80 text-sm font-condensed">
-                    <ShieldHalf size={16} />
+                    <GraduationCap size={16} />
                     Éducateurs
                   </span>
 
