@@ -4,11 +4,8 @@ import {
   CalendarDays,
   MapPin,
   ShieldHalf,
-  GraduationCap,
   Trophy,
   Users,
-  Handshake,
-  BriefcaseBusiness,
 } from 'lucide-react'
 import { club, gallery, matches, news, sponsors, teams } from '@/data/club'
 import { SectionHeading } from '@/components/SectionHeading'
