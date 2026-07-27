@@ -4,8 +4,8 @@ export const club = {
   founded: 2026,
   city: 'Plouha',
   region: 'Côtes-d\'Armor, Bretagne',
-  stadium: 'Stade de Kermarquer',
-  address: 'Rue du Stade, 22580 Plouha',
+  stadium: 'Terrain des sports',
+  address: 'Rue Louis Droumaguet, 22580 Plouha',
   email: 'contact@fc-plouha-lesfalaises.bzh',
   phone: '02 96 22 47 13',
 }
