@@ -14,6 +14,17 @@ function Admin() {
   const [editingId, setEditingId] = useState<number | null>(null)
 
 
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+    ],
+    content: content,
+    onUpdate({ editor }) {
+      setContent(editor.getHTML())
+    },
+  })
+
+
   useEffect(() => {
     fetchNews()
   }, [])
@@ -41,6 +52,8 @@ function Admin() {
     setImage(null)
     setPreview('')
     setEditingId(null)
+
+    editor?.commands.setContent('')
   }
 
 
@@ -80,7 +93,6 @@ function Admin() {
 
 
 
-    // MODE MODIFICATION
     if (editingId) {
 
       const result = await supabase
@@ -97,10 +109,8 @@ function Admin() {
       error = result.error
 
 
-    } 
-    
-    // MODE CREATION
-    else {
+    } else {
+
 
       const result = await supabase
         .from('news')
@@ -116,7 +126,6 @@ function Admin() {
 
 
       error = result.error
-
     }
 
 
@@ -128,17 +137,14 @@ function Admin() {
     }
 
 
-
-    if (editingId) {
-      setMessage("Actualité modifiée !")
-    } else {
-      setMessage("Actualité publiée !")
-    }
-
+    setMessage(
+      editingId
+        ? "Actualité modifiée !"
+        : "Actualité publiée !"
+    )
 
 
     resetForm()
-
     fetchNews()
   }
 
@@ -151,6 +157,9 @@ function Admin() {
     setTitle(item.title)
     setExcerpt(item.excerpt)
     setContent(item.content)
+
+
+    editor?.commands.setContent(item.content || '')
 
 
     if (item.image_url) {
@@ -192,7 +201,6 @@ function Admin() {
     }
 
 
-
     setMessage("Actualité supprimée")
 
     fetchNews()
@@ -220,9 +228,7 @@ function Admin() {
 
         <div className="bg-white rounded-2xl shadow-xl p-8">
 
-
           <div className="space-y-6">
-
 
 
             <div>
@@ -258,12 +264,10 @@ function Admin() {
 
 
 
-
             <div>
               <label className="block font-semibold mb-2">
                 Image de couverture
               </label>
-
 
               <input
                 type="file"
@@ -271,7 +275,6 @@ function Admin() {
                 onChange={(e) => {
 
                   const file = e.target.files?.[0]
-
 
                   if (file) {
                     setImage(file)
@@ -281,7 +284,6 @@ function Admin() {
                 }}
                 className="w-full border rounded-xl p-3"
               />
-
 
 
               {preview && (
@@ -296,8 +298,6 @@ function Admin() {
 
 
 
-
-
             <div>
 
               <label className="block font-semibold mb-2">
@@ -305,13 +305,58 @@ function Admin() {
               </label>
 
 
-              <textarea
-                className="w-full border rounded-xl p-4"
-                rows={12}
-                placeholder="Rédigez votre article..."
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-              />
+              <div className="border rounded-xl overflow-hidden">
+
+                <div className="flex gap-2 p-3 bg-gray-100 border-b">
+
+                  <button
+                    type="button"
+                    onClick={() => editor?.chain().focus().toggleBold().run()}
+                    className="px-3 py-1 bg-white border rounded font-bold"
+                  >
+                    B
+                  </button>
+
+
+                  <button
+                    type="button"
+                    onClick={() => editor?.chain().focus().toggleItalic().run()}
+                    className="px-3 py-1 bg-white border rounded italic"
+                  >
+                    I
+                  </button>
+
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      editor?.chain().focus().toggleHeading({ level: 2 }).run()
+                    }
+                    className="px-3 py-1 bg-white border rounded"
+                  >
+                    Titre
+                  </button>
+
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      editor?.chain().focus().toggleBulletList().run()
+                    }
+                    className="px-3 py-1 bg-white border rounded"
+                  >
+                    Liste
+                  </button>
+
+                </div>
+
+
+                <EditorContent
+                  editor={editor}
+                  className="p-4 min-h-[250px]"
+                />
+
+              </div>
 
 
             </div>
@@ -342,8 +387,6 @@ function Admin() {
 
 
 
-
-
             {message && (
 
               <div className="rounded-xl bg-green-100 border border-green-300 p-4 text-green-700 font-medium">
@@ -358,20 +401,14 @@ function Admin() {
           </div>
 
 
-
-
-
           <div className="mt-12">
-
 
             <h2 className="text-2xl font-bold mb-6">
               Actualités publiées
             </h2>
 
 
-
             <div className="space-y-4">
-
 
               {news.map((item) => (
 
@@ -380,10 +417,7 @@ function Admin() {
                   className="bg-gray-50 rounded-xl p-4 flex items-center justify-between gap-4"
                 >
 
-
-
                   <div className="flex items-center gap-4">
-
 
                     {item.image_url && (
 
@@ -394,8 +428,6 @@ function Admin() {
                       />
 
                     )}
-
-
 
                     <div>
 
@@ -413,15 +445,10 @@ function Admin() {
 
                     </div>
 
-
                   </div>
 
 
-
-
-
                   <div className="flex gap-2">
-
 
                     <button
                       onClick={() => editNews(item)}
@@ -431,7 +458,6 @@ function Admin() {
                     </button>
 
 
-
                     <button
                       onClick={() => deleteNews(item.id)}
                       className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg"
@@ -439,27 +465,19 @@ function Admin() {
                       Supprimer
                     </button>
 
-
                   </div>
-
 
 
                 </div>
 
-
               ))}
 
-
-
             </div>
-
 
           </div>
 
 
-
         </div>
-
 
 
       </div>
