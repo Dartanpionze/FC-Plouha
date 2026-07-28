@@ -10,30 +10,55 @@ function Admin() {
   const [preview, setPreview] = useState('')
 
   const publishNews = async () => {
-    const { error } = await supabase
-      .from('news')
-      .insert([
-        {
-          title,
-          excerpt,
-          content,
-          created_at: new Date(),
-        },
-      ])
-
+    let imageUrl = ''
+    
+    // 1 - Envoi de l'image dans Supabase Storage
+      if (image) {
+        const fileName = `${Date.now()}-${image.name}`
+          const { error: uploadError } = await supabase.storage
+            .from('news-images')
+            .upload(fileName, image)
+        
+        if (uploadError) {
+          console.error(uploadError)
+            setMessage("Erreur lors de l'envoi de l'image")
+              return
+        }
+        
+        const { data } = supabase.storage
+          .from('news-images')
+          .getPublicUrl(fileName)
+          imageUrl = data.publicUrl
+      }
+    
+    // 2 - Création de l'actualité dans la table news
+        const { error } = await supabase
+          .from('news')
+          .insert([
+            {
+              title,
+              excerpt,
+              content,
+              image_url: imageUrl,
+              created_at: new Date(),
+            },
+          ])
+    
     if (error) {
       console.error(error)
-      setMessage("Erreur lors de la publication")
-      return
+        setMessage("Erreur lors de la publication")
+          return
     }
-
+    
     setMessage("Actualité publiée !")
-
+    
     setTitle('')
     setExcerpt('')
     setContent('')
+    setImage(null)
+    setPreview('')
   }
-
+  
   return (
     <div className="min-h-screen bg-gray-100 py-16 px-4">
       <div className="max-w-4xl mx-auto">
