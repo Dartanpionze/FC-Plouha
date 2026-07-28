@@ -9,6 +9,7 @@ function Admin() {
   const [image, setImage] = useState<File | null>(null)
   const [preview, setPreview] = useState('')
   const [news, setNews] = useState<any[]>([])
+  const [editingId, setEditingId] = useState<number | null>(null)
 
   useEffect(() => {
     fetchNews()
@@ -85,6 +86,22 @@ function Admin() {
     fetchNews()
   }
 
+  const editNews = (item: any) => {
+    setEditingId(item.id)
+    
+    setTitle(item.title)
+    setExcerpt(item.excerpt)
+    setContent(item.content)
+    
+    if (item.image_url) {
+      setPreview(item.image_url)
+    }
+    
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    })
+  }
 
   const deleteNews = async (id: number) => {
     const confirmDelete = window.confirm(
