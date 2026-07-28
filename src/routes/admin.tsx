@@ -6,6 +6,8 @@ function Admin() {
   const [excerpt, setExcerpt] = useState('')
   const [content, setContent] = useState('')
   const [message, setMessage] = useState('')
+  const [image, setImage] = useState<File | null>(null)
+  const [preview, setPreview] = useState('')
 
   const publishNews = async () => {
     const { error } = await supabase
@@ -73,6 +75,34 @@ function Admin() {
                 value={excerpt}
                 onChange={(e) => setExcerpt(e.target.value)}
                 />
+            </div>
+
+            <div>
+              <label className="block font-semibold mb-2">
+                Image de couverture
+              </label>
+              
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  
+                  if (file) {
+                    setImage(file)
+                      setPreview(URL.createObjectURL(file))
+                  }
+                }}
+                className="w-full border rounded-xl p-3"
+                />
+              
+              {preview && (
+      <img
+        src={preview}
+        alt="Aperçu"
+        className="mt-4 h-48 w-full object-cover rounded-xl"
+        />
+    )}
             </div>
             
             <div>
