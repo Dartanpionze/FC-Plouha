@@ -33,49 +33,79 @@ function Admin() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-20">
-      <h1 className="text-4xl font-bold">
-        Administration FC Plouha
-      </h1>
-
-      <div className="mt-10 space-y-5">
-
-        <input
-          className="w-full border rounded-lg p-3"
-          placeholder="Titre de l'article"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-        />
-
-        <textarea
-          className="w-full border rounded-lg p-3"
-          placeholder="Résumé"
-          rows={3}
-          value={excerpt}
-          onChange={(e) => setExcerpt(e.target.value)}
-        />
-
-        <textarea
-          className="w-full border rounded-lg p-3"
-          placeholder="Contenu de l'article"
-          rows={10}
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-        />
-
-        <button
-          onClick={publishNews}
-          className="bg-[var(--club-yellow)] px-6 py-3 rounded-lg font-bold"
-        >
-          Publier
-        </button>
-
-        {message && (
-          <p className="mt-4">
-            {message}
-          </p>
-        )}
-
+    <div className="min-h-screen bg-gray-100 py-16 px-4">
+      <div className="max-w-4xl mx-auto">
+        
+        <h1 className="text-4xl font-bold text-[var(--club-navy)] mb-2">
+          Administration
+        </h1>
+        
+        <p className="text-gray-600 mb-8">
+          Créer une nouvelle actualité pour le site du FC Plouha.
+        </p>
+        
+        <div className="bg-white rounded-2xl shadow-xl p-8">
+          
+          <div className="space-y-6">
+            
+            <div>
+              <label className="block font-semibold mb-2">
+                Titre
+              </label>
+              
+              <input
+                className="w-full border rounded-xl p-4 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                placeholder="Titre de l'article"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                />
+            </div>
+            
+            <div>
+              <label className="block font-semibold mb-2">
+                Résumé
+              </label>
+              
+              <textarea
+                className="w-full border rounded-xl p-4 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                rows={3}
+                placeholder="Petit résumé..."
+                value={excerpt}
+                onChange={(e) => setExcerpt(e.target.value)}
+                />
+            </div>
+            
+            <div>
+              <label className="block font-semibold mb-2">
+                Contenu
+              </label>
+              
+              <textarea
+                className="w-full border rounded-xl p-4 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                rows={12}
+                placeholder="Rédigez votre article..."
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                />
+            </div>
+            
+            <button
+              onClick={publishNews}
+              className="w-full bg-[var(--club-yellow)] hover:bg-yellow-400 transition rounded-xl py-4 font-bold text-lg"
+              >
+              Publier l'actualité
+            </button>
+            
+            {message && (
+      <div className="rounded-xl bg-green-100 border border-green-300 p-4 text-green-700 font-medium">
+        {message}
+      </div>
+    )}
+            
+          </div>
+          
+        </div>
+        
       </div>
     </div>
   )
