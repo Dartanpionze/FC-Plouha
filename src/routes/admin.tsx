@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 
 function Admin() {
@@ -8,7 +8,27 @@ function Admin() {
   const [message, setMessage] = useState('')
   const [image, setImage] = useState<File | null>(null)
   const [preview, setPreview] = useState('')
+  const [news, setNews] = useState<any[]>([])
 
+  useEffect(() => {
+    fetchNews()
+  }, [])
+
+  
+  const fetchNews = async () => {
+    const { data, error } = await supabase
+      .from('news')
+      .select('*')
+      .order('created_at', { ascending: false })
+    
+    if (error) {
+      console.error(error)
+        return
+    }
+    
+    setNews(data || [])
+  }
+  
   const publishNews = async () => {
     let imageUrl = ''
     
@@ -57,6 +77,7 @@ function Admin() {
     setContent('')
     setImage(null)
     setPreview('')
+    fetchNews()
   }
   
   return (
