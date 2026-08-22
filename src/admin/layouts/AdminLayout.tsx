@@ -1,4 +1,5 @@
-import { NavLink, Outlet } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard,
   Newspaper,
@@ -11,6 +12,7 @@ import {
   ExternalLink,
   LogOut,
 } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
 
 const navigation = [
   {
@@ -52,11 +54,83 @@ const navigation = [
 ]
 
 export default function AdminLayout() {
+  const navigate = useNavigate()
+
+  const [session, setSession] = useState<any>(null)
+  const [checkingSession, setCheckingSession] =
+    useState(true)
+
+  useEffect(() => {
+    const checkSession = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+
+      setSession(session)
+      setCheckingSession(false)
+
+      if (!session) {
+        navigate('/admin/login', {
+          replace: true,
+        })
+      }
+    }
+
+    checkSession()
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setSession(session)
+
+        if (!session) {
+          navigate('/admin/login', {
+            replace: true,
+          })
+        }
+      },
+    )
+
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [navigate])
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+
+    navigate('/admin/login', {
+      replace: true,
+    })
+  }
+
+  if (checkingSession) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center">
+        <div className="text-slate-400">
+          Vérification de la connexion...
+        </div>
+      </div>
+    )
+  }
+
+  if (!session) {
+    return null
+  }
+
+  const userEmail =
+    session.user?.email || 'Administrateur'
+
+  const userInitial =
+    userEmail.charAt(0).toUpperCase()
+
   return (
     <div className="min-h-screen bg-slate-950 text-white flex">
+
       {/* SIDEBAR */}
       <aside className="w-72 shrink-0 bg-slate-900 border-r border-white/10 flex flex-col">
-        
+
         {/* LOGO */}
         <div className="h-20 px-6 flex items-center border-b border-white/10">
           <div>
@@ -72,6 +146,7 @@ export default function AdminLayout() {
 
         {/* NAVIGATION */}
         <nav className="flex-1 p-4 space-y-1">
+
           <div className="px-3 pt-2 pb-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
             Gestion du club
           </div>
@@ -147,10 +222,12 @@ export default function AdminLayout() {
               </>
             )}
           </NavLink>
+
         </nav>
 
         {/* BOTTOM */}
         <div className="p-4 border-t border-white/10 space-y-2">
+
           <NavLink
             to="/"
             className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:bg-white/5 hover:text-white transition"
@@ -161,19 +238,23 @@ export default function AdminLayout() {
 
           <button
             type="button"
+            onClick={handleLogout}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:bg-red-500/10 hover:text-red-400 transition"
           >
             <LogOut size={18} />
             Déconnexion
           </button>
+
         </div>
+
       </aside>
 
       {/* CONTENU */}
       <div className="flex-1 min-w-0 flex flex-col">
-        
+
         {/* TOPBAR */}
         <header className="h-20 shrink-0 border-b border-white/10 bg-slate-950/80 backdrop-blur flex items-center justify-between px-8">
+
           <div>
             <p className="text-sm text-slate-400">
               Administration du club
@@ -185,27 +266,32 @@ export default function AdminLayout() {
           </div>
 
           <div className="flex items-center gap-3">
+
             <div className="hidden sm:block text-right">
               <p className="text-sm font-medium">
                 Administrateur
               </p>
 
               <p className="text-xs text-slate-500">
-                Gestion du club
+                {userEmail}
               </p>
             </div>
 
             <div className="w-10 h-10 rounded-full bg-white/10 border border-white/10 flex items-center justify-center font-bold">
-              A
+              {userInitial}
             </div>
+
           </div>
+
         </header>
 
         {/* PAGE */}
         <main className="flex-1 overflow-auto">
           <Outlet />
         </main>
+
       </div>
+
     </div>
   )
 }
