@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { removeStorageFile } from '@/lib/storage'
 import {
   Plus,
   Pencil,
@@ -239,6 +240,10 @@ export default function Club() {
     setSaving(true)
     setMessage('')
 
+    const previousPhotoUrl = editingStaffId
+      ? staff.find((member) => member.id === editingStaffId)?.photo_url || null
+      : null
+
     let photoUrl = ''
 
     if (staffImage) {
@@ -289,9 +294,24 @@ export default function Club() {
 
     if (result.error) {
       console.error(result.error)
+
+      if (photoUrl) {
+        await removeStorageFile(
+          'staff-images',
+          photoUrl,
+        )
+      }
+
       setMessage("Erreur lors de l'enregistrement du dirigeant.")
       setSaving(false)
       return
+    }
+
+    if (photoUrl && previousPhotoUrl) {
+      await removeStorageFile(
+        'staff-images',
+        previousPhotoUrl,
+      )
     }
 
     const wasEditing = Boolean(editingStaffId)
@@ -341,6 +361,13 @@ export default function Club() {
       console.error(error)
       setMessage('Erreur lors de la suppression du dirigeant.')
       return
+    }
+
+    if (member.photo_url) {
+      await removeStorageFile(
+        'staff-images',
+        member.photo_url,
+      )
     }
 
     setMessage('Dirigeant supprimé.')
