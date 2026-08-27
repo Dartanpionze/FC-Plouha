@@ -12,6 +12,7 @@ import {
   ExternalLink,
   LogOut,
   Landmark,
+  ClipboardList,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
@@ -41,6 +42,11 @@ const navigation = [
     label: 'Joueurs',
     path: '/admin/players',
     icon: Users,
+  },
+  {
+    label: 'Inscriptions',
+    path: '/admin/registrations',
+    icon: ClipboardList,
   },
   {
     label: 'Matchs',
