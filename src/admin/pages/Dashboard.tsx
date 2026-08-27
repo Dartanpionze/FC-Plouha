@@ -9,6 +9,7 @@ import {
   Clock,
   MapPin,
   Users,
+  ClipboardList,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
@@ -48,6 +49,7 @@ export default function Dashboard() {
   const [partnersCount, setPartnersCount] = useState(0)
   const [galleryCount, setGalleryCount] = useState(0)
   const [playersCount, setPlayersCount] = useState(0)
+  const [registrationsCount, setRegistrationsCount] = useState(0)
 
   const [latestNews, setLatestNews] = useState<NewsItem[]>([])
   const [upcomingMatches, setUpcomingMatches] = useState<Match[]>([])
@@ -68,6 +70,7 @@ export default function Dashboard() {
       fetchPartners(),
       fetchGallery(),
       fetchPlayers(),
+      fetchRegistrations(),
     ])
 
     setLoading(false)
@@ -173,6 +176,18 @@ export default function Dashboard() {
     setPlayersCount(count || 0)
   }
 
+  const fetchRegistrations = async () => {
+    const { count } = await supabase
+      .from('registrations')
+      .select('id', {
+        count: 'exact',
+        head: true,
+      })
+      .eq('status', 'Nouveau')
+
+    setRegistrationsCount(count || 0)
+  }
+
   const stats: Stat[] = [
     {
       label: 'Actualités',
@@ -208,6 +223,16 @@ export default function Dashboard() {
       description: 'joueurs actifs',
       icon: Users,
       path: '/admin/players',
+    },
+    {
+      label: 'Inscriptions',
+      value: registrationsCount,
+      description:
+        registrationsCount > 1
+          ? 'nouvelles demandes'
+          : 'nouvelle demande',
+      icon: ClipboardList,
+      path: '/admin/registrations',
     },
   ]
 
@@ -248,7 +273,7 @@ export default function Dashboard() {
       </div>
 
       {/* STATS */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6 gap-4">
 
         {stats.map((stat) => {
           const Icon = stat.icon
@@ -319,7 +344,7 @@ export default function Dashboard() {
           Accédez rapidement aux outils les plus utilisés.
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mt-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 mt-4">
 
           <Link
             to="/admin/news"
@@ -397,6 +422,34 @@ export default function Dashboard() {
 
             <p className="text-sm text-slate-500 mt-1">
               Gérer les effectifs des différentes équipes.
+            </p>
+
+          </Link>
+
+          <Link
+            to="/admin/registrations"
+            className="relative rounded-2xl border border-white/10 bg-white/[0.03] p-5 hover:bg-white/[0.06] transition"
+          >
+
+            {registrationsCount > 0 && (
+              <span className="absolute top-4 right-4 min-w-6 h-6 px-1.5 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center">
+                {registrationsCount > 99
+                  ? '99+'
+                  : registrationsCount}
+              </span>
+            )}
+
+            <ClipboardList
+              size={22}
+              className="text-[var(--club-yellow)]"
+            />
+
+            <h3 className="font-semibold mt-4">
+              Voir les inscriptions
+            </h3>
+
+            <p className="text-sm text-slate-500 mt-1">
+              Traiter les nouvelles demandes reçues depuis le site.
             </p>
 
           </Link>
