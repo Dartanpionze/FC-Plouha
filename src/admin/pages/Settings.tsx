@@ -24,6 +24,10 @@ type ClubSettings = {
   facebook_url: string | null
   instagram_url: string | null
   description: string | null
+  founded_year: number | null
+  members_count: number | null
+  volunteers_count: number | null
+  district_titles: number | null
 }
 
 export default function Settings() {
@@ -48,6 +52,11 @@ export default function Settings() {
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+
+  const [foundedYear, setFoundedYear] = useState('')
+  const [membersCount, setMembersCount] = useState('')
+  const [volunteersCount, setVolunteersCount] = useState('')
+  const [districtTitles, setDistrictTitles] = useState('')
 
   useEffect(() => {
     fetchSettings()
@@ -74,6 +83,30 @@ export default function Settings() {
     setClubName(data.club_name || '')
     setShortName(data.short_name || '')
     setSeason(data.season || '')
+
+    setFoundedYear(
+      data.founded_year !== null
+      ? data.founded_year.toString()
+      : '',
+    )
+    
+    setMembersCount(
+      data.members_count !== null
+      ? data.members_count.toString()
+      : '0',
+    )
+    
+    setVolunteersCount(
+      data.volunteers_count !== null
+      ? data.volunteers_count.toString()
+      : '0',
+    )
+    
+    setDistrictTitles(
+      data.district_titles !== null
+      ? data.district_titles.toString()
+      : '0',
+    )
 
     setAddress(data.address || '')
     setPostalCode(data.postal_code || '')
@@ -107,6 +140,25 @@ export default function Settings() {
         club_name: clubName,
         short_name: shortName,
         season,
+        founded_year:
+          foundedYear === ''
+          ? null
+          : Number(foundedYear),
+        
+        members_count:
+          membersCount === ''
+          ? 0
+          : Number(membersCount),
+        
+        volunteers_count:
+          volunteersCount === ''
+          ? 0
+          : Number(volunteersCount),
+        
+        district_titles:
+          districtTitles === ''
+          ? 0
+          : Number(districtTitles),
         address: address || null,
         postal_code: postalCode || null,
         city: city || null,
@@ -236,6 +288,82 @@ export default function Settings() {
               />
             </div>
 
+            <div>
+              <label className="block text-sm font-semibold mb-2">
+                Année de fondation
+              </label>
+
+              <input
+                type="number"
+                min="1800"
+                max="2100"
+                placeholder="2026"
+                value={foundedYear}
+                onChange={(e) =>
+                  setFoundedYear(e.target.value)
+                }
+                className="w-full rounded-xl border border-white/10 bg-slate-950 px-4 py-3 text-white outline-none focus:border-white/30"
+              />
+            </div>
+
+          </div>
+
+          <div className="mt-6 pt-6 border-t border-white/10">
+            <h3 className="font-semibold mb-4">
+              Chiffres du club
+            </h3>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+
+              <div>
+                <label className="block text-sm font-semibold mb-2">
+                  Licenciés
+                </label>
+
+                <input
+                  type="number"
+                  min="0"
+                  value={membersCount}
+                  onChange={(e) =>
+                    setMembersCount(e.target.value)
+                  }
+                  className="w-full rounded-xl border border-white/10 bg-slate-950 px-4 py-3 text-white outline-none focus:border-white/30"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold mb-2">
+                  Bénévoles
+                </label>
+
+                <input
+                  type="number"
+                  min="0"
+                  value={volunteersCount}
+                  onChange={(e) =>
+                    setVolunteersCount(e.target.value)
+                  }
+                  className="w-full rounded-xl border border-white/10 bg-slate-950 px-4 py-3 text-white outline-none focus:border-white/30"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold mb-2">
+                  Titres District
+                </label>
+
+                <input
+                  type="number"
+                  min="0"
+                  value={districtTitles}
+                  onChange={(e) =>
+                    setDistrictTitles(e.target.value)
+                  }
+                  className="w-full rounded-xl border border-white/10 bg-slate-950 px-4 py-3 text-white outline-none focus:border-white/30"
+                />
+              </div>
+
+            </div>
           </div>
         </section>
 
