@@ -5,6 +5,7 @@ import ScrollToTop from './components/ScrollToTop'
 import Home from './routes/index'
 import Club from './routes/club'
 import TeamsPage from './routes/equipes'
+import TeamDetailPage from './routes/equipe-detail'
 import CalendarPage from './routes/calendrier'
 import NewsPage from './routes/actualites'
 import ArticlePage from './routes/article'
@@ -35,6 +36,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/club" element={<Club />} />
           <Route path="/equipes" element={<TeamsPage />} />
+          <Route path="/equipes/:id" element={<TeamDetailPage />} />
           <Route path="/calendrier" element={<CalendarPage />} />
           <Route path="/actualites" element={<NewsPage />} />
           <Route path="/actualites/:id" element={<ArticlePage />} />
