@@ -25,6 +25,7 @@ import Gallery from "./admin/pages/Gallery";
 import Partners from "./admin/pages/Partners";
 import Settings from "./admin/pages/Settings";
 import AdminClub from "./admin/pages/Club";
+import Registrations from "./admin/pages/Registrations";
 
 function App() {
   return (
@@ -47,6 +48,7 @@ function App() {
             <Route path="club" element={<AdminClub />} />
             <Route path="teams" element={<Teams />} />
             <Route path="players" element={<Players />} />
+            <Route path="registrations" element={<Registrations />} />
             <Route path="matches" element={<Matches />} />
             <Route path="gallery" element={<Gallery />} />
             <Route path="partners" element={<Partners />} />
