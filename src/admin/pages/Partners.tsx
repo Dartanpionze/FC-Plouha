@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { removeStorageFile } from '@/lib/storage'
 import {
   Plus,
   Pencil,
@@ -115,11 +116,12 @@ export default function Partners() {
     setLoading(true)
     setMessage('')
 
+    const previousLogoUrl = editingId
+      ? partners.find((partner) => partner.id === editingId)?.logo_url || null
+      : null
+
     let logoUrl = ''
 
-    /*
-     * Upload du nouveau logo
-     */
     if (logo) {
       const fileName = `${Date.now()}-${Math.random()
         .toString(36)
@@ -131,11 +133,7 @@ export default function Partners() {
 
       if (uploadError) {
         console.error(uploadError)
-
-        setMessage(
-          "Erreur lors de l'envoi du logo.",
-        )
-
+        setMessage("Erreur lors de l'envoi du logo.")
         setLoading(false)
         return
       }
@@ -183,12 +181,25 @@ export default function Partners() {
     if (error) {
       console.error(error)
 
+      if (logoUrl) {
+        await removeStorageFile(
+          'partner-logos',
+          logoUrl,
+        )
+      }
+
       setMessage(
         "Erreur lors de l'enregistrement du partenaire.",
       )
-
       setLoading(false)
       return
+    }
+
+    if (logoUrl && previousLogoUrl) {
+      await removeStorageFile(
+        'partner-logos',
+        previousLogoUrl,
+      )
     }
 
     const wasEditing = Boolean(editingId)
@@ -243,6 +254,13 @@ export default function Partners() {
         'Erreur lors de la suppression.',
       )
       return
+    }
+
+    if (partner.logo_url) {
+      await removeStorageFile(
+        'partner-logos',
+        partner.logo_url,
+      )
     }
 
     setMessage('Partenaire supprimé.')
