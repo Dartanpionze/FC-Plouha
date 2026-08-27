@@ -23,6 +23,7 @@ import Matches from "./admin/pages/Matches";
 import Gallery from "./admin/pages/Gallery";
 import Partners from "./admin/pages/Partners";
 import Settings from "./admin/pages/Settings";
+import AdminClub from "./admin/pages/Club";
 
 function App() {
   return (
@@ -41,6 +42,7 @@ function App() {
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<Dashboard />} />
             <Route path="news" element={<News />} />
+            <Route path="club" element={<AdminClub />} />
             <Route path="teams" element={<Teams />} />
             <Route path="players" element={<Players />} />
             <Route path="matches" element={<Matches />} />
