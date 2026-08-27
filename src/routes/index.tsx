@@ -9,13 +9,63 @@ import {
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { club, gallery, matches, sponsors, teams } from '@/data/club'
 import { SectionHeading } from '@/components/SectionHeading'
-import { PhotoTile } from '@/components/PhotoTile'
 import { ClubCrest } from '@/components/ClubCrest'
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('fr-FR', {
+type ClubSettings = {
+  club_name: string | null
+  short_name: string | null
+  season: string | null
+  city: string | null
+  description: string | null
+  founded_year: number | null
+  members_count: number | null
+  volunteers_count: number | null
+  district_titles: number | null
+}
+
+type Team = {
+  id: number
+  name: string
+  category: string | null
+  coach: string | null
+  image_url: string | null
+  active: boolean
+}
+
+type Match = {
+  id: number
+  opponent: string
+  match_date: string
+  match_time: string | null
+  location: string | null
+  is_home: boolean
+  competition: string | null
+  status: string
+  teams?: {
+    id: number
+    name: string
+  } | null
+}
+
+type GalleryPhoto = {
+  id: number
+  image_url: string
+  caption: string | null
+  active: boolean
+}
+
+type Partner = {
+  id: number
+  name: string
+  logo_url: string | null
+  website_url: string | null
+  active: boolean
+  display_order: number
+}
+
+function formatDate(value: string) {
+  return new Date(value).toLocaleDateString('fr-FR', {
     weekday: 'short',
     day: 'numeric',
     month: 'short',
@@ -23,47 +73,127 @@ function formatDate(iso: string) {
 }
 
 function Home() {
+  const [settings, setSettings] = useState<ClubSettings | null>(null)
   const [news, setNews] = useState<any[]>([])
+  const [teams, setTeams] = useState<Team[]>([])
+  const [matches, setMatches] = useState<Match[]>([])
+  const [galleryPhotos, setGalleryPhotos] = useState<GalleryPhoto[]>([])
+  const [partners, setPartners] = useState<Partner[]>([])
 
   useEffect(() => {
-    const fetchNews = async () => {
-      const { data, error } = await supabase
-        .from('news')
-        .select('*')
-        .order('created_at', { ascending: false })
+    const fetchHomeData = async () => {
+      const [
+        settingsResult,
+        newsResult,
+        teamsResult,
+        matchesResult,
+        galleryResult,
+        partnersResult,
+      ] = await Promise.all([
+        supabase
+          .from('club_settings')
+          .select('*')
+          .limit(1)
+          .single(),
 
-      if (error) {
-        console.error(error)
-        return
-      }
+        supabase
+          .from('news')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(4),
 
-      setNews(data || [])
-      console.log(data)
+        supabase
+          .from('teams')
+          .select('*')
+          .eq('active', true)
+          .order('created_at', { ascending: true }),
+
+        supabase
+          .from('matches')
+          .select(`
+            id,
+            opponent,
+            match_date,
+            match_time,
+            location,
+            is_home,
+            competition,
+            status,
+            teams (
+              id,
+              name
+            )
+          `)
+          .eq('status', 'scheduled')
+          .order('match_date', { ascending: true })
+          .order('match_time', { ascending: true })
+          .limit(3),
+
+        supabase
+          .from('gallery_photos')
+          .select('*')
+          .eq('active', true)
+          .order('created_at', { ascending: false })
+          .limit(8),
+
+        supabase
+          .from('partners')
+          .select('*')
+          .eq('active', true)
+          .order('display_order', { ascending: true })
+          .limit(12),
+      ])
+
+      if (settingsResult.error) console.error(settingsResult.error)
+      if (newsResult.error) console.error(newsResult.error)
+      if (teamsResult.error) console.error(teamsResult.error)
+      if (matchesResult.error) console.error(matchesResult.error)
+      if (galleryResult.error) console.error(galleryResult.error)
+      if (partnersResult.error) console.error(partnersResult.error)
+
+      setSettings(settingsResult.data || null)
+      setNews(newsResult.data || [])
+      setTeams(teamsResult.data || [])
+      setMatches((matchesResult.data || []) as Match[])
+      setGalleryPhotos(galleryResult.data || [])
+      setPartners(partnersResult.data || [])
     }
 
-    fetchNews()
+    fetchHomeData()
   }, [])
 
-  const upcoming = matches.filter((m) => !m.played).slice(0, 3)
+  const clubName = settings?.club_name || 'Football Club Plouha'
+  const city = settings?.city || 'Plouha'
+  const season = settings?.season || '2026/2027'
+  const foundedYear = settings?.founded_year ?? 2026
+  const membersCount = settings?.members_count ?? 0
+  const volunteersCount = settings?.volunteers_count ?? 0
+  const districtTitles = settings?.district_titles ?? 0
+
+  const getTeamName = (match: Match) =>
+    match.teams?.name || settings?.short_name || 'FC Plouha'
+
+  const getHomeTeam = (match: Match) =>
+    match.is_home ? getTeamName(match) : match.opponent
+
+  const getAwayTeam = (match: Match) =>
+    match.is_home ? match.opponent : getTeamName(match)
 
   return (
     <div>
       {/* HERO */}
       <section className="relative overflow-hidden bg-[var(--club-navy-deep)] grain-overlay">
-        {/* Image de fond côté droit */}
         <div className="absolute top-0 right-0 bottom-2 w-1/2">
           <img
             src="/fond-foot.jpg"
             alt=""
             className="w-full h-full object-cover"
           />
-        {/* Fondu bleu vers la gauche */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[var(--club-navy-deep)] via-[var(--club-navy-deep)]/70 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[var(--club-navy-deep)] via-[var(--club-navy-deep)]/70 to-transparent" />
         </div>
-        {/* Tes effets actuels */}
+
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_20%,rgba(29,79,145,0.55),transparent_55%),radial-gradient(circle_at_85%_75%,rgba(200,32,47,0.35),transparent_55%)]" />
-        
-        {/* Décoration terrain */}
+
         <svg
           className="absolute -right-24 -top-24 w-[560px] h-[560px] opacity-[0.07]"
           viewBox="0 0 200 200"
@@ -78,21 +208,22 @@ function Home() {
             <div className="flex items-center gap-3 mb-4">
               <span className="h-px w-10 bg-[var(--club-yellow)]" />
               <span className="font-condensed text-[var(--club-yellow)] text-sm font-semibold tracking-[0.3em]">
-                {club.city.toUpperCase()} · {club.region.toUpperCase()}
+                {city.toUpperCase()} · BRETAGNE
               </span>
             </div>
+
             <h1 className="text-5xl sm:text-6xl lg:text-7xl text-white leading-[0.95] text-balance">
-              Football Club Plouha
+              {clubName}
               <span className="block text-[var(--club-yellow)]">
                 Les Falaises
               </span>
             </h1>
+
             <p className="mt-6 text-white/70 text-lg max-w-xl font-condensed">
-              Le FC Plouha ouvre une nouvelle page de son histoire.
-              Une aventure humaine et sportive portée par la passion du football,
-              l'engagement des bénévoles et l'envie de construire ensemble
-              l'avenir des Falaises.
+              {settings?.description ||
+                "Le FC Plouha ouvre une nouvelle page de son histoire. Une aventure humaine et sportive portée par la passion du football, l'engagement des bénévoles et l'envie de construire ensemble l'avenir des Falaises."}
             </p>
+
             <div className="mt-9 flex flex-wrap gap-4">
               <Link
                 to="/equipes"
@@ -101,6 +232,7 @@ function Home() {
                 Découvrir nos équipes
                 <ArrowRight size={18} />
               </Link>
+
               <Link
                 to="/calendrier"
                 className="inline-flex items-center gap-2 border border-white/30 text-white font-condensed font-bold px-6 py-3.5 rounded-lg hover:bg-white/10 transition-colors"
@@ -110,27 +242,48 @@ function Home() {
             </div>
           </div>
 
-          <div className="relative flex justify-center lg:justify-end animate-rise" style={{ animationDelay: '0.15s' }}>
+          <div
+            className="relative flex justify-center lg:justify-end animate-rise"
+            style={{ animationDelay: '0.15s' }}
+          >
             <div className="relative bg-white/[0.04] border border-white/10 rounded-3xl p-4 backdrop-blur-sm w-full max-w-xl">
               <ClubCrest className="w-56 h-56 sm:w-72 sm:h-72 lg:w-[560px] lg:h-[560px] mx-auto -mt-6 drop-shadow-[0_10px_30px_rgba(0,0,0,0.4)]" />
+
               <div className="mt-0 grid grid-cols-2 gap-4 text-center">
                 <div>
-                  <div className="font-display text-3xl text-[var(--club-yellow)]">{club.founded}</div>
-                  <div className="font-condensed text-white/60 text-xs tracking-widest">FONDATION</div>
+                  <div className="font-display text-3xl text-[var(--club-yellow)]">
+                    {foundedYear}
+                  </div>
+                  <div className="font-condensed text-white/60 text-xs tracking-widest">
+                    FONDATION
+                  </div>
                 </div>
-                <div>
-                  <div className="font-display text-3xl text-[var(--club-yellow)]">{teams.length}</div>
-                  <div className="font-condensed text-white/60 text-xs tracking-widest">ÉQUIPES</div>
-                </div>
+
                 <div>
                   <div className="font-display text-3xl text-[var(--club-yellow)]">
-                    {teams.reduce((sum, t) => sum + t.players, 0)}
+                    {teams.length}
                   </div>
-                  <div className="font-condensed text-white/60 text-xs tracking-widest">LICENCIÉS</div>
+                  <div className="font-condensed text-white/60 text-xs tracking-widest">
+                    ÉQUIPES
+                  </div>
                 </div>
+
                 <div>
-                  <div className="font-display text-3xl text-[var(--club-yellow)]">3</div>
-                  <div className="font-condensed text-white/60 text-xs tracking-widest">TITRES DISTRICT</div>
+                  <div className="font-display text-3xl text-[var(--club-yellow)]">
+                    {membersCount}
+                  </div>
+                  <div className="font-condensed text-white/60 text-xs tracking-widest">
+                    LICENCIÉS
+                  </div>
+                </div>
+
+                <div>
+                  <div className="font-display text-3xl text-[var(--club-yellow)]">
+                    {districtTitles}
+                  </div>
+                  <div className="font-condensed text-white/60 text-xs tracking-widest">
+                    TITRES DISTRICT
+                  </div>
                 </div>
               </div>
             </div>
@@ -144,44 +297,85 @@ function Home() {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 py-20 grid lg:grid-cols-[0.9fr_1.1fr] gap-14 items-center">
         <div className="relative">
           <div className="grid grid-cols-2 gap-4">
-            <PhotoTile hue={214} caption="Stade de Kermarquer" className="h-56 rounded-2xl col-span-2" />
-            <PhotoTile hue={48} caption="École de foot" className="h-40 rounded-2xl" />
-            <PhotoTile hue={0} caption="Séniors A" className="h-40 rounded-2xl" />
+            {galleryPhotos.slice(0, 3).map((photo, index) => (
+              <Link
+                key={photo.id}
+                to="/galerie"
+                className={`group relative overflow-hidden rounded-2xl ${
+                  index === 0 ? 'h-56 col-span-2' : 'h-40'
+                }`}
+              >
+                <img
+                  src={photo.image_url}
+                  alt={photo.caption || 'FC Plouha'}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                {photo.caption && (
+                  <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/70 to-transparent">
+                    <span className="text-white font-condensed font-semibold text-sm">
+                      {photo.caption}
+                    </span>
+                  </div>
+                )}
+              </Link>
+            ))}
+
+            {galleryPhotos.length === 0 && (
+              <div className="h-56 col-span-2 rounded-2xl bg-[var(--club-navy)]/[0.05] flex items-center justify-center text-[var(--club-navy-deep)]/40 font-condensed">
+                Les photos du club apparaîtront ici.
+              </div>
+            )}
           </div>
         </div>
+
         <div>
           <SectionHeading eyebrow="Le club" title="Une histoire ancrée dans le Goëlo" />
+
           <p className="mt-6 text-[var(--club-navy-deep)]/80 leading-relaxed font-condensed text-lg">
-            Créé en {club.founded} par une poignée de passionnés du bourg,
-            le Football Club Plouha a grandi au rythme du village, entre
-            terrain de Kermarquer et vue sur les falaises du Bréhat.
-            Aujourd'hui, {teams.reduce((sum, t) => sum + t.players, 0)}
-            {' '}licenciés répartis en {teams.length} équipes, de l'école de
-            foot aux séniors, portent haut les couleurs bleu, jaune et rouge.
+            {settings?.description ||
+              `Créé en ${foundedYear}, le ${clubName} écrit une nouvelle page de son histoire à ${city}.`}
           </p>
+
+          <p className="mt-4 text-[var(--club-navy-deep)]/70 leading-relaxed font-condensed">
+            Aujourd'hui, {membersCount} licencié{membersCount > 1 ? 's' : ''} réparti
+            {membersCount > 1 ? 's' : ''} en {teams.length} équipe
+            {teams.length > 1 ? 's' : ''} porte{teams.length > 1 ? 'nt' : ''} les couleurs
+            du club pour la saison {season}.
+          </p>
+
           <div className="mt-8 grid sm:grid-cols-3 gap-6">
             <div className="flex items-start gap-3">
               <ShieldHalf className="text-[var(--club-red)] shrink-0" size={26} />
               <div>
                 <div className="font-condensed font-bold">Valeurs</div>
-                <div className="text-sm text-[var(--club-navy-deep)]/70">Respect, engagement, convivialité</div>
+                <div className="text-sm text-[var(--club-navy-deep)]/70">
+                  Respect, engagement, convivialité
+                </div>
               </div>
             </div>
+
             <div className="flex items-start gap-3">
               <Trophy className="text-[var(--club-red)] shrink-0" size={26} />
               <div>
                 <div className="font-condensed font-bold">Palmarès</div>
-                <div className="text-sm text-[var(--club-navy-deep)]/70">3 titres de District depuis 2010</div>
+                <div className="text-sm text-[var(--club-navy-deep)]/70">
+                  {districtTitles} titre{districtTitles > 1 ? 's' : ''} de District
+                </div>
               </div>
             </div>
+
             <div className="flex items-start gap-3">
               <Users className="text-[var(--club-red)] shrink-0" size={26} />
               <div>
                 <div className="font-condensed font-bold">Bénévoles</div>
-                <div className="text-sm text-[var(--club-navy-deep)]/70">Plus de 40 bénévoles actifs</div>
+                <div className="text-sm text-[var(--club-navy-deep)]/70">
+                  {volunteersCount} bénévole{volunteersCount > 1 ? 's' : ''} actif
+                  {volunteersCount > 1 ? 's' : ''}
+                </div>
               </div>
             </div>
           </div>
+
           <Link
             to="/club"
             className="inline-flex items-center gap-2 mt-8 font-condensed font-bold text-[var(--club-navy)] hover:text-[var(--club-red)] transition-colors"
@@ -203,20 +397,24 @@ function Home() {
               Toutes les actualités <ArrowRight size={16} />
             </Link>
           </div>
+
           <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-6">
-            {news.map((item, i) => (
+            {news.map((item) => (
               <Link
                 key={item.id}
                 to={`/actualites/${item.id}`}
                 className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-shadow border border-black/5 block"
-                >
-                <div className="h-36 overflow-hidden">
-                  <img
-                    src={item.image_url}
-                    alt={item.title}
-                    className="w-full h-full object-cover"
+              >
+                {item.image_url && (
+                  <div className="h-36 overflow-hidden">
+                    <img
+                      src={item.image_url}
+                      alt={item.title}
+                      className="w-full h-full object-cover"
                     />
-                </div>
+                  </div>
+                )}
+
                 <div className="p-5">
                   <div className="text-xs font-condensed font-semibold text-[var(--club-navy)]/60 tracking-wide">
                     {formatDate(item.created_at)}
@@ -224,9 +422,11 @@ function Home() {
                   <h3 className="mt-2 font-condensed font-bold text-lg leading-snug normal-case">
                     {item.title}
                   </h3>
-                  <p className="mt-2 text-sm text-[var(--club-navy-deep)]/70 leading-relaxed line-clamp-3">
-                    {item.excerpt}
-                  </p>
+                  {item.excerpt && (
+                    <p className="mt-2 text-sm text-[var(--club-navy-deep)]/70 leading-relaxed line-clamp-3">
+                      {item.excerpt}
+                    </p>
+                  )}
                 </div>
               </Link>
             ))}
@@ -245,22 +445,41 @@ function Home() {
             Le détail des équipes <ArrowRight size={16} />
           </Link>
         </div>
+
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {teams.slice(0, 6).map((team) => (
             <div
               key={team.id}
-              className="p-6 rounded-2xl border border-[var(--club-navy)]/10 hover:border-[var(--club-yellow)] transition-colors bg-white"
+              className="rounded-2xl overflow-hidden border border-[var(--club-navy)]/10 hover:border-[var(--club-yellow)] transition-all bg-white"
             >
-              <div className="flex items-center justify-between">
-                <h3 className="font-condensed font-bold text-xl normal-case">{team.name}</h3>
-                <span className="text-xs font-condensed font-semibold px-2.5 py-1 rounded-full bg-[var(--club-red)]/10 text-[var(--club-red)]">
-                  {team.category}
-                </span>
+              {team.image_url && (
+                <div className="h-36 overflow-hidden">
+                  <img
+                    src={team.image_url}
+                    alt={team.name}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+
+              <div className="p-6">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="font-condensed font-bold text-xl normal-case">
+                    {team.name}
+                  </h3>
+                  {team.category && (
+                    <span className="text-xs font-condensed font-semibold px-2.5 py-1 rounded-full bg-[var(--club-red)]/10 text-[var(--club-red)]">
+                      {team.category}
+                    </span>
+                  )}
+                </div>
+
+                {team.coach && (
+                  <p className="mt-3 text-sm text-[var(--club-navy-deep)]/70">
+                    Entraîneur : {team.coach}
+                  </p>
+                )}
               </div>
-              <p className="mt-3 text-sm text-[var(--club-navy-deep)]/70">
-                Entraîneur : {team.coach}
-              </p>
-              <p className="text-sm text-[var(--club-navy-deep)]/70">{team.training}</p>
             </div>
           ))}
         </div>
@@ -270,31 +489,45 @@ function Home() {
       <section className="bg-[var(--club-navy-deep)] py-20 grain-overlay">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <SectionHeading eyebrow="Agenda" title="Prochaines rencontres" dark />
+
           <div className="mt-10 grid md:grid-cols-3 gap-5">
-            {upcoming.map((match) => (
+            {matches.map((match) => (
               <div
                 key={match.id}
                 className="bg-white/[0.05] border border-white/10 rounded-2xl p-6 text-white"
               >
                 <div className="text-xs font-condensed font-semibold text-[var(--club-yellow)] tracking-widest mb-4">
-                  {match.competition}
+                  {match.competition || 'Rencontre'}
                 </div>
-                <div className="flex items-center justify-between font-condensed font-bold text-lg normal-case">
-                  <span>{match.home}</span>
+
+                <div className="flex items-center justify-between gap-3 font-condensed font-bold text-lg normal-case">
+                  <span className="flex-1 text-right">{getHomeTeam(match)}</span>
                   <span className="text-white/40 text-sm">vs</span>
-                  <span>{match.away}</span>
+                  <span className="flex-1">{getAwayTeam(match)}</span>
                 </div>
+
                 <div className="mt-5 flex items-center gap-2 text-sm text-white/60">
                   <CalendarDays size={15} />
-                  {formatDate(match.date)} · {match.time}
+                  {formatDate(`${match.match_date}T12:00:00`)}
+                  {match.match_time && ` · ${match.match_time.slice(0, 5)}`}
                 </div>
-                <div className="mt-1.5 flex items-center gap-2 text-sm text-white/60">
-                  <MapPin size={15} />
-                  {match.venue}
-                </div>
+
+                {match.location && (
+                  <div className="mt-1.5 flex items-center gap-2 text-sm text-white/60">
+                    <MapPin size={15} />
+                    {match.location}
+                  </div>
+                )}
               </div>
             ))}
+
+            {matches.length === 0 && (
+              <div className="md:col-span-3 text-center py-10 text-white/50 font-condensed">
+                Aucun match programmé pour le moment.
+              </div>
+            )}
           </div>
+
           <div className="mt-10 text-center">
             <Link
               to="/calendrier"
@@ -317,27 +550,80 @@ function Home() {
             Voir toute la galerie <ArrowRight size={16} />
           </Link>
         </div>
+
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {gallery.slice(0, 8).map((img) => (
-            <PhotoTile key={img.id} hue={img.hue} caption={img.caption} className="h-44 rounded-xl" />
+          {galleryPhotos.map((photo) => (
+            <Link
+              key={photo.id}
+              to="/galerie"
+              className="group relative h-44 rounded-xl overflow-hidden bg-[var(--club-navy-deep)]/5"
+            >
+              <img
+                src={photo.image_url}
+                alt={photo.caption || 'Galerie FC Plouha'}
+                loading="lazy"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              />
+              {photo.caption && (
+                <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/70 to-transparent">
+                  <span className="text-white text-sm font-condensed font-semibold">
+                    {photo.caption}
+                  </span>
+                </div>
+              )}
+            </Link>
           ))}
         </div>
       </section>
 
-      {/* SPONSORS */}
+      {/* PARTNERS */}
       <section className="bg-[var(--club-cream)] border-t border-black/5 py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <SectionHeading eyebrow="Ils nous soutiennent" title="Nos partenaires" align="center" />
+          <SectionHeading
+            eyebrow="Ils nous soutiennent"
+            title="Nos partenaires"
+            align="center"
+          />
+
           <div className="mt-10 flex flex-wrap justify-center gap-4">
-            {sponsors.map((sponsor) => (
-              <div
-                key={sponsor.id}
-                className="px-6 py-4 bg-white rounded-xl border border-black/5 font-condensed font-bold text-[var(--club-navy)] text-sm"
-              >
-                {sponsor.name}
-              </div>
-            ))}
+            {partners.map((partner) => {
+              const content = (
+                <>
+                  {partner.logo_url ? (
+                    <img
+                      src={partner.logo_url}
+                      alt={partner.name}
+                      className="h-12 max-w-36 object-contain"
+                    />
+                  ) : (
+                    <span className="font-condensed font-bold text-[var(--club-navy)] text-sm">
+                      {partner.name}
+                    </span>
+                  )}
+                </>
+              )
+
+              return partner.website_url ? (
+                <a
+                  key={partner.id}
+                  href={partner.website_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="min-w-40 h-20 px-6 bg-white rounded-xl border border-black/5 flex items-center justify-center hover:shadow-md transition-shadow"
+                >
+                  {content}
+                </a>
+              ) : (
+                <div
+                  key={partner.id}
+                  className="min-w-40 h-20 px-6 bg-white rounded-xl border border-black/5 flex items-center justify-center"
+                >
+                  {content}
+                </div>
+              )
+            })}
           </div>
+
           <div className="mt-8 text-center">
             <Link
               to="/partenaires"
@@ -348,6 +634,7 @@ function Home() {
           </div>
         </div>
       </section>
+
       {/* CALL TO ACTION */}
       <section className="relative overflow-hidden bg-[var(--club-navy-deep)] py-24">
         
@@ -421,6 +708,7 @@ function Home() {
           </div>
         </div>
       </section>
+
     </div>
   )
 }
