@@ -8,6 +8,7 @@ import {
   Images,
   Clock,
   MapPin,
+  Users,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
@@ -46,6 +47,7 @@ export default function Dashboard() {
   const [matchesCount, setMatchesCount] = useState(0)
   const [partnersCount, setPartnersCount] = useState(0)
   const [galleryCount, setGalleryCount] = useState(0)
+  const [playersCount, setPlayersCount] = useState(0)
 
   const [latestNews, setLatestNews] = useState<NewsItem[]>([])
   const [upcomingMatches, setUpcomingMatches] = useState<Match[]>([])
@@ -65,6 +67,7 @@ export default function Dashboard() {
       fetchMatches(),
       fetchPartners(),
       fetchGallery(),
+      fetchPlayers(),
     ])
 
     setLoading(false)
@@ -158,6 +161,18 @@ export default function Dashboard() {
     setGalleryCount(count || 0)
   }
 
+  const fetchPlayers = async () => {
+    const { count } = await supabase
+      .from('players')
+      .select('id', {
+        count: 'exact',
+        head: true,
+      })
+      .eq('active', true)
+
+    setPlayersCount(count || 0)
+  }
+
   const stats: Stat[] = [
     {
       label: 'Actualités',
@@ -186,6 +201,13 @@ export default function Dashboard() {
       description: 'partenaires actifs',
       icon: Handshake,
       path: '/admin/partners',
+    },
+    {
+      label: 'Joueurs',
+      value: playersCount,
+      description: 'joueurs actifs',
+      icon: Users,
+      path: '/admin/players',
     },
   ]
 
@@ -226,7 +248,7 @@ export default function Dashboard() {
       </div>
 
       {/* STATS */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
 
         {stats.map((stat) => {
           const Icon = stat.icon
@@ -297,7 +319,7 @@ export default function Dashboard() {
           Accédez rapidement aux outils les plus utilisés.
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mt-4">
 
           <Link
             to="/admin/news"
@@ -355,6 +377,26 @@ export default function Dashboard() {
 
             <p className="text-sm text-slate-500 mt-1">
               Alimenter la galerie du club.
+            </p>
+
+          </Link>
+
+          <Link
+            to="/admin/players"
+            className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 hover:bg-white/[0.06] transition"
+          >
+
+            <Users
+              size={22}
+              className="text-[var(--club-yellow)]"
+            />
+
+            <h3 className="font-semibold mt-4">
+              Ajouter un joueur
+            </h3>
+
+            <p className="text-sm text-slate-500 mt-1">
+              Gérer les effectifs des différentes équipes.
             </p>
 
           </Link>
