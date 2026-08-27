@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import {
   Shield,
@@ -154,9 +155,10 @@ function TeamsPage() {
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-7">
 
               {teams.map((team) => (
-                <article
+                <Link
                   key={team.id}
-                  className="group rounded-2xl overflow-hidden border border-black/5 bg-white hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+                  to={`/equipes/${team.id}`}
+                  className="group block rounded-2xl overflow-hidden border border-black/5 bg-white hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
                 >
 
                   {/* PHOTO */}
@@ -272,12 +274,16 @@ function TeamsPage() {
                           {team.description}
                         </p>
 
-                      </div>
+                        <div className="mt-5 pt-4 border-t border-black/[0.06] font-condensed font-bold text-sm text-[var(--club-navy)] group-hover:text-[var(--club-red)] transition-colors">
+                      Voir l'effectif →
+                    </div>
+
+                  </div>
                     )}
 
                   </div>
 
-                </article>
+                </Link>
               ))}
 
             </div>
