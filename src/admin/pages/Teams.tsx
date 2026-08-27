@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { removeStorageFile } from '@/lib/storage'
 import {
   Plus,
   Search,
@@ -112,6 +113,10 @@ export default function Teams() {
     setLoading(true)
     setMessage('')
 
+    const previousImageUrl = editingId
+      ? teams.find((team) => team.id === editingId)?.image_url || null
+      : null
+
     let imageUrl = ''
 
     if (image) {
@@ -173,17 +178,34 @@ export default function Teams() {
 
     if (error) {
       console.error(error)
+
+      if (imageUrl) {
+        await removeStorageFile(
+          'team-images',
+          imageUrl,
+        )
+      }
+
       setMessage("Erreur lors de l'enregistrement.")
       setLoading(false)
       return
     }
+
+    if (imageUrl && previousImageUrl) {
+      await removeStorageFile(
+        'team-images',
+        previousImageUrl,
+      )
+    }
+
+    const wasEditing = Boolean(editingId)
 
     await fetchTeams()
 
     resetForm()
 
     setMessage(
-      editingId
+      wasEditing
         ? 'Équipe modifiée avec succès.'
         : 'Équipe créée avec succès.',
     )
@@ -198,6 +220,10 @@ export default function Teams() {
 
     if (!confirmDelete) return
 
+    const team = teams.find(
+      (item) => item.id === id,
+    )
+
     const { error } = await supabase
       .from('teams')
       .delete()
@@ -207,6 +233,13 @@ export default function Teams() {
       console.error(error)
       setMessage('Erreur lors de la suppression.')
       return
+    }
+
+    if (team?.image_url) {
+      await removeStorageFile(
+        'team-images',
+        team.image_url,
+      )
     }
 
     setMessage('Équipe supprimée.')
