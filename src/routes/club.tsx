@@ -1,113 +1,872 @@
-import { Link } from 'react-router-dom'
-import { Award, HeartHandshake, ShieldHalf, Users2 } from 'lucide-react'
-import { club, teams } from '@/data/club'
-import { SectionHeading } from '@/components/SectionHeading'
-import { PhotoTile } from '@/components/PhotoTile'
+import { useEffect, useState } from 'react'
+import { supabase } from '@/lib/supabase'
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  X,
+  History,
+  Users,
+  Eye,
+  EyeOff,
+  Image as ImageIcon,
+  Save,
+} from 'lucide-react'
 
-const timeline = [
-  { year: '1968', text: "Création du club par d'anciens joueurs du bourg de Plouha." },
-  { year: '1984', text: 'Inauguration du stade de Kermarquer et de son premier vestiaire en dur.' },
-  { year: '2003', text: "Ouverture de l'école de foot et lancement de la section féminine." },
-  { year: '2011', text: 'Premier titre de champion de District pour les Séniors A.' },
-  { year: '2019', text: 'Rénovation complète des vestiaires et pose du nouvel éclairage LED.' },
-  { year: '2026', text: 'Le club compte 11 équipes et plus de 130 licenciés.' },
-]
+type HistoryItem = {
+  id: number
+  created_at: string
+  year: number
+  title: string
+  description: string | null
+  display_order: number
+}
 
-const bureau = [
-  { role: 'Présidente', name: 'Annick Le Floch' },
-  { role: 'Vice-président', name: 'Ronan Guivarc\'h' },
-  { role: 'Trésorier', name: 'Job Riou' },
-  { role: 'Secrétaire', name: 'Solenn Le Gall' },
-  { role: 'Responsable technique', name: 'Erwan Le Bihan' },
-  { role: 'Responsable école de foot', name: 'Katell Morvan' },
-]
+type StaffMember = {
+  id: number
+  created_at: string
+  name: string
+  role: string
+  photo_url: string | null
+  email: string | null
+  phone: string | null
+  display_order: number
+  active: boolean
+}
 
-function ClubPage() {
+export default function Club() {
+  const [history, setHistory] = useState<HistoryItem[]>([])
+  const [staff, setStaff] = useState<StaffMember[]>([])
+
+  const [historyYear, setHistoryYear] = useState('')
+  const [historyTitle, setHistoryTitle] = useState('')
+  const [historyDescription, setHistoryDescription] = useState('')
+  const [historyOrder, setHistoryOrder] = useState('0')
+  const [editingHistoryId, setEditingHistoryId] = useState<number | null>(null)
+  const [showHistoryForm, setShowHistoryForm] = useState(false)
+
+  const [staffName, setStaffName] = useState('')
+  const [staffRole, setStaffRole] = useState('')
+  const [staffEmail, setStaffEmail] = useState('')
+  const [staffPhone, setStaffPhone] = useState('')
+  const [staffOrder, setStaffOrder] = useState('0')
+  const [staffImage, setStaffImage] = useState<File | null>(null)
+  const [staffPreview, setStaffPreview] = useState('')
+  const [editingStaffId, setEditingStaffId] = useState<number | null>(null)
+  const [showStaffForm, setShowStaffForm] = useState(false)
+
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [message, setMessage] = useState('')
+
+  useEffect(() => {
+    fetchData()
+  }, [])
+
+  const fetchData = async () => {
+    setLoading(true)
+
+    const [historyResult, staffResult] = await Promise.all([
+      supabase
+        .from('club_history')
+        .select('*')
+        .order('display_order', { ascending: true })
+        .order('year', { ascending: true }),
+      supabase
+        .from('club_staff')
+        .select('*')
+        .order('display_order', { ascending: true })
+        .order('name', { ascending: true }),
+    ])
+
+    if (historyResult.error) {
+      console.error(historyResult.error)
+      setMessage("Impossible de récupérer l'histoire du club.")
+    } else {
+      setHistory(historyResult.data || [])
+    }
+
+    if (staffResult.error) {
+      console.error(staffResult.error)
+      setMessage('Impossible de récupérer les dirigeants.')
+    } else {
+      setStaff(staffResult.data || [])
+    }
+
+    setLoading(false)
+  }
+
+  const resetHistoryForm = () => {
+    setHistoryYear('')
+    setHistoryTitle('')
+    setHistoryDescription('')
+    setHistoryOrder('0')
+    setEditingHistoryId(null)
+    setShowHistoryForm(false)
+  }
+
+  const openHistoryForm = () => {
+    resetHistoryForm()
+    setMessage('')
+    setShowHistoryForm(true)
+  }
+
+  const editHistory = (item: HistoryItem) => {
+    setEditingHistoryId(item.id)
+    setHistoryYear(item.year.toString())
+    setHistoryTitle(item.title)
+    setHistoryDescription(item.description || '')
+    setHistoryOrder(item.display_order.toString())
+    setMessage('')
+    setShowHistoryForm(true)
+
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth',
+    })
+  }
+
+  const saveHistory = async () => {
+    if (!historyYear || !historyTitle.trim()) {
+      setMessage("L'année et le titre sont obligatoires.")
+      return
+    }
+
+    setSaving(true)
+    setMessage('')
+
+    const payload = {
+      year: Number(historyYear),
+      title: historyTitle.trim(),
+      description: historyDescription || null,
+      display_order: Number(historyOrder) || 0,
+    }
+
+    const result = editingHistoryId
+      ? await supabase
+          .from('club_history')
+          .update(payload)
+          .eq('id', editingHistoryId)
+      : await supabase
+          .from('club_history')
+          .insert([payload])
+
+    if (result.error) {
+      console.error(result.error)
+      setMessage("Erreur lors de l'enregistrement de l'événement.")
+      setSaving(false)
+      return
+    }
+
+    const wasEditing = Boolean(editingHistoryId)
+
+    resetHistoryForm()
+    await fetchData()
+
+    setMessage(
+      wasEditing
+        ? 'Événement modifié avec succès.'
+        : 'Événement ajouté avec succès.',
+    )
+
+    setSaving(false)
+  }
+
+  const deleteHistory = async (item: HistoryItem) => {
+    const confirmed = window.confirm(
+      `Supprimer l'événement "${item.title}" ?`,
+    )
+
+    if (!confirmed) return
+
+    const { error } = await supabase
+      .from('club_history')
+      .delete()
+      .eq('id', item.id)
+
+    if (error) {
+      console.error(error)
+      setMessage("Erreur lors de la suppression de l'événement.")
+      return
+    }
+
+    setMessage('Événement supprimé.')
+    fetchData()
+  }
+
+  const resetStaffForm = () => {
+    setStaffName('')
+    setStaffRole('')
+    setStaffEmail('')
+    setStaffPhone('')
+    setStaffOrder('0')
+    setStaffImage(null)
+    setStaffPreview('')
+    setEditingStaffId(null)
+    setShowStaffForm(false)
+  }
+
+  const openStaffForm = () => {
+    resetStaffForm()
+    setMessage('')
+    setShowStaffForm(true)
+  }
+
+  const editStaff = (member: StaffMember) => {
+    setEditingStaffId(member.id)
+    setStaffName(member.name)
+    setStaffRole(member.role)
+    setStaffEmail(member.email || '')
+    setStaffPhone(member.phone || '')
+    setStaffOrder(member.display_order.toString())
+    setStaffImage(null)
+    setStaffPreview(member.photo_url || '')
+    setMessage('')
+    setShowStaffForm(true)
+
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth',
+    })
+  }
+
+  const saveStaff = async () => {
+    if (!staffName.trim() || !staffRole.trim()) {
+      setMessage('Le nom et la fonction sont obligatoires.')
+      return
+    }
+
+    setSaving(true)
+    setMessage('')
+
+    let photoUrl = ''
+
+    if (staffImage) {
+      const fileName = `${Date.now()}-${Math.random()
+        .toString(36)
+        .substring(2)}-${staffImage.name}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('staff-images')
+        .upload(fileName, staffImage)
+
+      if (uploadError) {
+        console.error(uploadError)
+        setMessage("Erreur lors de l'envoi de la photo.")
+        setSaving(false)
+        return
+      }
+
+      const { data } = supabase.storage
+        .from('staff-images')
+        .getPublicUrl(fileName)
+
+      photoUrl = data.publicUrl
+    }
+
+    const payload = {
+      name: staffName.trim(),
+      role: staffRole.trim(),
+      email: staffEmail || null,
+      phone: staffPhone || null,
+      display_order: Number(staffOrder) || 0,
+      ...(photoUrl && { photo_url: photoUrl }),
+    }
+
+    const result = editingStaffId
+      ? await supabase
+          .from('club_staff')
+          .update(payload)
+          .eq('id', editingStaffId)
+      : await supabase
+          .from('club_staff')
+          .insert([
+            {
+              ...payload,
+              active: true,
+            },
+          ])
+
+    if (result.error) {
+      console.error(result.error)
+      setMessage("Erreur lors de l'enregistrement du dirigeant.")
+      setSaving(false)
+      return
+    }
+
+    const wasEditing = Boolean(editingStaffId)
+
+    resetStaffForm()
+    await fetchData()
+
+    setMessage(
+      wasEditing
+        ? 'Dirigeant modifié avec succès.'
+        : 'Dirigeant ajouté avec succès.',
+    )
+
+    setSaving(false)
+  }
+
+  const toggleStaff = async (member: StaffMember) => {
+    const { error } = await supabase
+      .from('club_staff')
+      .update({
+        active: !member.active,
+      })
+      .eq('id', member.id)
+
+    if (error) {
+      console.error(error)
+      setMessage("Impossible de modifier l'état du dirigeant.")
+      return
+    }
+
+    fetchData()
+  }
+
+  const deleteStaff = async (member: StaffMember) => {
+    const confirmed = window.confirm(
+      `Supprimer définitivement "${member.name}" ?`,
+    )
+
+    if (!confirmed) return
+
+    const { error } = await supabase
+      .from('club_staff')
+      .delete()
+      .eq('id', member.id)
+
+    if (error) {
+      console.error(error)
+      setMessage('Erreur lors de la suppression du dirigeant.')
+      return
+    }
+
+    setMessage('Dirigeant supprimé.')
+    fetchData()
+  }
+
+  if (loading) {
+    return (
+      <div className="p-8 max-w-7xl mx-auto text-slate-400">
+        Chargement de la page Club...
+      </div>
+    )
+  }
+
   return (
-    <div>
-      <section className="bg-[var(--club-navy-deep)] grain-overlay py-20">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 text-center">
-          <span className="font-condensed font-bold text-xs tracking-[0.3em] text-[var(--club-yellow)]">
-            LE CLUB
-          </span>
-          <h1 className="mt-4 text-4xl sm:text-6xl text-white">
-            {club.name}
-          </h1>
-          <p className="mt-6 text-white/70 font-condensed text-lg max-w-2xl mx-auto">
-            Un club familial où se croisent trois générations de licenciés,
-            autour d'une même passion : le ballon rond face aux falaises du
-            Goëlo.
-          </p>
-        </div>
-      </section>
+    <div className="p-8 max-w-7xl mx-auto">
 
-      <section className="max-w-6xl mx-auto px-4 sm:px-6 py-20 grid lg:grid-cols-2 gap-14 items-center">
-        <PhotoTile hue={214} caption="Vue du stade de Kermarquer" className="h-80 rounded-2xl" />
-        <div>
-          <SectionHeading eyebrow="Notre histoire" title="Presque 60 ans d'existence" />
-          <p className="mt-6 font-condensed text-lg text-[var(--club-navy-deep)]/80 leading-relaxed">
-            Le Football Club Plouha voit le jour en {club.founded}, quand un
-            groupe d'ouvriers et de marins-pêcheurs du bourg décide de monter
-            une équipe pour disputer les tournois de la Fête du Goëlo. Depuis,
-            le club n'a jamais cessé de grandir, porté par des générations de
-            bénévoles et une identité forte : le bleu de la mer, le jaune du
-            genêt breton, et le rouge de la passion.
-          </p>
-        </div>
-      </section>
+      <div className="mb-8">
+        <p className="text-sm text-slate-400 mb-1">
+          Gestion du club
+        </p>
 
-      <section className="bg-[var(--club-navy)]/[0.04] py-20">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6">
-          <SectionHeading eyebrow="Chronologie" title="Les grandes dates" align="center" />
-          <ol className="mt-12 relative border-l-2 border-[var(--club-yellow)] ml-3">
-            {timeline.map((item) => (
-              <li key={item.year} className="mb-9 ml-8">
-                <span className="absolute -left-[9px] w-4 h-4 rounded-full bg-[var(--club-red)] border-2 border-white" />
-                <div className="font-display text-xl text-[var(--club-navy)]">{item.year}</div>
-                <p className="font-condensed text-[var(--club-navy-deep)]/75 mt-1">{item.text}</p>
-              </li>
-            ))}
-          </ol>
-        </div>
-      </section>
+        <h1 className="text-3xl font-bold tracking-tight">
+          Club
+        </h1>
 
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 py-20">
-        <SectionHeading eyebrow="Nos valeurs" title="Ce qui nous rassemble" align="center" />
-        <div className="mt-12 grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[
-            { icon: ShieldHalf, title: 'Respect', text: "Des terrains, des arbitres et de l'adversaire, en toute circonstance." },
-            { icon: Users2, title: 'Convivialité', text: 'Un club où chacun trouve sa place, joueur, parent ou bénévole.' },
-            { icon: Award, title: 'Exigence', text: 'Progresser à son rythme, de l\'école de foot aux séniors.' },
-            { icon: HeartHandshake, title: 'Engagement', text: 'Des bénévoles qui font vivre le club toute la saison.' },
-          ].map(({ icon: Icon, title, text }) => (
-            <div key={title} className="text-center p-6 rounded-2xl bg-white border border-black/5">
-              <Icon className="mx-auto text-[var(--club-red)]" size={30} />
-              <h3 className="mt-4 font-condensed font-bold text-lg">{title}</h3>
-              <p className="mt-2 text-sm text-[var(--club-navy-deep)]/70">{text}</p>
+        <p className="mt-2 text-slate-400">
+          Gérez l'histoire du FC Plouha et les membres du bureau.
+        </p>
+      </div>
+
+      {message && (
+        <div className="mb-6 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-slate-300">
+          {message}
+        </div>
+      )}
+
+      {/* FORMULAIRE HISTOIRE */}
+      {showHistoryForm && (
+        <section className="mb-8 rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-xl font-bold">
+                {editingHistoryId
+                  ? "Modifier l'événement"
+                  : "Ajouter un événement"}
+              </h2>
+
+              <p className="text-sm text-slate-500 mt-1">
+                Cet événement apparaîtra dans la frise historique du site.
+              </p>
             </div>
-          ))}
-        </div>
-      </section>
 
-      <section className="bg-[var(--club-navy-deep)] py-20 grain-overlay">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6">
-          <SectionHeading eyebrow="Bureau directeur" title="L'équipe dirigeante" dark align="center" />
-          <div className="mt-12 grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {bureau.map((person) => (
-              <div key={person.name} className="bg-white/5 border border-white/10 rounded-xl p-5 text-white">
-                <div className="font-condensed font-bold">{person.name}</div>
-                <div className="text-sm text-[var(--club-yellow)]">{person.role}</div>
-              </div>
-            ))}
+            <button
+              type="button"
+              onClick={resetHistoryForm}
+              className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center"
+            >
+              <X size={18} />
+            </button>
           </div>
-          <p className="mt-8 text-center text-white/50 font-condensed">
-            {teams.reduce((sum, t) => sum + t.players, 0)} licenciés répartis
-            en {teams.length} équipes cette saison.
-          </p>
-        </div>
-      </section>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div>
+              <label className="block text-sm font-semibold mb-2">
+                Année
+              </label>
+
+              <input
+                type="number"
+                value={historyYear}
+                onChange={(e) => setHistoryYear(e.target.value)}
+                placeholder="2026"
+                className="w-full rounded-xl border border-white/10 bg-slate-950 px-4 py-3 text-white outline-none focus:border-white/30"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold mb-2">
+                Ordre d'affichage
+              </label>
+
+              <input
+                type="number"
+                min="0"
+                value={historyOrder}
+                onChange={(e) => setHistoryOrder(e.target.value)}
+                className="w-full rounded-xl border border-white/10 bg-slate-950 px-4 py-3 text-white outline-none focus:border-white/30"
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-semibold mb-2">
+                Titre
+              </label>
+
+              <input
+                type="text"
+                value={historyTitle}
+                onChange={(e) => setHistoryTitle(e.target.value)}
+                placeholder="Ex : Création du FC Plouha"
+                className="w-full rounded-xl border border-white/10 bg-slate-950 px-4 py-3 text-white outline-none focus:border-white/30"
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-semibold mb-2">
+                Description
+              </label>
+
+              <textarea
+                rows={5}
+                value={historyDescription}
+                onChange={(e) => setHistoryDescription(e.target.value)}
+                placeholder="Racontez cet événement..."
+                className="w-full rounded-xl border border-white/10 bg-slate-950 px-4 py-3 text-white outline-none focus:border-white/30 resize-none"
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3 mt-6">
+            <button
+              type="button"
+              onClick={saveHistory}
+              disabled={saving}
+              className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--club-yellow)] text-slate-950 py-3.5 font-bold disabled:opacity-50"
+            >
+              <Save size={18} />
+              {saving
+                ? 'Enregistrement...'
+                : editingHistoryId
+                  ? 'Mettre à jour'
+                  : "Ajouter l'événement"}
+            </button>
+
+            <button
+              type="button"
+              onClick={resetHistoryForm}
+              className="px-6 rounded-xl bg-white/5 hover:bg-white/10 py-3.5 font-semibold"
+            >
+              Annuler
+            </button>
+          </div>
+        </section>
+      )}
+
+      {/* FORMULAIRE STAFF */}
+      {showStaffForm && (
+        <section className="mb-8 rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-xl font-bold">
+                {editingStaffId
+                  ? 'Modifier le dirigeant'
+                  : 'Ajouter un dirigeant'}
+              </h2>
+
+              <p className="text-sm text-slate-500 mt-1">
+                Ces informations pourront être affichées sur la page publique du club.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={resetStaffForm}
+              className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center"
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+            <div>
+              <label className="block text-sm font-semibold mb-2">
+                Nom
+              </label>
+
+              <input
+                type="text"
+                value={staffName}
+                onChange={(e) => setStaffName(e.target.value)}
+                placeholder="Prénom Nom"
+                className="w-full rounded-xl border border-white/10 bg-slate-950 px-4 py-3 text-white outline-none focus:border-white/30"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold mb-2">
+                Fonction
+              </label>
+
+              <input
+                type="text"
+                value={staffRole}
+                onChange={(e) => setStaffRole(e.target.value)}
+                placeholder="Président, secrétaire..."
+                className="w-full rounded-xl border border-white/10 bg-slate-950 px-4 py-3 text-white outline-none focus:border-white/30"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold mb-2">
+                E-mail
+              </label>
+
+              <input
+                type="email"
+                value={staffEmail}
+                onChange={(e) => setStaffEmail(e.target.value)}
+                placeholder="email@exemple.fr"
+                className="w-full rounded-xl border border-white/10 bg-slate-950 px-4 py-3 text-white outline-none focus:border-white/30"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold mb-2">
+                Téléphone
+              </label>
+
+              <input
+                type="tel"
+                value={staffPhone}
+                onChange={(e) => setStaffPhone(e.target.value)}
+                placeholder="06..."
+                className="w-full rounded-xl border border-white/10 bg-slate-950 px-4 py-3 text-white outline-none focus:border-white/30"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold mb-2">
+                Ordre d'affichage
+              </label>
+
+              <input
+                type="number"
+                min="0"
+                value={staffOrder}
+                onChange={(e) => setStaffOrder(e.target.value)}
+                className="w-full rounded-xl border border-white/10 bg-slate-950 px-4 py-3 text-white outline-none focus:border-white/30"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold mb-2">
+                Photo
+              </label>
+
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+
+                  if (!file) return
+
+                  setStaffImage(file)
+                  setStaffPreview(URL.createObjectURL(file))
+                }}
+                className="w-full rounded-xl border border-white/10 bg-slate-950 px-4 py-3"
+              />
+            </div>
+
+            {staffPreview && (
+              <div className="md:col-span-2">
+                <div className="w-40 h-40 rounded-2xl overflow-hidden border border-white/10 bg-white/5">
+                  <img
+                    src={staffPreview}
+                    alt="Aperçu"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              </div>
+            )}
+
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3 mt-6">
+            <button
+              type="button"
+              onClick={saveStaff}
+              disabled={saving}
+              className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--club-yellow)] text-slate-950 py-3.5 font-bold disabled:opacity-50"
+            >
+              <Save size={18} />
+              {saving
+                ? 'Enregistrement...'
+                : editingStaffId
+                  ? 'Mettre à jour'
+                  : 'Ajouter le dirigeant'}
+            </button>
+
+            <button
+              type="button"
+              onClick={resetStaffForm}
+              className="px-6 rounded-xl bg-white/5 hover:bg-white/10 py-3.5 font-semibold"
+            >
+              Annuler
+            </button>
+          </div>
+        </section>
+      )}
+
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+
+        {/* HISTOIRE */}
+        <section className="rounded-2xl border border-white/10 bg-white/[0.03] overflow-hidden">
+
+          <div className="p-5 border-b border-white/10 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <History className="text-[var(--club-yellow)]" size={21} />
+
+              <div>
+                <h2 className="font-bold">
+                  Histoire du club
+                </h2>
+
+                <p className="text-sm text-slate-500 mt-1">
+                  {history.length} événement{history.length > 1 ? 's' : ''}
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={openHistoryForm}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[var(--club-yellow)] text-slate-950 font-bold text-sm"
+            >
+              <Plus size={17} />
+              Ajouter
+            </button>
+          </div>
+
+          {history.length === 0 ? (
+            <div className="p-10 text-center text-slate-500">
+              Aucun événement enregistré.
+            </div>
+          ) : (
+            <div className="divide-y divide-white/5">
+              {history.map((item) => (
+                <div
+                  key={item.id}
+                  className="p-5 hover:bg-white/[0.02] transition"
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="w-16 shrink-0 text-[var(--club-yellow)] font-black text-lg">
+                      {item.year}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <h3 className="font-semibold">
+                            {item.title}
+                          </h3>
+
+                          {item.description && (
+                            <p className="text-sm text-slate-500 mt-2">
+                              {item.description}
+                            </p>
+                          )}
+
+                          <p className="text-xs text-slate-600 mt-2">
+                            Position : {item.display_order}
+                          </p>
+                        </div>
+
+                        <div className="flex gap-2 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => editHistory(item)}
+                            className="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center"
+                            title="Modifier"
+                          >
+                            <Pencil size={16} />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => deleteHistory(item)}
+                            className="w-9 h-9 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 flex items-center justify-center"
+                            title="Supprimer"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* STAFF */}
+        <section className="rounded-2xl border border-white/10 bg-white/[0.03] overflow-hidden">
+
+          <div className="p-5 border-b border-white/10 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <Users className="text-[var(--club-yellow)]" size={21} />
+
+              <div>
+                <h2 className="font-bold">
+                  Bureau & dirigeants
+                </h2>
+
+                <p className="text-sm text-slate-500 mt-1">
+                  {staff.length} membre{staff.length > 1 ? 's' : ''}
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={openStaffForm}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[var(--club-yellow)] text-slate-950 font-bold text-sm"
+            >
+              <Plus size={17} />
+              Ajouter
+            </button>
+          </div>
+
+          {staff.length === 0 ? (
+            <div className="p-10 text-center text-slate-500">
+              Aucun dirigeant enregistré.
+            </div>
+          ) : (
+            <div className="divide-y divide-white/5">
+              {staff.map((member) => (
+                <div
+                  key={member.id}
+                  className={`p-5 hover:bg-white/[0.02] transition ${
+                    !member.active ? 'opacity-50' : ''
+                  }`}
+                >
+                  <div className="flex items-center gap-4">
+
+                    <div className="w-16 h-16 shrink-0 rounded-xl overflow-hidden bg-white/5 flex items-center justify-center">
+                      {member.photo_url ? (
+                        <img
+                          src={member.photo_url}
+                          alt={member.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <ImageIcon
+                          size={22}
+                          className="text-slate-600"
+                        />
+                      )}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="font-semibold">
+                          {member.name}
+                        </h3>
+
+                        {!member.active && (
+                          <span className="text-xs px-2 py-1 rounded-full bg-red-500/10 text-red-400">
+                            Masqué
+                          </span>
+                        )}
+                      </div>
+
+                      <p className="text-sm text-slate-400 mt-1">
+                        {member.role}
+                      </p>
+
+                      {(member.email || member.phone) && (
+                        <p className="text-xs text-slate-600 mt-1">
+                          {[member.email, member.phone]
+                            .filter(Boolean)
+                            .join(' · ')}
+                        </p>
+                      )}
+
+                      <p className="text-xs text-slate-600 mt-1">
+                        Position : {member.display_order}
+                      </p>
+                    </div>
+
+                    <div className="flex gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => toggleStaff(member)}
+                        className="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center"
+                        title={member.active ? 'Masquer' : 'Afficher'}
+                      >
+                        {member.active ? (
+                          <EyeOff size={16} />
+                        ) : (
+                          <Eye size={16} />
+                        )}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => editStaff(member)}
+                        className="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center"
+                        title="Modifier"
+                      >
+                        <Pencil size={16} />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => deleteStaff(member)}
+                        className="w-9 h-9 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 flex items-center justify-center"
+                        title="Supprimer"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+      </div>
     </div>
   )
 }
-
-export default ClubPage
