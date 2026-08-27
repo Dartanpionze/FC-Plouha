@@ -149,7 +149,7 @@ export default function Dashboard() {
 
   const fetchGallery = async () => {
     const { count } = await supabase
-      .from('gallery')
+      .from('gallery_photos')
       .select('id', {
         count: 'exact',
         head: true,
