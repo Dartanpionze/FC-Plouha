@@ -71,6 +71,8 @@ export default function AdminLayout() {
   const [session, setSession] = useState<any>(null)
   const [checkingSession, setCheckingSession] =
     useState(true)
+  const [newRegistrationsCount, setNewRegistrationsCount] =
+    useState(0)
 
   useEffect(() => {
     const checkSession = async () => {
@@ -108,6 +110,58 @@ export default function AdminLayout() {
       subscription.unsubscribe()
     }
   }, [navigate])
+
+  useEffect(() => {
+    if (!session) return
+
+    const fetchNewRegistrationsCount = async () => {
+      const { count, error } = await supabase
+        .from('registrations')
+        .select('id', {
+          count: 'exact',
+          head: true,
+        })
+        .eq('status', 'Nouveau')
+
+      if (error) {
+        console.error(error)
+        return
+      }
+
+      setNewRegistrationsCount(count || 0)
+    }
+
+    fetchNewRegistrationsCount()
+
+    const handleFocus = () => {
+      fetchNewRegistrationsCount()
+    }
+
+    window.addEventListener('focus', handleFocus)
+
+    const channel = supabase
+      .channel('admin-registrations-badge')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'registrations',
+        },
+        () => {
+          fetchNewRegistrationsCount()
+        },
+      )
+      .subscribe()
+
+    return () => {
+      window.removeEventListener(
+        'focus',
+        handleFocus,
+      )
+      supabase.removeChannel(channel)
+    }
+  }, [session])
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -194,7 +248,18 @@ export default function AdminLayout() {
                       }
                     />
 
-                    <span>{item.label}</span>
+                    <span className="flex-1">
+                      {item.label}
+                    </span>
+
+                    {item.path === '/admin/registrations' &&
+                      newRegistrationsCount > 0 && (
+                        <span className="min-w-6 h-6 px-1.5 rounded-full bg-red-500 text-white text-[11px] font-bold flex items-center justify-center">
+                          {newRegistrationsCount > 99
+                            ? '99+'
+                            : newRegistrationsCount}
+                        </span>
+                      )}
                   </>
                 )}
               </NavLink>
