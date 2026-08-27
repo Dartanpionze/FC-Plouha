@@ -1,55 +1,290 @@
-import { Link } from 'react-router-dom'
-import { Users } from 'lucide-react'
-import { teams } from '@/data/club'
-import { PhotoTile } from '@/components/PhotoTile'
+import { useEffect, useState } from 'react'
+import {
+  Shield,
+  UserRound,
+  Users,
+  Loader2,
+} from 'lucide-react'
+import { supabase } from '@/lib/supabase'
+
+type Team = {
+  id: number
+  created_at: string
+  name: string
+  category: string | null
+  season: string | null
+  coach: string | null
+  assistant_coach: string | null
+  description: string | null
+  image_url: string | null
+  active: boolean
+}
 
 function TeamsPage() {
+  const [teams, setTeams] = useState<Team[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
+
+  useEffect(() => {
+    fetchTeams()
+  }, [])
+
+  const fetchTeams = async () => {
+    setLoading(true)
+    setError(false)
+
+    const { data, error } = await supabase
+      .from('teams')
+      .select('*')
+      .eq('active', true)
+      .order('created_at', {
+        ascending: true,
+      })
+
+    if (error) {
+      console.error(error)
+      setError(true)
+      setLoading(false)
+      return
+    }
+
+    setTeams(data || [])
+    setLoading(false)
+  }
+
+  const currentSeason =
+    teams.find((team) => team.season)?.season ||
+    '2026/2027'
+
   return (
     <div>
+
+      {/* HERO */}
       <section className="bg-[var(--club-navy-deep)] grain-overlay py-16">
+
         <div className="max-w-5xl mx-auto px-4 sm:px-6 text-center">
+
           <span className="font-condensed font-bold text-xs tracking-[0.3em] text-[var(--club-yellow)]">
-            EFFECTIFS 2026-2027
+            EFFECTIFS {currentSeason.replace('/', '-')}
           </span>
-          <h1 className="mt-4 text-4xl sm:text-6xl text-white">Nos équipes</h1>
-          <p className="mt-6 text-white/70 font-condensed text-lg max-w-2xl mx-auto">
-            De l'école de foot aux séniors, {teams.length} équipes portent
-            les couleurs des Falaises chaque week-end.
-          </p>
+
+          <h1 className="mt-4 text-4xl sm:text-6xl text-white">
+            Nos équipes
+          </h1>
+
+          {!loading && !error && teams.length > 0 && (
+            <p className="mt-6 text-white/70 font-condensed text-lg max-w-2xl mx-auto">
+              {teams.length} équipe
+              {teams.length > 1 ? 's' : ''} porte
+              {teams.length > 1 ? 'nt' : ''} les couleurs
+              des Falaises.
+            </p>
+          )}
+
         </div>
+
       </section>
 
+      {/* CONTENU */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 py-20">
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {teams.map((team, i) => (
-            <div
-              key={team.id}
-              className="rounded-2xl overflow-hidden border border-black/5 bg-white hover:shadow-lg transition-shadow"
-            >
-              <PhotoTile hue={i % 3 === 0 ? 214 : i % 3 === 1 ? 48 : 0} caption={team.category} className="h-32" />
-              <div className="p-6">
-                <h2 className="font-condensed font-bold text-xl normal-case">{team.name}</h2>
-                <div className="mt-4 space-y-2 text-sm text-[var(--club-navy-deep)]/75 font-condensed">
-                  <div className="flex justify-between">
-                    <span>Entraîneur</span>
-                    <span className="font-semibold text-[var(--club-navy-deep)]">{team.coach}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Entraînements</span>
-                    <span className="font-semibold text-[var(--club-navy-deep)]">{team.training}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span>Effectif</span>
-                    <span className="inline-flex items-center gap-1.5 font-semibold text-[var(--club-navy-deep)]">
-                      <Users size={14} /> {team.players}
-                    </span>
-                  </div>
-                </div>
-              </div>
+
+        {/* CHARGEMENT */}
+        {loading && (
+          <div className="py-20 flex flex-col items-center justify-center">
+
+            <Loader2
+              size={36}
+              className="animate-spin text-[var(--club-navy-deep)]/40"
+            />
+
+            <p className="mt-4 font-condensed text-[var(--club-navy-deep)]/50">
+              Chargement des équipes...
+            </p>
+
+          </div>
+        )}
+
+        {/* ERREUR */}
+        {!loading && error && (
+          <div className="py-20 text-center">
+
+            <Shield
+              size={44}
+              className="mx-auto text-[var(--club-red)]"
+            />
+
+            <h2 className="mt-4 text-2xl text-[var(--club-navy-deep)]">
+              Impossible de charger les équipes
+            </h2>
+
+            <p className="mt-2 text-[var(--club-navy-deep)]/60">
+              Veuillez réessayer ultérieurement.
+            </p>
+
+          </div>
+        )}
+
+        {/* AUCUNE EQUIPE */}
+        {!loading &&
+          !error &&
+          teams.length === 0 && (
+            <div className="py-20 text-center">
+
+              <Users
+                size={46}
+                className="mx-auto text-[var(--club-navy-deep)]/20"
+              />
+
+              <h2 className="mt-4 text-2xl text-[var(--club-navy-deep)]">
+                Les équipes arrivent bientôt
+              </h2>
+
+              <p className="mt-2 text-[var(--club-navy-deep)]/60">
+                Les effectifs du FC Plouha seront
+                prochainement disponibles.
+              </p>
+
             </div>
-          ))}
-        </div>
+          )}
+
+        {/* EQUIPES */}
+        {!loading &&
+          !error &&
+          teams.length > 0 && (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-7">
+
+              {teams.map((team) => (
+                <article
+                  key={team.id}
+                  className="group rounded-2xl overflow-hidden border border-black/5 bg-white hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+                >
+
+                  {/* PHOTO */}
+                  <div className="relative h-56 overflow-hidden bg-[var(--club-navy-deep)]">
+
+                    {team.image_url ? (
+                      <img
+                        src={team.image_url}
+                        alt={team.name}
+                        loading="lazy"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+
+                        <Shield
+                          size={54}
+                          className="text-white/20"
+                        />
+
+                      </div>
+                    )}
+
+                    <div className="absolute inset-0 bg-gradient-to-t from-[var(--club-navy-deep)]/90 via-transparent to-transparent" />
+
+                    {team.category && (
+                      <div className="absolute left-4 top-4">
+
+                        <span className="inline-flex bg-[var(--club-yellow)] text-[var(--club-navy-deep)] font-condensed font-bold text-xs px-3 py-1.5 rounded-full">
+                          {team.category}
+                        </span>
+
+                      </div>
+                    )}
+
+                    <div className="absolute left-5 right-5 bottom-4">
+
+                      <h2 className="font-condensed font-bold text-2xl text-white normal-case">
+                        {team.name}
+                      </h2>
+
+                      {team.season && (
+                        <p className="text-white/60 text-xs font-condensed mt-1">
+                          Saison {team.season}
+                        </p>
+                      )}
+
+                    </div>
+
+                  </div>
+
+                  {/* INFORMATIONS */}
+                  <div className="p-6">
+
+                    {(team.coach ||
+                      team.assistant_coach) && (
+                      <div className="space-y-3">
+
+                        {team.coach && (
+                          <div className="flex items-center justify-between gap-4">
+
+                            <div className="flex items-center gap-2 text-sm text-[var(--club-navy-deep)]/55 font-condensed">
+
+                              <UserRound size={15} />
+
+                              <span>
+                                Entraîneur
+                              </span>
+
+                            </div>
+
+                            <span className="font-condensed font-semibold text-sm text-[var(--club-navy-deep)] text-right">
+                              {team.coach}
+                            </span>
+
+                          </div>
+                        )}
+
+                        {team.assistant_coach && (
+                          <div className="flex items-center justify-between gap-4">
+
+                            <div className="flex items-center gap-2 text-sm text-[var(--club-navy-deep)]/55 font-condensed">
+
+                              <Users size={15} />
+
+                              <span>
+                                Adjoint
+                              </span>
+
+                            </div>
+
+                            <span className="font-condensed font-semibold text-sm text-[var(--club-navy-deep)] text-right">
+                              {team.assistant_coach}
+                            </span>
+
+                          </div>
+                        )}
+
+                      </div>
+                    )}
+
+                    {team.description && (
+                      <div
+                        className={`${
+                          team.coach ||
+                          team.assistant_coach
+                            ? 'mt-5 pt-5 border-t border-black/[0.06]'
+                            : ''
+                        }`}
+                      >
+
+                        <p className="text-sm leading-relaxed text-[var(--club-navy-deep)]/65">
+                          {team.description}
+                        </p>
+
+                      </div>
+                    )}
+
+                  </div>
+
+                </article>
+              ))}
+
+            </div>
+          )}
+
       </section>
+
     </div>
   )
 }
