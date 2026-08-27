@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { removeStorageFile } from '@/lib/storage'
 import {
   Plus,
   Search,
@@ -189,6 +190,10 @@ export default function Players() {
     setSaving(true)
     setMessage('')
 
+    const previousPhotoUrl = editingId
+      ? players.find((player) => player.id === editingId)?.photo_url || null
+      : null
+
     let photoUrl = ''
 
     if (photo) {
@@ -247,9 +252,24 @@ export default function Players() {
 
     if (result.error) {
       console.error(result.error)
+
+      if (photoUrl) {
+        await removeStorageFile(
+          'player-images',
+          photoUrl,
+        )
+      }
+
       setMessage("Erreur lors de l'enregistrement du joueur.")
       setSaving(false)
       return
+    }
+
+    if (photoUrl && previousPhotoUrl) {
+      await removeStorageFile(
+        'player-images',
+        previousPhotoUrl,
+      )
     }
 
     const wasEditing = Boolean(editingId)
@@ -299,6 +319,13 @@ export default function Players() {
       console.error(error)
       setMessage('Erreur lors de la suppression du joueur.')
       return
+    }
+
+    if (player.photo_url) {
+      await removeStorageFile(
+        'player-images',
+        player.photo_url,
+      )
     }
 
     setMessage('Joueur supprimé.')
