@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { removeStorageFile, removeStorageFiles } from '@/lib/storage'
 import {
   Plus,
   Trash2,
@@ -179,6 +180,14 @@ export default function Gallery() {
 
       if (uploadError) {
         console.error(uploadError)
+
+        await removeStorageFiles(
+          'gallery-images',
+          uploadedPhotos.map(
+            (photo) => photo.image_url,
+          ),
+        )
+
         setMessage(
           `Erreur lors de l'envoi de ${file.name}.`,
         )
@@ -204,6 +213,14 @@ export default function Gallery() {
 
     if (error) {
       console.error(error)
+
+      await removeStorageFiles(
+        'gallery-images',
+        uploadedPhotos.map(
+          (photo) => photo.image_url,
+        ),
+      )
+
       setMessage("Erreur lors de l'enregistrement des photos.")
       setLoading(false)
       return
@@ -212,12 +229,14 @@ export default function Gallery() {
     await fetchPhotos(selectedAlbum)
     await fetchAlbums()
 
+    const uploadedCount = uploadedPhotos.length
+
     resetPhotoForm()
 
     setMessage(
-      `${photoFiles.length} photo${
-        photoFiles.length > 1 ? 's' : ''
-      } ajoutée${photoFiles.length > 1 ? 's' : ''}.`,
+      `${uploadedCount} photo${
+        uploadedCount > 1 ? 's' : ''
+      } ajoutée${uploadedCount > 1 ? 's' : ''}.`,
     )
 
     setLoading(false)
@@ -240,6 +259,11 @@ export default function Gallery() {
       setMessage('Erreur lors de la suppression.')
       return
     }
+
+    await removeStorageFile(
+      'gallery-images',
+      photo.image_url,
+    )
 
     setMessage('Photo supprimée.')
 
@@ -274,6 +298,20 @@ export default function Gallery() {
 
     if (!confirmDelete) return
 
+    const { data: albumPhotos, error: photosError } =
+      await supabase
+        .from('gallery_photos')
+        .select('image_url')
+        .eq('album_id', album.id)
+
+    if (photosError) {
+      console.error(photosError)
+      setMessage(
+        "Impossible de récupérer les photos de l'album.",
+      )
+      return
+    }
+
     const { error } = await supabase
       .from('gallery_albums')
       .delete()
@@ -284,6 +322,13 @@ export default function Gallery() {
       setMessage("Erreur lors de la suppression de l'album.")
       return
     }
+
+    await removeStorageFiles(
+      'gallery-images',
+      (albumPhotos || []).map(
+        (photo) => photo.image_url,
+      ),
+    )
 
     setMessage('Album supprimé.')
 
