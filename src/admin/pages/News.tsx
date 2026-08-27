@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { removeStorageFile } from '@/lib/storage'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import {
@@ -106,6 +107,10 @@ export default function News() {
     setLoading(true)
     setMessage('')
 
+    const previousImageUrl = editingId
+      ? news.find((item) => item.id === editingId)?.image_url || null
+      : null
+
     let imageUrl = ''
 
     if (image) {
@@ -161,13 +166,30 @@ export default function News() {
 
     if (error) {
       console.error(error)
+
+      if (imageUrl) {
+        await removeStorageFile(
+          'news-images',
+          imageUrl,
+        )
+      }
+
       setMessage("Erreur lors de l'enregistrement.")
       setLoading(false)
       return
     }
 
+    if (imageUrl && previousImageUrl) {
+      await removeStorageFile(
+        'news-images',
+        previousImageUrl,
+      )
+    }
+
+    const wasEditing = Boolean(editingId)
+
     setMessage(
-      editingId
+      wasEditing
         ? 'Actualité modifiée avec succès.'
         : 'Actualité publiée avec succès.',
     )
@@ -186,6 +208,10 @@ export default function News() {
 
     if (!confirmDelete) return
 
+    const item = news.find(
+      (newsItem) => newsItem.id === id,
+    )
+
     const { error } = await supabase
       .from('news')
       .delete()
@@ -195,6 +221,13 @@ export default function News() {
       console.error(error)
       setMessage('Erreur lors de la suppression.')
       return
+    }
+
+    if (item?.image_url) {
+      await removeStorageFile(
+        'news-images',
+        item.image_url,
+      )
     }
 
     setMessage('Actualité supprimée.')
