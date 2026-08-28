@@ -26,6 +26,7 @@ import Partners from './admin/pages/Partners'
 import Settings from './admin/pages/Settings'
 import AdminClub from './admin/pages/Club'
 import Registrations from './admin/pages/Registrations'
+import RequireAdminPermission from './admin/components/RequireAdminPermission'
 
 function App() {
   return (
@@ -55,15 +56,15 @@ function App() {
 
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<Dashboard />} />
-          <Route path="news" element={<News />} />
-          <Route path="club" element={<AdminClub />} />
-          <Route path="teams" element={<Teams />} />
-          <Route path="players" element={<Players />} />
-          <Route path="registrations" element={<Registrations />} />
-          <Route path="matches" element={<Matches />} />
-          <Route path="gallery" element={<Gallery />} />
-          <Route path="partners" element={<Partners />} />
-          <Route path="settings" element={<Settings />} />
+          <Route path="news" element={<RequireAdminPermission module="news"><News /></RequireAdminPermission>} />
+          <Route path="club" element={<RequireAdminPermission module="club"><AdminClub /></RequireAdminPermission>} />
+          <Route path="teams" element={<RequireAdminPermission module="teams"><Teams /></RequireAdminPermission>} />
+          <Route path="players" element={<RequireAdminPermission module="players"><Players /></RequireAdminPermission>} />
+          <Route path="registrations" element={<RequireAdminPermission module="registrations"><Registrations /></RequireAdminPermission>} />
+          <Route path="matches" element={<RequireAdminPermission module="matches"><Matches /></RequireAdminPermission>} />
+          <Route path="gallery" element={<RequireAdminPermission module="gallery"><Gallery /></RequireAdminPermission>} />
+          <Route path="partners" element={<RequireAdminPermission module="partners"><Partners /></RequireAdminPermission>} />
+          <Route path="settings" element={<RequireAdminPermission module="settings"><Settings /></RequireAdminPermission>} />
         </Route>
       </Routes>
     </>
