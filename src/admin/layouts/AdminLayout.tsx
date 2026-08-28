@@ -9,6 +9,7 @@ import {
   Images,
   Handshake,
   Settings,
+  UserCog,
   ExternalLink,
   LogOut,
   Landmark,
@@ -369,6 +370,37 @@ export default function AdminLayout() {
         <div className="px-3 pt-6 pb-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
           Configuration
         </div>
+
+        {superadmin && (
+          <NavLink
+            to="/admin/users"
+            className={({ isActive }) =>
+              `
+              group flex items-center gap-3 px-3 py-2.5 rounded-xl
+              text-sm font-medium transition-all
+              ${
+                isActive
+                  ? 'bg-white/10 text-white'
+                  : 'text-slate-400 hover:bg-white/5 hover:text-white'
+              }
+              `
+            }
+          >
+            {({ isActive }) => (
+              <>
+                <UserCog
+                  size={19}
+                  className={
+                    isActive
+                      ? 'text-[var(--club-yellow)]'
+                      : 'text-slate-500 group-hover:text-slate-300'
+                  }
+                />
+                <span>Utilisateurs</span>
+              </>
+            )}
+          </NavLink>
+        )}
 
         {canView('settings') && (
         <NavLink
