@@ -396,6 +396,8 @@ function Home() {
                 <img
                   src={photo.image_url}
                   alt={photo.caption || 'FC Plouha'}
+                  loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
                 {photo.caption && (
@@ -498,6 +500,8 @@ function Home() {
                     <img
                       src={item.image_url}
                       alt={item.title}
+                      loading="lazy"
+                      decoding="async"
                       className="w-full h-full object-cover"
                     />
                   </div>
@@ -545,6 +549,8 @@ function Home() {
                   <img
                     src={team.image_url}
                     alt={team.name}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -731,6 +737,8 @@ function Home() {
           <img
             src="/rejoignez-nous.jpg"
             alt=""
+            loading="lazy"
+            decoding="async"
             className="w-full h-full object-cover"
             />
           
