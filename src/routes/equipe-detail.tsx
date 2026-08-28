@@ -11,6 +11,7 @@ import {
   Users,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import Seo from '@/components/Seo'
 
 type Team = {
   id: number
@@ -137,7 +138,9 @@ function TeamDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center">
+      <>
+        <Seo title="Équipe" />
+        <div className="min-h-[60vh] flex flex-col items-center justify-center">
         <Loader2
           size={36}
           className="animate-spin text-[var(--club-navy-deep)]/40"
@@ -146,13 +149,16 @@ function TeamDetailPage() {
         <p className="mt-4 font-condensed text-[var(--club-navy-deep)]/50">
           Chargement de l'équipe...
         </p>
-      </div>
+        </div>
+      </>
     )
   }
 
   if (error) {
     return (
-      <section className="max-w-5xl mx-auto px-4 sm:px-6 py-24 text-center">
+      <>
+        <Seo title="Équipe indisponible" noIndex />
+        <section className="max-w-5xl mx-auto px-4 sm:px-6 py-24 text-center">
         <AlertTriangle
           size={48}
           className="mx-auto text-[var(--club-red)]"
@@ -184,13 +190,16 @@ function TeamDetailPage() {
             Retour aux équipes
           </Link>
         </div>
-      </section>
+        </section>
+      </>
     )
   }
 
   if (notFound || !team) {
     return (
-      <section className="max-w-5xl mx-auto px-4 sm:px-6 py-24 text-center">
+      <>
+        <Seo title="Équipe introuvable" noIndex />
+        <section className="max-w-5xl mx-auto px-4 sm:px-6 py-24 text-center">
         <Shield
           size={48}
           className="mx-auto text-[var(--club-red)]"
@@ -211,7 +220,8 @@ function TeamDetailPage() {
           <ArrowLeft size={17} />
           Retour aux équipes
         </Link>
-      </section>
+        </section>
+      </>
     )
   }
 
@@ -229,8 +239,19 @@ function TeamDetailPage() {
       !positions.includes(player.position || ''),
   )
 
+  const seoDescription =
+    team.description ||
+    `Découvrez l'équipe ${team.name} du Football Club Plouha${
+      team.category ? `, catégorie ${team.category}` : ''
+    }.`
+
   return (
     <div>
+      <Seo
+        title={team.name}
+        description={seoDescription}
+        image={team.image_url}
+      />
 
       {/* HERO */}
       <section className="relative overflow-hidden bg-[var(--club-navy-deep)] grain-overlay">
