@@ -4,9 +4,11 @@ import {
   HeartHandshake,
   ShieldHalf,
   Users2,
+  AlertTriangle,
   Mail,
   Phone,
   Loader2,
+  RefreshCw,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { SectionHeading } from '@/components/SectionHeading'
@@ -64,67 +66,73 @@ function ClubPage() {
     setLoading(true)
     setError(false)
 
-    const [
-      settingsResult,
-      historyResult,
-      staffResult,
-      teamsResult,
-    ] = await Promise.all([
-      supabase
-        .from('club_settings')
-        .select(`
-          club_name,
-          short_name,
-          season,
-          description,
-          founded_year,
-          members_count,
-          volunteers_count,
-          district_titles,
-          city
-        `)
-        .limit(1)
-        .single(),
+    try {
+      const [
+        settingsResult,
+        historyResult,
+        staffResult,
+        teamsResult,
+      ] = await Promise.all([
+        supabase
+          .from('club_settings')
+          .select(`
+            club_name,
+            short_name,
+            season,
+            description,
+            founded_year,
+            members_count,
+            volunteers_count,
+            district_titles,
+            city
+          `)
+          .limit(1)
+          .single(),
 
-      supabase
-        .from('club_history')
-        .select('*')
-        .order('display_order', { ascending: true })
-        .order('year', { ascending: true }),
+        supabase
+          .from('club_history')
+          .select('*')
+          .order('display_order', { ascending: true })
+          .order('year', { ascending: true }),
 
-      supabase
-        .from('club_staff')
-        .select('*')
-        .eq('active', true)
-        .order('display_order', { ascending: true })
-        .order('name', { ascending: true }),
+        supabase
+          .from('club_staff')
+          .select('*')
+          .eq('active', true)
+          .order('display_order', { ascending: true })
+          .order('name', { ascending: true }),
 
-      supabase
-        .from('teams')
-        .select('id, active')
-        .eq('active', true),
-    ])
+        supabase
+          .from('teams')
+          .select('id, active')
+          .eq('active', true),
+      ])
 
-    if (
-      settingsResult.error ||
-      historyResult.error ||
-      staffResult.error ||
-      teamsResult.error
-    ) {
-      console.error(
-        settingsResult.error ||
-          historyResult.error ||
-          staffResult.error ||
-          teamsResult.error,
-      )
+      const results = [
+        settingsResult,
+        historyResult,
+        staffResult,
+        teamsResult,
+      ]
+
+      if (results.some((result) => Boolean(result.error))) {
+        results.forEach((result) => {
+          if (result.error) console.error(result.error)
+        })
+
+        setError(true)
+      }
+
+      setSettings(settingsResult.data || null)
+      setHistory(historyResult.data || [])
+      setStaff(staffResult.data || [])
+      setTeams(teamsResult.data || [])
+    } catch (fetchError) {
+      console.error(fetchError)
       setError(true)
+    } finally {
+      setLoading(false)
     }
-
-    setSettings(settingsResult.data || null)
-    setHistory(historyResult.data || [])
-    setStaff(staffResult.data || [])
-    setTeams(teamsResult.data || [])
-    setLoading(false)
   }
 
   const clubName =
@@ -165,6 +173,33 @@ function ClubPage() {
 
   return (
     <div>
+
+      {error && (
+        <div className="bg-amber-50 border-b border-amber-200">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex items-start gap-3 text-amber-900">
+              <AlertTriangle
+                size={20}
+                className="mt-0.5 shrink-0"
+              />
+
+              <p className="font-condensed text-sm">
+                Certaines informations du club n'ont pas pu être chargées.
+                Les données disponibles restent affichées.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={fetchClubData}
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-amber-300 bg-white px-4 py-2 font-condensed font-bold text-sm text-amber-900 hover:bg-amber-100 transition-colors"
+            >
+              <RefreshCw size={16} />
+              Réessayer
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* HERO */}
       <section className="relative overflow-hidden bg-[var(--club-navy-deep)] grain-overlay py-20">
