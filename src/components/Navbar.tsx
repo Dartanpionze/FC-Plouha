@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Menu, X } from 'lucide-react'
 import { ClubCrest } from './ClubCrest'
 
@@ -18,10 +18,30 @@ export function Navbar() {
   const [open, setOpen] = useState(false)
   const { pathname } = useLocation()
 
+  useEffect(() => {
+    if (!open) return
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setOpen(false)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [open])
+
+  useEffect(() => {
+    setOpen(false)
+  }, [pathname])
+
   return (
     <header className="sticky top-0 z-50 bg-[var(--club-navy)] shadow-lg shadow-black/20">
       <div className="h-1.5 stripe-diagonal" />
-      <nav className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between h-20">
+      <nav
+        aria-label="Navigation principale"
+        className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between h-20"
+      >
         <Link to="/" className="flex items-center gap-3 shrink-0">
           <ClubCrest className="w-14 h-14" />
           <span className="text-white leading-tight">
@@ -41,6 +61,7 @@ export function Navbar() {
               <li key={link.to}>
                 <Link
                   to={link.to}
+                  aria-current={active ? 'page' : undefined}
                   className={`px-3 py-2 rounded-md transition-colors block ${
                     active
                       ? 'text-[var(--club-navy)] bg-[var(--club-yellow)]'
@@ -60,13 +81,17 @@ export function Navbar() {
           onClick={() => setOpen((v) => !v)}
           aria-label={open ? 'Fermer le menu' : 'Ouvrir le menu'}
           aria-expanded={open}
+          aria-controls="mobile-navigation"
         >
           {open ? <X size={26} /> : <Menu size={26} />}
         </button>
       </nav>
 
       {open && (
-        <div className="lg:hidden bg-[var(--club-navy-deep)] border-t border-white/10">
+        <div
+          id="mobile-navigation"
+          className="lg:hidden bg-[var(--club-navy-deep)] border-t border-white/10"
+        >
           <ul className="px-4 py-3 flex flex-col font-condensed font-semibold text-base">
             {links.map((link) => {
               const active = pathname === link.to
@@ -75,6 +100,7 @@ export function Navbar() {
                   <Link
                     to={link.to}
                     onClick={() => setOpen(false)}
+                    aria-current={active ? 'page' : undefined}
                     className={`block py-3 border-b border-white/5 ${
                       active ? 'text-[var(--club-yellow)]' : 'text-white/85'
                     }`}
