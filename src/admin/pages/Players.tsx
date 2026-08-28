@@ -76,6 +76,7 @@ export default function Players() {
   const [teamFilter, setTeamFilter] = useState('all')
 
   const [message, setMessage] = useState('')
+  const [photoValidationError, setPhotoValidationError] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
@@ -174,6 +175,7 @@ export default function Players() {
   const openNewForm = () => {
     resetForm()
     setMessage('')
+    setPhotoValidationError('')
     setShowForm(true)
   }
 
@@ -194,6 +196,7 @@ export default function Players() {
     setPhoto(null)
     setPreview(player.photo_url || '')
     setMessage('')
+    setPhotoValidationError('')
     setShowForm(true)
 
     window.scrollTo({
@@ -226,7 +229,7 @@ export default function Players() {
       const photoError = validateImageFile(photo)
 
       if (photoError) {
-        setMessage(photoError)
+        setPhotoValidationError(photoError)
         setSaving(false)
         return
       }
@@ -648,12 +651,12 @@ export default function Players() {
                   if (photoError) {
                     setPhoto(null)
                     setPreview('')
-                    setMessage(photoError)
+                    setPhotoValidationError(photoError)
                     e.currentTarget.value = ''
                     return
                   }
 
-                  setMessage('')
+                  setPhotoValidationError('')
                   setPhoto(file)
                   setPreview(URL.createObjectURL(file))
                 }}
@@ -662,6 +665,15 @@ export default function Players() {
                 <p className="mt-2 text-xs text-slate-500">
                   JPG, PNG ou WebP — {MAX_IMAGE_SIZE_LABEL} maximum.
                 </p>
+
+                {photoValidationError && (
+                  <div
+                    role="alert"
+                    className="mt-3 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2.5 text-sm font-medium text-red-300"
+                  >
+                    {photoValidationError}
+                  </div>
+                )}
             </div>
 
             {preview && (
