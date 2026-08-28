@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { removeStorageFile } from '@/lib/storage'
+import {
+  createImageFileName,
+  MAX_IMAGE_SIZE_LABEL,
+  validateImageFile,
+} from '@/lib/uploads'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import {
@@ -130,7 +135,15 @@ export default function News() {
     let imageUrl = ''
 
     if (image) {
-      const fileName = `${Date.now()}-${image.name}`
+      const imageError = validateImageFile(image)
+
+      if (imageError) {
+        setMessage(imageError)
+        setLoading(false)
+        return
+      }
+
+      const fileName = createImageFileName(image)
 
       const { error: uploadError } = await supabase.storage
         .from('news-images')
@@ -383,12 +396,23 @@ export default function News() {
 
                 <input
                   type="file"
-                  accept="image/*"
+                  accept="image/jpeg,image/png,image/webp"
                   className="hidden"
                   onChange={(e) => {
                     const file = e.target.files?.[0]
 
                     if (file) {
+                      const imageError = validateImageFile(file)
+
+                      if (imageError) {
+                        setImage(null)
+                        setPreview('')
+                        setMessage(imageError)
+                        e.currentTarget.value = ''
+                        return
+                      }
+
+                      setMessage('')
                       setImage(file)
                       setPreview(URL.createObjectURL(file))
                     }
