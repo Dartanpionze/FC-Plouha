@@ -424,14 +424,14 @@ export default function Club() {
   }
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
 
       <div className="mb-8">
         <p className="text-sm text-slate-400 mb-1">
           Gestion du club
         </p>
 
-        <h1 className="text-3xl font-bold tracking-tight">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
           Club
         </h1>
 
@@ -459,7 +459,7 @@ export default function Club() {
 
       {/* FORMULAIRE HISTOIRE */}
       {showHistoryForm && (
-        <section className="mb-8 rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+        <section className="mb-8 rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-6">
 
           <div className="flex items-center justify-between mb-6">
             <div>
@@ -569,7 +569,7 @@ export default function Club() {
 
       {/* FORMULAIRE STAFF */}
       {showStaffForm && (
-        <section className="mb-8 rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+        <section className="mb-8 rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-6">
 
           <div className="flex items-center justify-between mb-6">
             <div>
