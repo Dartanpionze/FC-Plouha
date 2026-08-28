@@ -2,6 +2,11 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { removeStorageFile } from '@/lib/storage'
 import {
+  createImageFileName,
+  MAX_IMAGE_SIZE_LABEL,
+  validateImageFile,
+} from '@/lib/uploads'
+import {
   Plus,
   Pencil,
   Trash2,
@@ -40,6 +45,7 @@ export default function Partners() {
   const [showForm, setShowForm] = useState(false)
 
   const [message, setMessage] = useState('')
+  const [logoValidationError, setLogoValidationError] = useState('')
   const [loading, setLoading] = useState(false)
   const [fetching, setFetching] = useState(true)
 
@@ -137,9 +143,15 @@ export default function Partners() {
     let logoUrl = ''
 
     if (logo) {
-      const fileName = `${Date.now()}-${Math.random()
-        .toString(36)
-        .substring(2)}-${logo.name}`
+      const logoError = validateImageFile(logo)
+
+      if (logoError) {
+        setLogoValidationError(logoError)
+        setLoading(false)
+        return
+      }
+
+      const fileName = createImageFileName(logo)
 
       const { error: uploadError } = await supabase.storage
         .from('partner-logos')
@@ -504,7 +516,7 @@ export default function Partners() {
 
               <input
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/webp"
                 onChange={(e) => {
 
                   const file =
@@ -512,13 +524,32 @@ export default function Partners() {
 
                   if (!file) return
 
+                  const logoError = validateImageFile(file)
+
+                  if (logoError) {
+                    setLogo(null)
+                    setPreview('')
+                    setLogoValidationError(logoError)
+                    e.currentTarget.value = ''
+                    return
+                  }
+
+                  setLogoValidationError('')
                   setLogo(file)
-                  setPreview(
-                    URL.createObjectURL(file),
-                  )
+                  setPreview(URL.createObjectURL(file))
                 }}
                 className="w-full rounded-xl border border-white/10 bg-slate-950 px-4 py-3"
               />
+
+              <p className="mt-2 text-xs text-slate-500">
+                JPG, PNG ou WebP — {MAX_IMAGE_SIZE_LABEL} maximum.
+              </p>
+
+              {logoValidationError && (
+                <div role="alert" className="mt-3 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2.5 text-sm font-medium text-red-300">
+                  {logoValidationError}
+                </div>
+              )}
 
               {preview && (
                 <div className="mt-4 w-full h-48 rounded-xl bg-white flex items-center justify-center p-6">
