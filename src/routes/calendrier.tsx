@@ -7,6 +7,7 @@ import {
   Loader2,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import Seo from '@/components/Seo'
 
 type Team = {
   id: number
@@ -28,16 +29,6 @@ type Match = {
   home_score: number | null
   away_score: number | null
   teams?: Team | null
-}
-
-function singleRelation<T>(
-  relation: T | T[] | null | undefined,
-): T | null {
-  if (Array.isArray(relation)) {
-    return relation[0] ?? null
-  }
-
-  return relation ?? null
 }
 
 function formatDate(date: string) {
@@ -100,12 +91,7 @@ function CalendarPage() {
       return
     }
 
-    setMatches(
-      (data || []).map((match) => ({
-        ...match,
-        teams: singleRelation(match.teams),
-      })),
-    )
+    setMatches(data || [])
     setLoading(false)
   }
 
@@ -146,6 +132,10 @@ function CalendarPage() {
 
   return (
     <div>
+      <Seo
+        title="Calendrier & résultats"
+        description="Consultez le calendrier, les prochains matchs et les résultats des équipes du Football Club Plouha."
+      />
 
       {/* HERO */}
       <section className="bg-[var(--club-navy-deep)] grain-overlay py-16">
