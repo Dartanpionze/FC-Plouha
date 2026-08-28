@@ -261,6 +261,8 @@ function TeamDetailPage() {
             <img
               src={team.image_url}
               alt=""
+              decoding="async"
+              fetchPriority="high"
               className="w-full h-full object-cover opacity-35"
             />
 
@@ -487,6 +489,7 @@ function PlayerGroup({
                   src={player.photo_url}
                   alt={`${player.first_name} ${player.last_name}`}
                   loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
               ) : (
