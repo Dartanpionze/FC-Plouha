@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
+  AlertTriangle,
   Clock,
   Mail,
   MapPin,
   Phone,
   Loader2,
+  RefreshCw,
   UserPlus,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
@@ -38,6 +40,7 @@ function ContactPage() {
   const [settings, setSettings] = useState<ClubSettings | null>(null)
   const [teamCategories, setTeamCategories] = useState<string[]>([])
   const [loadingSettings, setLoadingSettings] = useState(true)
+  const [pageDataError, setPageDataError] = useState(false)
 
   const [fields, setFields] = useState<FormFields>({
     firstName: '',
@@ -53,11 +56,15 @@ function ContactPage() {
   const [status, setStatus] = useState<
     'idle' | 'sending' | 'sent' | 'error'
   >('idle')
+  const [formError, setFormError] = useState('')
 
   const isRegistration = fields.subject === 'Inscription'
 
-  useEffect(() => {
-    const fetchPageData = async () => {
+  const fetchPageData = async () => {
+    setLoadingSettings(true)
+    setPageDataError(false)
+
+    try {
       const [settingsResult, teamsResult] = await Promise.all([
         supabase
           .from('club_settings')
@@ -82,12 +89,14 @@ function ContactPage() {
 
       if (settingsResult.error) {
         console.error(settingsResult.error)
+        setPageDataError(true)
       } else {
         setSettings(settingsResult.data)
       }
 
       if (teamsResult.error) {
         console.error(teamsResult.error)
+        setPageDataError(true)
       } else {
         const categories = Array.from(
           new Set(
@@ -99,10 +108,15 @@ function ContactPage() {
 
         setTeamCategories(categories)
       }
-
+    } catch (fetchError) {
+      console.error(fetchError)
+      setPageDataError(true)
+    } finally {
       setLoadingSettings(false)
     }
+  }
 
+  useEffect(() => {
     fetchPageData()
   }, [])
 
@@ -139,6 +153,7 @@ function ContactPage() {
 
     if (status === 'error') {
       setStatus('idle')
+      setFormError('')
     }
   }
 
@@ -188,6 +203,7 @@ function ContactPage() {
       !fields.email.trim() ||
       !fields.subject
     ) {
+      setFormError('Merci de remplir tous les champs obligatoires.')
       setStatus('error')
       return
     }
@@ -196,10 +212,14 @@ function ContactPage() {
       isRegistration &&
       (!fields.birthYear || !fields.category)
     ) {
+      setFormError(
+        "Merci d'indiquer l'année de naissance et la catégorie souhaitée.",
+      )
       setStatus('error')
       return
     }
 
+    setFormError('')
     setStatus('sending')
 
     try {
@@ -219,6 +239,9 @@ function ContactPage() {
       })
     } catch (error) {
       console.error(error)
+      setFormError(
+        "Impossible d'envoyer votre demande pour le moment. Merci de réessayer.",
+      )
       setStatus('error')
     }
   }
@@ -263,6 +286,33 @@ function ContactPage() {
         </div>
 
       </section>
+
+      {pageDataError && (
+        <div className="bg-amber-50 border-b border-amber-200">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex items-start gap-3 text-amber-900">
+              <AlertTriangle
+                size={20}
+                className="mt-0.5 shrink-0"
+              />
+
+              <p className="font-condensed text-sm">
+                Certaines informations de contact n'ont pas pu être chargées.
+                Le formulaire reste disponible.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={fetchPageData}
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-amber-300 bg-white px-4 py-2 font-condensed font-bold text-sm text-amber-900 hover:bg-amber-100 transition-colors"
+            >
+              <RefreshCw size={16} />
+              Réessayer
+            </button>
+          </div>
+        </div>
+      )}
 
       <section className="max-w-6xl mx-auto px-4 sm:px-6 py-20 grid lg:grid-cols-[1fr_1.2fr] gap-14">
 
