@@ -186,6 +186,8 @@ function ArticlePage() {
         <img
           src={article.image_url}
           alt={article.title}
+          decoding="async"
+          fetchPriority="high"
           className="w-full h-64 sm:h-96 object-cover rounded-3xl"
         />
       )}
