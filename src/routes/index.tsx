@@ -275,6 +275,8 @@ function Home() {
           <img
             src="/fond-foot.jpg"
             alt=""
+            decoding="async"
+            fetchPriority="high"
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-[var(--club-navy-deep)] via-[var(--club-navy-deep)]/70 to-transparent" />
@@ -656,6 +658,7 @@ function Home() {
                 src={photo.image_url}
                 alt={photo.caption || 'Galerie FC Plouha'}
                 loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
               />
               {photo.caption && (
@@ -686,7 +689,9 @@ function Home() {
                   {partner.logo_url ? (
                     <img
                       src={partner.logo_url}
-                      alt={partner.name}
+                      alt={`Logo ${partner.name}`}
+                      loading="lazy"
+                      decoding="async"
                       className="h-12 max-w-36 object-contain"
                     />
                   ) : (
