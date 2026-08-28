@@ -1,12 +1,24 @@
-import { FormEvent, useEffect, useState } from 'react'
-import { Navigate, useNavigate } from 'react-router-dom'
-import { KeyRound, Loader2 } from 'lucide-react'
+import { FormEvent, useEffect, useMemo, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { AlertTriangle, KeyRound, Loader2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+
+function hasInviteMarker() {
+  const search = new URLSearchParams(window.location.search)
+  const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''))
+
+  const type = search.get('type') ?? hash.get('type')
+  const hasAccessToken = Boolean(hash.get('access_token'))
+  const hasCode = Boolean(search.get('code'))
+
+  return type === 'invite' || (hasAccessToken && type === 'invite') || (hasCode && type === 'invite')
+}
 
 export default function AcceptInvite() {
   const navigate = useNavigate()
+  const inviteMarker = useMemo(() => hasInviteMarker(), [])
   const [sessionReady, setSessionReady] = useState(false)
-  const [hasSession, setHasSession] = useState(false)
+  const [hasInviteSession, setHasInviteSession] = useState(false)
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [saving, setSaving] = useState(false)
@@ -16,18 +28,18 @@ export default function AcceptInvite() {
     let mounted = true
 
     const readSession = async () => {
-      const { data } = await supabase.auth.getSession()
+      const { data, error } = await supabase.auth.getSession()
       if (!mounted) return
 
-      setHasSession(Boolean(data.session))
+      setHasInviteSession(inviteMarker && !error && Boolean(data.session))
       setSessionReady(true)
     }
 
-    readSession()
+    void readSession()
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!mounted) return
-      setHasSession(Boolean(session))
+      setHasInviteSession(inviteMarker && Boolean(session))
       setSessionReady(true)
     })
 
@@ -35,11 +47,16 @@ export default function AcceptInvite() {
       mounted = false
       listener.subscription.unsubscribe()
     }
-  }, [])
+  }, [inviteMarker])
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
     setErrorMessage('')
+
+    if (!hasInviteSession) {
+      setErrorMessage("Cette page n'a pas été ouverte depuis une invitation valide.")
+      return
+    }
 
     if (password.length < 8) {
       setErrorMessage('Le mot de passe doit contenir au moins 8 caractères.')
@@ -56,7 +73,6 @@ export default function AcceptInvite() {
     const { error } = await supabase.auth.updateUser({ password })
 
     if (error) {
-      console.error(error)
       setErrorMessage("Impossible d'enregistrer le mot de passe. Le lien d'invitation a peut-être expiré.")
       setSaving(false)
       return
@@ -76,8 +92,40 @@ export default function AcceptInvite() {
     )
   }
 
-  if (!hasSession) {
-    return <Navigate to="/admin/login" replace />
+  if (!hasInviteSession) {
+    return (
+      <div className="min-h-screen bg-[var(--club-navy-deep)] flex items-center justify-center px-4 py-10">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <img
+              src="/logo.png"
+              alt="FC Plouha"
+              className="w-24 h-24 object-contain mx-auto mb-5"
+            />
+            <h1 className="text-3xl font-bold text-white">Activation du compte</h1>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-2xl p-6 sm:p-8">
+            <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
+              <AlertTriangle size={20} className="mt-0.5 shrink-0" />
+              <div>
+                <p className="font-semibold">Aucune invitation valide détectée</p>
+                <p className="mt-1 text-sm">
+                  Utilisez le lien reçu par e-mail pour activer votre compte CMS. Une session déjà connectée ne suffit pas à ouvrir cette page d’activation.
+                </p>
+              </div>
+            </div>
+
+            <Link
+              to="/admin/login"
+              className="mt-6 block w-full rounded-xl bg-[var(--club-yellow)] px-4 py-3.5 text-center font-bold hover:bg-yellow-400 transition"
+            >
+              Retour à la connexion
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
