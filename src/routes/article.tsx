@@ -181,7 +181,7 @@ function ArticlePage() {
         image={article.image_url}
       />
 
-      <article className="max-w-5xl mx-auto px-6 py-20">
+      <article className="max-w-5xl 2xl:max-w-6xl mx-auto px-6 2xl:px-8 py-20 2xl:py-24">
       {article.image_url && (
         <img
           src={article.image_url}
@@ -197,7 +197,7 @@ function ArticlePage() {
           {new Date(article.created_at).toLocaleDateString('fr-FR')}
         </p>
 
-        <h1 className="mt-3 text-4xl font-bold">
+        <h1 className="mt-3 text-4xl 2xl:text-5xl font-bold">
           {article.title}
         </h1>
 
