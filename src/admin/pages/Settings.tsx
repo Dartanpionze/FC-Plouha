@@ -51,6 +51,7 @@ export default function Settings() {
 
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
   const [saving, setSaving] = useState(false)
 
   const [foundedYear, setFoundedYear] = useState('')
@@ -64,63 +65,77 @@ export default function Settings() {
 
   const fetchSettings = async () => {
     setLoading(true)
+    setLoadError(false)
 
-    const { data, error } = await supabase
-      .from('club_settings')
-      .select('*')
-      .limit(1)
-      .single()
+    try {
+      const { data, error } = await supabase
+        .from('club_settings')
+        .select('*')
+        .limit(1)
+        .single()
 
-    if (error) {
-      console.error(error)
-      setMessage('Impossible de récupérer les paramètres du club.')
+      if (error || !data) {
+        if (error) console.error(error)
+        setLoadError(true)
+        setMessage(
+          'Impossible de récupérer les paramètres du club. Vous pouvez réessayer.',
+        )
+        return false
+      }
+
+      setSettings(data)
+
+      setClubName(data.club_name || '')
+      setShortName(data.short_name || '')
+      setSeason(data.season || '')
+
+      setFoundedYear(
+        data.founded_year !== null
+          ? data.founded_year.toString()
+          : '',
+      )
+
+      setMembersCount(
+        data.members_count !== null
+          ? data.members_count.toString()
+          : '0',
+      )
+
+      setVolunteersCount(
+        data.volunteers_count !== null
+          ? data.volunteers_count.toString()
+          : '0',
+      )
+
+      setDistrictTitles(
+        data.district_titles !== null
+          ? data.district_titles.toString()
+          : '0',
+      )
+
+      setAddress(data.address || '')
+      setPostalCode(data.postal_code || '')
+      setCity(data.city || '')
+
+      setEmail(data.email || '')
+      setPhone(data.phone || '')
+
+      setFacebookUrl(data.facebook_url || '')
+      setInstagramUrl(data.instagram_url || '')
+
+      setDescription(data.description || '')
+
+      return true
+    } catch (fetchError) {
+      console.error(fetchError)
+      setLoadError(true)
+      setMessage(
+        'Impossible de récupérer les paramètres du club. Vous pouvez réessayer.',
+      )
+      return false
+    } finally {
       setLoading(false)
-      return
     }
-
-    setSettings(data)
-
-    setClubName(data.club_name || '')
-    setShortName(data.short_name || '')
-    setSeason(data.season || '')
-
-    setFoundedYear(
-      data.founded_year !== null
-      ? data.founded_year.toString()
-      : '',
-    )
-    
-    setMembersCount(
-      data.members_count !== null
-      ? data.members_count.toString()
-      : '0',
-    )
-    
-    setVolunteersCount(
-      data.volunteers_count !== null
-      ? data.volunteers_count.toString()
-      : '0',
-    )
-    
-    setDistrictTitles(
-      data.district_titles !== null
-      ? data.district_titles.toString()
-      : '0',
-    )
-
-    setAddress(data.address || '')
-    setPostalCode(data.postal_code || '')
-    setCity(data.city || '')
-
-    setEmail(data.email || '')
-    setPhone(data.phone || '')
-
-    setFacebookUrl(data.facebook_url || '')
-    setInstagramUrl(data.instagram_url || '')
-
-    setDescription(data.description || '')
-
-    setLoading(false)
   }
 
   const saveSettings = async () => {
@@ -178,10 +193,13 @@ export default function Settings() {
       return
     }
 
-    setMessage('Paramètres enregistrés avec succès.')
-    setSaving(false)
+    const refreshed = await fetchSettings()
 
-    fetchSettings()
+    if (refreshed) {
+      setMessage('Paramètres enregistrés avec succès.')
+    }
+
+    setSaving(false)
   }
 
   if (loading) {
@@ -190,6 +208,32 @@ export default function Settings() {
         <p className="text-slate-400">
           Chargement des paramètres...
         </p>
+      </div>
+    )
+  }
+
+  if (loadError || !settings) {
+    return (
+      <div className="p-8 max-w-5xl mx-auto">
+        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+          <h1 className="text-2xl font-bold">
+            Paramètres indisponibles
+          </h1>
+
+          <p className="mt-3 text-slate-400">
+            Impossible de charger les paramètres du club. Aucun champ
+            modifiable n'est affiché afin d'éviter d'enregistrer des données
+            incomplètes.
+          </p>
+
+          <button
+            type="button"
+            onClick={() => fetchSettings()}
+            className="mt-5 rounded-xl bg-[var(--club-yellow)] px-4 py-2.5 font-bold text-[var(--club-navy-deep)]"
+          >
+            Réessayer
+          </button>
+        </div>
       </div>
     )
   }
