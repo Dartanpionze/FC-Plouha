@@ -47,6 +47,8 @@ export default function Gallery() {
 
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
+  const [fetchingAlbums, setFetchingAlbums] = useState(true)
+  const [fetchingPhotos, setFetchingPhotos] = useState(false)
 
   useEffect(() => {
     fetchAlbums()
@@ -61,38 +63,69 @@ export default function Gallery() {
   }, [selectedAlbum])
 
   const fetchAlbums = async () => {
-    const { data, error } = await supabase
-      .from('gallery_albums')
-      .select('*')
-      .order('created_at', { ascending: false })
+    setFetchingAlbums(true)
 
-    if (error) {
-      console.error(error)
-      setMessage('Impossible de récupérer les albums.')
-      return
-    }
+    try {
+      const { data, error } = await supabase
+        .from('gallery_albums')
+        .select('*')
+        .order('created_at', { ascending: false })
 
-    setAlbums(data || [])
+      if (error) {
+        console.error(error)
+        setMessage(
+          'Impossible de récupérer les albums. Vous pouvez réessayer.',
+        )
+        return false
+      }
 
-    if (!selectedAlbum && data?.length) {
-      setSelectedAlbum(data[0].id)
+      setAlbums(data || [])
+
+      if (!selectedAlbum && data?.length) {
+        setSelectedAlbum(data[0].id)
+      }
+
+      return true
+    } catch (fetchError) {
+      console.error(fetchError)
+      setMessage(
+        'Impossible de récupérer les albums. Vous pouvez réessayer.',
+      )
+      return false
+    } finally {
+      setFetchingAlbums(false)
     }
   }
 
   const fetchPhotos = async (albumId: number) => {
-    const { data, error } = await supabase
-      .from('gallery_photos')
-      .select('*')
-      .eq('album_id', albumId)
-      .order('created_at', { ascending: false })
+    setFetchingPhotos(true)
 
-    if (error) {
-      console.error(error)
-      setMessage('Impossible de récupérer les photos.')
-      return
+    try {
+      const { data, error } = await supabase
+        .from('gallery_photos')
+        .select('*')
+        .eq('album_id', albumId)
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error(error)
+        setMessage(
+          'Impossible de récupérer les photos. Vous pouvez réessayer.',
+        )
+        return false
+      }
+
+      setPhotos(data || [])
+      return true
+    } catch (fetchError) {
+      console.error(fetchError)
+      setMessage(
+        'Impossible de récupérer les photos. Vous pouvez réessayer.',
+      )
+      return false
+    } finally {
+      setFetchingPhotos(false)
     }
-
-    setPhotos(data || [])
   }
 
   const resetAlbumForm = () => {
@@ -136,15 +169,18 @@ export default function Gallery() {
       return
     }
 
-    await fetchAlbums()
-
     if (data) {
       setSelectedAlbum(data.id)
     }
 
     resetAlbumForm()
 
-    setMessage('Album créé avec succès.')
+    const refreshed = await fetchAlbums()
+
+    if (refreshed) {
+      setMessage('Album créé avec succès.')
+    }
+
     setLoading(false)
   }
 
@@ -226,18 +262,20 @@ export default function Gallery() {
       return
     }
 
-    await fetchPhotos(selectedAlbum)
-    await fetchAlbums()
+    const photosRefreshed = await fetchPhotos(selectedAlbum)
+    const albumsRefreshed = await fetchAlbums()
 
     const uploadedCount = uploadedPhotos.length
 
     resetPhotoForm()
 
-    setMessage(
-      `${uploadedCount} photo${
-        uploadedCount > 1 ? 's' : ''
-      } ajoutée${uploadedCount > 1 ? 's' : ''}.`,
-    )
+    if (photosRefreshed && albumsRefreshed) {
+      setMessage(
+        `${uploadedCount} photo${
+          uploadedCount > 1 ? 's' : ''
+        } ajoutée${uploadedCount > 1 ? 's' : ''}.`,
+      )
+    }
 
     setLoading(false)
   }
@@ -265,10 +303,12 @@ export default function Gallery() {
       photo.image_url,
     )
 
-    setMessage('Photo supprimée.')
-
     if (selectedAlbum) {
-      fetchPhotos(selectedAlbum)
+      const refreshed = await fetchPhotos(selectedAlbum)
+
+      if (refreshed) {
+        setMessage('Photo supprimée.')
+      }
     }
   }
 
@@ -287,7 +327,15 @@ export default function Gallery() {
     }
 
     if (selectedAlbum) {
-      fetchPhotos(selectedAlbum)
+      const refreshed = await fetchPhotos(selectedAlbum)
+
+      if (refreshed) {
+        setMessage(
+          photo.active
+            ? 'Photo masquée.'
+            : 'Photo affichée.',
+        )
+      }
     }
   }
 
@@ -330,13 +378,15 @@ export default function Gallery() {
       ),
     )
 
-    setMessage('Album supprimé.')
-
     if (selectedAlbum === album.id) {
       setSelectedAlbum(null)
     }
 
-    fetchAlbums()
+    const refreshed = await fetchAlbums()
+
+    if (refreshed) {
+      setMessage('Album supprimé.')
+    }
   }
 
   const selectedAlbumData = albums.find(
