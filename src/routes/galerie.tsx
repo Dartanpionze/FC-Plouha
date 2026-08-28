@@ -7,6 +7,7 @@ import {
   X,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import Seo from '@/components/Seo'
 
 type Album = {
   id: number
@@ -116,6 +117,10 @@ function GalleryPage() {
 
   return (
     <div>
+      <Seo
+        title="Galerie"
+        description="Retrouvez en images les matchs, événements et moments de vie du Football Club Plouha."
+      />
 
       {/* HERO */}
       <section className="bg-[var(--club-navy-deep)] grain-overlay py-16">
