@@ -62,6 +62,7 @@ export default function Registrations() {
   const [notes, setNotes] = useState('')
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(true)
+  const [fetchError, setFetchError] = useState(false)
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
@@ -70,25 +71,37 @@ export default function Registrations() {
 
   const fetchRegistrations = async () => {
     setLoading(true)
+    setFetchError(false)
 
-    const { data, error } = await supabase
-      .from('registrations')
-      .select('*')
-      .order('created_at', {
-        ascending: false,
-      })
+    try {
+      const { data, error } = await supabase
+        .from('registrations')
+        .select('*')
+        .order('created_at', {
+          ascending: false,
+        })
 
-    if (error) {
+      if (error) {
+        console.error(error)
+        setFetchError(true)
+        setMessage(
+          'Impossible de récupérer les demandes. Vous pouvez réessayer.',
+        )
+        return false
+      }
+
+      setRegistrations(data || [])
+      return true
+    } catch (error) {
       console.error(error)
+      setFetchError(true)
       setMessage(
-        'Impossible de récupérer les demandes.',
+        'Impossible de récupérer les demandes. Vous pouvez réessayer.',
       )
+      return false
+    } finally {
       setLoading(false)
-      return
     }
-
-    setRegistrations(data || [])
-    setLoading(false)
   }
 
   const openRegistration = (
@@ -123,7 +136,11 @@ export default function Registrations() {
       })
     }
 
-    fetchRegistrations()
+    const refreshed = await fetchRegistrations()
+
+    if (refreshed) {
+      setMessage('Statut mis à jour.')
+    }
   }
 
   const saveNotes = async () => {
@@ -153,9 +170,13 @@ export default function Registrations() {
       admin_notes: notes,
     })
 
-    setMessage('Notes enregistrées.')
+    const refreshed = await fetchRegistrations()
+
+    if (refreshed) {
+      setMessage('Notes enregistrées.')
+    }
+
     setSaving(false)
-    fetchRegistrations()
   }
 
   const deleteRegistration = async (
@@ -184,8 +205,11 @@ export default function Registrations() {
       setSelected(null)
     }
 
-    setMessage('Demande supprimée.')
-    fetchRegistrations()
+    const refreshed = await fetchRegistrations()
+
+    if (refreshed) {
+      setMessage('Demande supprimée.')
+    }
   }
 
   const filteredRegistrations = useMemo(() => {
@@ -267,6 +291,16 @@ export default function Registrations() {
         <div className="mb-6 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-slate-300">
           {message}
         </div>
+      )}
+
+      {fetchError && !loading && (
+        <button
+          type="button"
+          onClick={() => fetchRegistrations()}
+          className="mb-6 inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/[0.08] transition"
+        >
+          Réessayer le chargement
+        </button>
       )}
 
       <div className="grid xl:grid-cols-[1.2fr_0.8fr] gap-6">
