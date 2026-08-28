@@ -190,7 +190,9 @@ function SponsorsPage() {
                             {partner.logo_url ? (
                               <img
                                 src={partner.logo_url}
-                                alt={partner.name}
+                                alt={`Logo ${partner.name}`}
+                                loading="lazy"
+                                decoding="async"
                                 className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-300"
                               />
                             ) : (
