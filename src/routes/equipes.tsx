@@ -7,6 +7,7 @@ import {
   Loader2,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import Seo from '@/components/Seo'
 
 type Team = {
   id: number
@@ -59,6 +60,10 @@ function TeamsPage() {
 
   return (
     <div>
+      <Seo
+        title="Nos équipes"
+        description="Découvrez les équipes du Football Club Plouha, leurs catégories, leurs entraîneurs et leurs effectifs."
+      />
 
       {/* HERO */}
       <section className="bg-[var(--club-navy-deep)] grain-overlay py-16">
