@@ -1,9 +1,17 @@
 import { ArrowLeft, Home, SearchX } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import Seo from '@/components/Seo'
 
 export default function NotFoundPage() {
   return (
-    <section className="relative overflow-hidden bg-[var(--club-navy-deep)] min-h-[70vh] flex items-center grain-overlay">
+    <>
+      <Seo
+        title="Page introuvable"
+        description="La page demandée est introuvable."
+        noIndex
+      />
+
+      <section className="relative overflow-hidden bg-[var(--club-navy-deep)] min-h-[70vh] flex items-center grain-overlay">
       <div className="absolute inset-0 opacity-15">
         <img
           src="/fond-foot.jpg"
@@ -54,6 +62,7 @@ export default function NotFoundPage() {
           </button>
         </div>
       </div>
-    </section>
+      </section>
+    </>
   )
 }
