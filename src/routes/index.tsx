@@ -1,8 +1,11 @@
 import { Link } from 'react-router-dom'
 import {
+  AlertTriangle,
   ArrowRight,
   CalendarDays,
+  Loader2,
   MapPin,
+  RefreshCw,
   ShieldHalf,
   Trophy,
   Users,
@@ -79,9 +82,14 @@ function Home() {
   const [matches, setMatches] = useState<Match[]>([])
   const [galleryPhotos, setGalleryPhotos] = useState<GalleryPhoto[]>([])
   const [partners, setPartners] = useState<Partner[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
 
-  useEffect(() => {
-    const fetchHomeData = async () => {
+  const fetchHomeData = async () => {
+    setLoading(true)
+    setError(false)
+
+    try {
       const [
         settingsResult,
         newsResult,
@@ -144,12 +152,23 @@ function Home() {
           .limit(12),
       ])
 
-      if (settingsResult.error) console.error(settingsResult.error)
-      if (newsResult.error) console.error(newsResult.error)
-      if (teamsResult.error) console.error(teamsResult.error)
-      if (matchesResult.error) console.error(matchesResult.error)
-      if (galleryResult.error) console.error(galleryResult.error)
-      if (partnersResult.error) console.error(partnersResult.error)
+      const results = [
+        settingsResult,
+        newsResult,
+        teamsResult,
+        matchesResult,
+        galleryResult,
+        partnersResult,
+      ]
+
+      const hasError = results.some((result) => Boolean(result.error))
+
+      if (hasError) {
+        results.forEach((result) => {
+          if (result.error) console.error(result.error)
+        })
+        setError(true)
+      }
 
       setSettings(settingsResult.data || null)
       setNews(newsResult.data || [])
@@ -157,8 +176,15 @@ function Home() {
       setMatches((matchesResult.data || []) as Match[])
       setGalleryPhotos(galleryResult.data || [])
       setPartners(partnersResult.data || [])
+    } catch (fetchError) {
+      console.error(fetchError)
+      setError(true)
+    } finally {
+      setLoading(false)
     }
+  }
 
+  useEffect(() => {
     fetchHomeData()
   }, [])
 
@@ -179,8 +205,50 @@ function Home() {
   const getAwayTeam = (match: Match) =>
     match.is_home ? match.opponent : getTeamName(match)
 
+  if (loading) {
+    return (
+      <div className="min-h-[65vh] bg-white flex items-center justify-center px-4">
+        <div className="text-center">
+          <Loader2
+            size={38}
+            className="mx-auto animate-spin text-[var(--club-navy)]"
+          />
+          <p className="mt-4 font-condensed text-[var(--club-navy-deep)]/60">
+            Chargement du site...
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div>
+      {error && (
+        <div className="bg-amber-50 border-b border-amber-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex items-start gap-3 text-amber-900">
+              <AlertTriangle
+                size={20}
+                className="mt-0.5 shrink-0"
+              />
+              <p className="font-condensed text-sm">
+                Certaines informations du site n'ont pas pu être chargées.
+                Vous pouvez réessayer sans quitter cette page.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={fetchHomeData}
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-amber-300 bg-white px-4 py-2 font-condensed font-bold text-sm text-amber-900 hover:bg-amber-100 transition-colors"
+            >
+              <RefreshCw size={16} />
+              Réessayer
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* HERO */}
       <section className="relative overflow-hidden bg-[var(--club-navy-deep)] grain-overlay">
         <div className="absolute top-0 right-0 bottom-2 w-1/2">
