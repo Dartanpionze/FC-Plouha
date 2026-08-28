@@ -79,19 +79,19 @@ function SponsorsPage() {
       />
 
       {/* HERO */}
-      <section className="bg-[var(--club-navy-deep)] grain-overlay py-16">
+      <section className="bg-[var(--club-navy-deep)] grain-overlay py-16 2xl:py-20">
 
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 text-center">
+        <div className="max-w-5xl 2xl:max-w-6xl mx-auto px-4 sm:px-6 2xl:px-8 text-center">
 
           <span className="font-condensed font-bold text-xs tracking-[0.3em] text-[var(--club-yellow)]">
             MERCI À EUX
           </span>
 
-          <h1 className="mt-4 text-4xl sm:text-6xl text-white">
+          <h1 className="mt-4 2xl:mt-5 text-4xl sm:text-6xl 2xl:text-7xl text-white">
             Nos partenaires
           </h1>
 
-          <p className="mt-6 text-white/70 font-condensed text-lg max-w-2xl mx-auto">
+          <p className="mt-6 text-white/70 font-condensed text-lg 2xl:text-xl max-w-2xl 2xl:max-w-3xl mx-auto 2xl:leading-relaxed">
             Le club vit grâce au soutien de ses partenaires locaux,
             qui accompagnent nos équipes saison après saison.
           </p>
@@ -101,7 +101,7 @@ function SponsorsPage() {
       </section>
 
       {/* CONTENU */}
-      <section className="max-w-6xl mx-auto px-4 sm:px-6 py-20">
+      <section className="max-w-6xl 2xl:max-w-7xl mx-auto px-4 sm:px-6 2xl:px-8 py-20 2xl:py-24">
 
         {/* CHARGEMENT */}
         {loading && (
@@ -213,7 +213,7 @@ function SponsorsPage() {
 
                             <div className="flex items-start justify-between gap-3">
 
-                              <h3 className="font-condensed font-bold text-xl text-[var(--club-navy-deep)]">
+                              <h3 className="font-condensed font-bold text-xl 2xl:text-2xl text-[var(--club-navy-deep)]">
                                 {partner.name}
                               </h3>
 
@@ -270,20 +270,20 @@ function SponsorsPage() {
       </section>
 
       {/* CTA */}
-      <section className="bg-[var(--club-navy)] py-16">
+      <section className="bg-[var(--club-navy)] py-16 2xl:py-20">
 
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center text-white">
+        <div className="max-w-3xl 2xl:max-w-4xl mx-auto px-4 sm:px-6 2xl:px-8 text-center text-white">
 
           <Handshake
             className="mx-auto text-[var(--club-yellow)]"
             size={36}
           />
 
-          <h2 className="mt-4 text-3xl">
+          <h2 className="mt-4 text-3xl 2xl:text-4xl">
             Devenez partenaire
           </h2>
 
-          <p className="mt-4 text-white/70 font-condensed">
+          <p className="mt-4 text-white/70 font-condensed 2xl:text-lg">
             Visibilité sur nos maillots, panneaux au stade et
             réseaux sociaux : échangeons sur la formule qui vous
             correspond.
