@@ -293,31 +293,31 @@ function Home() {
           <line x1="100" y1="6" x2="100" y2="194" stroke="white" strokeWidth="1.5" />
         </svg>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pt-8 pb-10 sm:pt-12 sm:pb-12 grid lg:grid-cols-[1.2fr_0.8fr] gap-12 items-center">
+        <div className="relative z-10 max-w-7xl 2xl:max-w-[1540px] mx-auto px-4 sm:px-6 2xl:px-8 pt-8 pb-10 sm:pt-12 sm:pb-12 2xl:pt-16 2xl:pb-16 grid lg:grid-cols-[1.2fr_0.8fr] 2xl:grid-cols-[1.15fr_0.85fr] gap-12 2xl:gap-16 items-center">
           <div className="animate-rise">
-            <div className="flex items-center gap-3 mb-4">
-              <span className="h-px w-10 bg-[var(--club-yellow)]" />
-              <span className="font-condensed text-[var(--club-yellow)] text-sm font-semibold tracking-[0.3em]">
+            <div className="flex items-center gap-3 2xl:gap-4 mb-4 2xl:mb-5">
+              <span className="h-px w-10 2xl:w-12 bg-[var(--club-yellow)]" />
+              <span className="font-condensed text-[var(--club-yellow)] text-sm 2xl:text-base font-semibold tracking-[0.3em]">
                 {city.toUpperCase()} · BRETAGNE
               </span>
             </div>
 
-            <h1 className="text-5xl sm:text-6xl lg:text-7xl text-white leading-[0.95] text-balance">
+            <h1 className="text-5xl sm:text-6xl lg:text-7xl 2xl:text-[5.5rem] text-white leading-[0.95] text-balance">
               {clubName}
               <span className="block text-[var(--club-yellow)]">
                 Les Falaises
               </span>
             </h1>
 
-            <p className="mt-6 text-white/70 text-lg max-w-xl font-condensed">
+            <p className="mt-6 2xl:mt-7 text-white/70 text-lg 2xl:text-xl max-w-xl 2xl:max-w-2xl font-condensed 2xl:leading-relaxed">
               {settings?.description ||
                 "Le FC Plouha ouvre une nouvelle page de son histoire. Une aventure humaine et sportive portée par la passion du football, l'engagement des bénévoles et l'envie de construire ensemble l'avenir des Falaises."}
             </p>
 
-            <div className="mt-9 flex flex-wrap gap-4">
+            <div className="mt-9 2xl:mt-10 flex flex-wrap gap-4 2xl:gap-5">
               <Link
                 to="/equipes"
-                className="inline-flex items-center gap-2 bg-[var(--club-yellow)] text-[var(--club-navy-deep)] font-condensed font-bold px-6 py-3.5 rounded-lg hover:bg-white transition-colors"
+                className="inline-flex items-center gap-2 2xl:gap-3 bg-[var(--club-yellow)] text-[var(--club-navy-deep)] font-condensed font-bold 2xl:text-lg px-6 py-3.5 2xl:px-8 2xl:py-4 rounded-lg hover:bg-white transition-colors"
               >
                 Découvrir nos équipes
                 <ArrowRight size={18} />
@@ -325,7 +325,7 @@ function Home() {
 
               <Link
                 to="/calendrier"
-                className="inline-flex items-center gap-2 border border-white/30 text-white font-condensed font-bold px-6 py-3.5 rounded-lg hover:bg-white/10 transition-colors"
+                className="inline-flex items-center gap-2 2xl:gap-3 border border-white/30 text-white font-condensed font-bold 2xl:text-lg px-6 py-3.5 2xl:px-8 2xl:py-4 rounded-lg hover:bg-white/10 transition-colors"
               >
                 Voir le calendrier
               </Link>
@@ -336,42 +336,42 @@ function Home() {
             className="relative flex justify-center lg:justify-end animate-rise"
             style={{ animationDelay: '0.15s' }}
           >
-            <div className="relative bg-white/[0.04] border border-white/10 rounded-3xl p-4 backdrop-blur-sm w-full max-w-xl">
-              <ClubCrest className="w-56 h-56 sm:w-72 sm:h-72 lg:w-[560px] lg:h-[560px] mx-auto -mt-6 drop-shadow-[0_10px_30px_rgba(0,0,0,0.4)]" />
+            <div className="relative bg-white/[0.04] border border-white/10 rounded-3xl p-4 2xl:p-6 backdrop-blur-sm w-full max-w-xl 2xl:max-w-2xl">
+              <ClubCrest className="w-56 h-56 sm:w-72 sm:h-72 lg:w-[560px] lg:h-[560px] 2xl:w-[590px] 2xl:h-[590px] mx-auto -mt-6 2xl:-mt-8 drop-shadow-[0_10px_30px_rgba(0,0,0,0.4)]" />
 
-              <div className="mt-0 grid grid-cols-2 gap-4 text-center">
+              <div className="mt-0 2xl:mt-1 grid grid-cols-2 gap-4 2xl:gap-6 text-center">
                 <div>
-                  <div className="font-display text-3xl text-[var(--club-yellow)]">
+                  <div className="font-display text-3xl 2xl:text-4xl text-[var(--club-yellow)]">
                     {foundedYear}
                   </div>
-                  <div className="font-condensed text-white/60 text-xs tracking-widest">
+                  <div className="font-condensed text-white/60 text-xs 2xl:text-sm tracking-widest">
                     FONDATION
                   </div>
                 </div>
 
                 <div>
-                  <div className="font-display text-3xl text-[var(--club-yellow)]">
+                  <div className="font-display text-3xl 2xl:text-4xl text-[var(--club-yellow)]">
                     {teams.length}
                   </div>
-                  <div className="font-condensed text-white/60 text-xs tracking-widest">
+                  <div className="font-condensed text-white/60 text-xs 2xl:text-sm tracking-widest">
                     ÉQUIPES
                   </div>
                 </div>
 
                 <div>
-                  <div className="font-display text-3xl text-[var(--club-yellow)]">
+                  <div className="font-display text-3xl 2xl:text-4xl text-[var(--club-yellow)]">
                     {membersCount}
                   </div>
-                  <div className="font-condensed text-white/60 text-xs tracking-widest">
+                  <div className="font-condensed text-white/60 text-xs 2xl:text-sm tracking-widest">
                     LICENCIÉS
                   </div>
                 </div>
 
                 <div>
-                  <div className="font-display text-3xl text-[var(--club-yellow)]">
+                  <div className="font-display text-3xl 2xl:text-4xl text-[var(--club-yellow)]">
                     {districtTitles}
                   </div>
-                  <div className="font-condensed text-white/60 text-xs tracking-widest">
+                  <div className="font-condensed text-white/60 text-xs 2xl:text-sm tracking-widest">
                     TITRES DISTRICT
                   </div>
                 </div>
