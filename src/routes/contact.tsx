@@ -10,6 +10,7 @@ import {
   UserPlus,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import Seo from '@/components/Seo'
 
 type ClubSettings = {
   club_name: string | null
@@ -264,6 +265,10 @@ function ContactPage() {
 
   return (
     <div>
+      <Seo
+        title="Contact & inscriptions"
+        description="Contactez le Football Club Plouha, inscrivez-vous comme joueur ou bénévole, ou proposez un partenariat."
+      />
 
       {/* HERO */}
       <section className="bg-[var(--club-navy-deep)] grain-overlay py-16">
@@ -695,12 +700,9 @@ function ContactPage() {
                     : 'Envoyer le message'}
               </button>
 
-              {status === 'error' && formError && (
-                <p
-                  role="alert"
-                  className="text-sm text-[var(--club-red)]"
-                >
-                  {formError}
+              {status === 'error' && (
+                <p className="text-sm text-[var(--club-red)]">
+                  Vérifiez les champs obligatoires ou réessayez dans quelques instants.
                 </p>
               )}
 
