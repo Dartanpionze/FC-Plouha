@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { SectionHeading } from '@/components/SectionHeading'
+import Seo from '@/components/Seo'
 
 type Partner = {
   id: number
@@ -72,6 +73,10 @@ function SponsorsPage() {
 
   return (
     <div>
+      <Seo
+        title="Partenaires"
+        description="Découvrez les partenaires et sponsors qui accompagnent et soutiennent le Football Club Plouha."
+      />
 
       {/* HERO */}
       <section className="bg-[var(--club-navy-deep)] grain-overlay py-16">
