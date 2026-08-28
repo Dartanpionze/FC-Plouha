@@ -30,6 +30,16 @@ type Match = {
   teams?: Team | null
 }
 
+function singleRelation<T>(
+  relation: T | T[] | null | undefined,
+): T | null {
+  if (Array.isArray(relation)) {
+    return relation[0] ?? null
+  }
+
+  return relation ?? null
+}
+
 function formatDate(date: string) {
   return new Date(`${date}T12:00:00`).toLocaleDateString(
     'fr-FR',
@@ -90,7 +100,12 @@ function CalendarPage() {
       return
     }
 
-    setMatches(data || [])
+    setMatches(
+      (data || []).map((match) => ({
+        ...match,
+        teams: singleRelation(match.teams),
+      })),
+    )
     setLoading(false)
   }
 
