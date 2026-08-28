@@ -46,6 +46,16 @@ type Player = {
   } | null
 }
 
+function singleRelation<T>(
+  relation: T | T[] | null | undefined,
+): T | null {
+  if (Array.isArray(relation)) {
+    return relation[0] ?? null
+  }
+
+  return relation ?? null
+}
+
 const positions = [
   'Gardien',
   'Défenseur',
@@ -126,7 +136,12 @@ export default function Players() {
         console.error(playersResult.error)
         errors.push('les joueurs')
       } else {
-        setPlayers((playersResult.data || []) as Player[])
+        setPlayers(
+          (playersResult.data || []).map((player) => ({
+            ...player,
+            teams: singleRelation(player.teams),
+          })),
+        )
       }
 
       if (teamsResult.error) {
