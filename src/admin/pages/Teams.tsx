@@ -44,6 +44,7 @@ export default function Teams() {
   const [editingId, setEditingId] = useState<number | null>(null)
   const [search, setSearch] = useState('')
   const [message, setMessage] = useState('')
+  const [imageValidationError, setImageValidationError] = useState('')
   const [loading, setLoading] = useState(false)
   const [fetching, setFetching] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -95,6 +96,7 @@ export default function Teams() {
 
     setEditingId(null)
     setMessage('')
+    setImageValidationError('')
     setShowForm(false)
   }
 
@@ -117,6 +119,7 @@ export default function Teams() {
     setImage(null)
 
     setMessage('')
+    setImageValidationError('')
     setShowForm(true)
 
     window.scrollTo({
@@ -144,7 +147,7 @@ export default function Teams() {
       const imageError = validateImageFile(image)
 
       if (imageError) {
-        setMessage(imageError)
+        setImageValidationError(imageError)
         setLoading(false)
         return
       }
@@ -540,12 +543,12 @@ export default function Teams() {
                       if (imageError) {
                         setImage(null)
                         setPreview('')
-                        setMessage(imageError)
+                        setImageValidationError(imageError)
                         e.currentTarget.value = ''
                         return
                       }
 
-                      setMessage('')
+                      setImageValidationError('')
                       setImage(file)
                       setPreview(URL.createObjectURL(file))
                     }
@@ -553,6 +556,19 @@ export default function Teams() {
                 />
 
               </label>
+
+              <p className="mt-2 text-xs text-slate-500">
+                JPG, PNG ou WebP — {MAX_IMAGE_SIZE_LABEL} maximum.
+              </p>
+
+              {imageValidationError && (
+                <div
+                  role="alert"
+                  className="mt-3 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2.5 text-sm font-medium text-red-300"
+                >
+                  {imageValidationError}
+                </div>
+              )}
 
               {preview && (
                 <img
