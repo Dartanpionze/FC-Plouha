@@ -63,17 +63,17 @@ function NewsPage() {
       />
 
       {/* HERO */}
-      <section className="bg-[var(--club-navy-deep)] grain-overlay py-16">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 text-center">
+      <section className="bg-[var(--club-navy-deep)] grain-overlay py-16 2xl:py-20">
+        <div className="max-w-5xl 2xl:max-w-6xl mx-auto px-4 sm:px-6 2xl:px-8 text-center">
           <span className="font-condensed font-bold text-xs tracking-[0.3em] text-[var(--club-yellow)]">
             LE CLUB EN DIRECT
           </span>
 
-          <h1 className="mt-4 text-4xl sm:text-6xl text-white">
+          <h1 className="mt-4 2xl:mt-5 text-4xl sm:text-6xl 2xl:text-7xl text-white">
             Actualités
           </h1>
 
-          <p className="mt-5 text-white/65 font-condensed text-lg max-w-2xl mx-auto">
+          <p className="mt-5 2xl:mt-6 text-white/65 font-condensed text-lg 2xl:text-xl max-w-2xl 2xl:max-w-3xl mx-auto 2xl:leading-relaxed">
             Retrouvez les dernières nouvelles du FC Plouha,
             la vie du club et les informations sportives.
           </p>
@@ -81,7 +81,7 @@ function NewsPage() {
       </section>
 
       {/* CONTENU */}
-      <section className="max-w-5xl mx-auto px-4 sm:px-6 py-20">
+      <section className="max-w-5xl 2xl:max-w-6xl mx-auto px-4 sm:px-6 2xl:px-8 py-20 2xl:py-24">
 
         {/* CHARGEMENT */}
         {loading && (
@@ -150,7 +150,6 @@ function NewsPage() {
                       src={item.image_url}
                       alt={item.title}
                       loading="lazy"
-                      decoding="async"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                   ) : (
@@ -168,7 +167,7 @@ function NewsPage() {
                     {formatDate(item.created_at)}
                   </div>
 
-                  <h2 className="mt-3 font-condensed font-bold text-2xl normal-case text-[var(--club-navy-deep)]">
+                  <h2 className="mt-3 font-condensed font-bold text-2xl 2xl:text-[1.7rem] normal-case text-[var(--club-navy-deep)]">
                     <Link
                       to={`/actualites/${item.id}`}
                       className="hover:text-[var(--club-red)] transition-colors"
