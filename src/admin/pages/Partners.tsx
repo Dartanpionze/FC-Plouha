@@ -41,27 +41,41 @@ export default function Partners() {
 
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
+  const [fetching, setFetching] = useState(true)
 
   useEffect(() => {
     fetchPartners()
   }, [])
 
   const fetchPartners = async () => {
-    const { data, error } = await supabase
-      .from('partners')
-      .select('*')
-      .order('display_order', { ascending: true })
-      .order('name', { ascending: true })
+    setFetching(true)
 
-    if (error) {
-      console.error(error)
+    try {
+      const { data, error } = await supabase
+        .from('partners')
+        .select('*')
+        .order('display_order', { ascending: true })
+        .order('name', { ascending: true })
+
+      if (error) {
+        console.error(error)
+        setMessage(
+          'Impossible de récupérer les partenaires. Vous pouvez réessayer.',
+        )
+        return false
+      }
+
+      setPartners(data || [])
+      return true
+    } catch (fetchError) {
+      console.error(fetchError)
       setMessage(
-        'Impossible de récupérer les partenaires.',
+        'Impossible de récupérer les partenaires. Vous pouvez réessayer.',
       )
-      return
+      return false
+    } finally {
+      setFetching(false)
     }
-
-    setPartners(data || [])
   }
 
   const resetForm = () => {
@@ -204,15 +218,17 @@ export default function Partners() {
 
     const wasEditing = Boolean(editingId)
 
-    await fetchPartners()
-
     resetForm()
 
-    setMessage(
-      wasEditing
-        ? 'Partenaire modifié avec succès.'
-        : 'Partenaire ajouté avec succès.',
-    )
+    const refreshed = await fetchPartners()
+
+    if (refreshed) {
+      setMessage(
+        wasEditing
+          ? 'Partenaire modifié avec succès.'
+          : 'Partenaire ajouté avec succès.',
+      )
+    }
 
     setLoading(false)
   }
@@ -233,7 +249,15 @@ export default function Partners() {
       return
     }
 
-    fetchPartners()
+    const refreshed = await fetchPartners()
+
+    if (refreshed) {
+      setMessage(
+        partner.active
+          ? 'Partenaire masqué.'
+          : 'Partenaire affiché.',
+      )
+    }
   }
 
   const deletePartner = async (partner: Partner) => {
@@ -263,8 +287,11 @@ export default function Partners() {
       )
     }
 
-    setMessage('Partenaire supprimé.')
-    fetchPartners()
+    const refreshed = await fetchPartners()
+
+    if (refreshed) {
+      setMessage('Partenaire supprimé.')
+    }
   }
 
   const getTypeLabel = (value: string) => {
@@ -314,6 +341,23 @@ export default function Partners() {
           {message}
         </div>
       )}
+
+      {fetching && (
+        <div className="mb-6 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-slate-400">
+          Chargement des partenaires...
+        </div>
+      )}
+
+      {!fetching &&
+        message.startsWith('Impossible de récupérer') && (
+          <button
+            type="button"
+            onClick={() => fetchPartners()}
+            className="mb-6 inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/[0.08] transition"
+          >
+            Réessayer le chargement
+          </button>
+        )}
 
       {/* FORMULAIRE */}
       {showForm && (
