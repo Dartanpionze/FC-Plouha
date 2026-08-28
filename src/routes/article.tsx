@@ -8,10 +8,12 @@ import {
   RefreshCw,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import Seo from '@/components/Seo'
 
 type Article = {
   id: number
   title: string
+  excerpt: string | null
   content: string | null
   image_url: string | null
   created_at: string
@@ -40,7 +42,7 @@ function ArticlePage() {
     try {
       const { data, error: fetchError } = await supabase
         .from('news')
-        .select('id, title, content, image_url, created_at')
+        .select('id, title, excerpt, content, image_url, created_at')
         .eq('id', id)
         .maybeSingle()
 
@@ -73,7 +75,9 @@ function ArticlePage() {
 
   if (loading) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center px-6">
+      <>
+        <Seo title="Actualité" />
+        <div className="min-h-[60vh] flex items-center justify-center px-6">
         <div className="text-center">
           <Loader2
             size={38}
@@ -84,12 +88,15 @@ function ArticlePage() {
           </p>
         </div>
       </div>
+      </>
     )
   }
 
   if (error) {
     return (
-      <section className="max-w-3xl mx-auto px-6 py-24 text-center">
+      <>
+        <Seo title="Actualité indisponible" noIndex />
+        <section className="max-w-3xl mx-auto px-6 py-24 text-center">
         <div className="mx-auto w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center">
           <AlertTriangle
             size={30}
@@ -125,12 +132,15 @@ function ArticlePage() {
           </Link>
         </div>
       </section>
+      </>
     )
   }
 
   if (notFound || !article) {
     return (
-      <section className="max-w-3xl mx-auto px-6 py-24 text-center">
+      <>
+        <Seo title="Actualité introuvable" noIndex />
+        <section className="max-w-3xl mx-auto px-6 py-24 text-center">
         <div className="mx-auto w-16 h-16 rounded-2xl bg-[var(--club-navy)]/10 flex items-center justify-center">
           <Newspaper
             size={30}
@@ -154,11 +164,24 @@ function ArticlePage() {
           Voir les actualités
         </Link>
       </section>
+      </>
     )
   }
 
+  const seoDescription =
+    article.excerpt ||
+    article.content?.replace(/\s+/g, ' ').trim().slice(0, 160) ||
+    'Actualité du Football Club Plouha.'
+
   return (
-    <article className="max-w-5xl mx-auto px-6 py-20">
+    <>
+      <Seo
+        title={article.title}
+        description={seoDescription}
+        image={article.image_url}
+      />
+
+      <article className="max-w-5xl mx-auto px-6 py-20">
       {article.image_url && (
         <img
           src={article.image_url}
@@ -180,7 +203,8 @@ function ArticlePage() {
           {article.content}
         </div>
       </div>
-    </article>
+      </article>
+    </>
   )
 }
 
