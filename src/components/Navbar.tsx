@@ -40,21 +40,21 @@ export function Navbar() {
       <div className="h-1.5 stripe-diagonal" />
       <nav
         aria-label="Navigation principale"
-        className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between h-20"
+        className="max-w-7xl 2xl:max-w-[1540px] mx-auto px-4 sm:px-6 2xl:px-8 flex items-center justify-between h-20 2xl:h-24"
       >
         <Link to="/" className="flex items-center gap-3 shrink-0">
-          <ClubCrest className="w-14 h-14" />
+          <ClubCrest className="w-14 h-14 2xl:w-16 2xl:h-16" />
           <span className="text-white leading-tight">
-            <span className="block font-display text-lg tracking-wide">
+            <span className="block font-display text-lg 2xl:text-2xl tracking-wide">
               FC Plouha
             </span>
-            <span className="block font-condensed text-[var(--club-yellow)] text-xs font-semibold tracking-[0.2em]">
+            <span className="block font-condensed text-[var(--club-yellow)] text-xs 2xl:text-sm font-semibold tracking-[0.2em]">
               LES FALAISES
             </span>
           </span>
         </Link>
 
-        <ul className="hidden lg:flex items-center gap-1 font-condensed font-semibold text-sm tracking-wide">
+        <ul className="hidden lg:flex items-center gap-1 2xl:gap-2 font-condensed font-semibold text-sm 2xl:text-base tracking-wide">
           {links.map((link) => {
             const active = pathname === link.to
             return (
@@ -62,7 +62,7 @@ export function Navbar() {
                 <Link
                   to={link.to}
                   aria-current={active ? 'page' : undefined}
-                  className={`px-3 py-2 rounded-md transition-colors block ${
+                  className={`px-3 py-2 2xl:px-4 2xl:py-2.5 rounded-md transition-colors block ${
                     active
                       ? 'text-[var(--club-navy)] bg-[var(--club-yellow)]'
                       : 'text-white/85 hover:text-[var(--club-yellow)]'
