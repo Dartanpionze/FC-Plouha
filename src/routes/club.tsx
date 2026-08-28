@@ -207,7 +207,7 @@ function ClubPage() {
       )}
 
       {/* HERO */}
-      <section className="relative overflow-hidden bg-[var(--club-navy-deep)] grain-overlay py-20">
+      <section className="relative overflow-hidden bg-[var(--club-navy-deep)] grain-overlay py-20 2xl:py-24">
 
         <div className="absolute inset-0 opacity-20">
           <img
@@ -219,17 +219,17 @@ function ClubPage() {
 
         <div className="absolute inset-0 bg-gradient-to-b from-[var(--club-navy-deep)]/40 to-[var(--club-navy-deep)]" />
 
-        <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 text-center">
+        <div className="relative z-10 max-w-5xl 2xl:max-w-6xl mx-auto px-4 sm:px-6 2xl:px-8 text-center">
 
           <span className="font-condensed font-bold text-xs tracking-[0.3em] text-[var(--club-yellow)]">
             LE CLUB
           </span>
 
-          <h1 className="mt-4 text-4xl sm:text-6xl text-white">
+          <h1 className="mt-4 2xl:mt-5 text-4xl sm:text-6xl 2xl:text-7xl text-white">
             {clubName}
           </h1>
 
-          <p className="mt-6 text-white/70 font-condensed text-lg max-w-2xl mx-auto">
+          <p className="mt-6 text-white/70 font-condensed text-lg 2xl:text-xl max-w-2xl 2xl:max-w-3xl mx-auto 2xl:leading-relaxed">
             {settings?.description ||
               `Une aventure humaine et sportive à ${city}, portée par la passion du football et l'envie de construire ensemble l'avenir des Falaises.`}
           </p>
@@ -239,7 +239,7 @@ function ClubPage() {
       </section>
 
       {/* INTRO / CHIFFRES */}
-      <section className="max-w-6xl mx-auto px-4 sm:px-6 py-20">
+      <section className="max-w-6xl 2xl:max-w-7xl mx-auto px-4 sm:px-6 2xl:px-8 py-20 2xl:py-24">
 
         <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-14 items-center">
 
@@ -360,7 +360,7 @@ function ClubPage() {
       </section>
 
       {/* VALEURS */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 py-20">
+      <section className="max-w-7xl 2xl:max-w-[1540px] mx-auto px-4 sm:px-6 2xl:px-8 py-20 2xl:py-24">
 
         <SectionHeading
           eyebrow="Nos valeurs"
