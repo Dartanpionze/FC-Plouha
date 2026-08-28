@@ -136,19 +136,19 @@ function GalleryPage() {
       />
 
       {/* HERO */}
-      <section className="bg-[var(--club-navy-deep)] grain-overlay py-16">
+      <section className="bg-[var(--club-navy-deep)] grain-overlay py-16 2xl:py-20">
 
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 text-center">
+        <div className="max-w-5xl 2xl:max-w-6xl mx-auto px-4 sm:px-6 2xl:px-8 text-center">
 
           <span className="font-condensed font-bold text-xs tracking-[0.3em] text-[var(--club-yellow)]">
             SOUVENIRS
           </span>
 
-          <h1 className="mt-4 text-4xl sm:text-6xl text-white">
+          <h1 className="mt-4 2xl:mt-5 text-4xl sm:text-6xl 2xl:text-7xl text-white">
             Galerie photo
           </h1>
 
-          <p className="mt-5 text-white/60 font-condensed text-lg max-w-2xl mx-auto">
+          <p className="mt-5 2xl:mt-6 text-white/60 font-condensed text-lg 2xl:text-xl max-w-2xl 2xl:max-w-3xl mx-auto 2xl:leading-relaxed">
             Retrouvez les moments forts du FC Plouha,
             sur et en dehors des terrains.
           </p>
@@ -157,7 +157,7 @@ function GalleryPage() {
 
       </section>
 
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 py-16">
+      <section className="max-w-7xl 2xl:max-w-[1540px] mx-auto px-4 sm:px-6 2xl:px-8 py-16 2xl:py-20">
 
         {/* CHARGEMENT */}
         {loading && (
@@ -235,7 +235,7 @@ function GalleryPage() {
                         NOS ALBUMS
                       </span>
 
-                      <h2 className="mt-2 text-3xl text-[var(--club-navy-deep)]">
+                      <h2 className="mt-2 text-3xl 2xl:text-4xl text-[var(--club-navy-deep)]">
                         Parcourir la galerie
                       </h2>
 
@@ -395,7 +395,7 @@ function GalleryPage() {
                   PHOTOS
                 </span>
 
-                <h2 className="mt-2 text-3xl text-[var(--club-navy-deep)]">
+                <h2 className="mt-2 text-3xl 2xl:text-4xl text-[var(--club-navy-deep)]">
                   {selectedAlbumData
                     ? selectedAlbumData.name
                     : 'Toutes les photos'}
