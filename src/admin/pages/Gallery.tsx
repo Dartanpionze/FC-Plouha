@@ -2,6 +2,11 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { removeStorageFile, removeStorageFiles } from '@/lib/storage'
 import {
+  createImageFileName,
+  MAX_IMAGE_SIZE_LABEL,
+  validateImageFile,
+} from '@/lib/uploads'
+import {
   Plus,
   Trash2,
   Eye,
@@ -46,6 +51,7 @@ export default function Gallery() {
   const [showPhotoForm, setShowPhotoForm] = useState(false)
 
   const [message, setMessage] = useState('')
+  const [photosValidationError, setPhotosValidationError] = useState('')
   const [loading, setLoading] = useState(false)
   const [fetchingAlbums, setFetchingAlbums] = useState(true)
   const [fetchingPhotos, setFetchingPhotos] = useState(false)
@@ -205,10 +211,21 @@ export default function Gallery() {
       active: boolean
     }[] = []
 
+    const invalidFile = photoFiles.find((file) =>
+      validateImageFile(file),
+    )
+
+    if (invalidFile) {
+      const fileError =
+        validateImageFile(invalidFile) || 'Fichier non autorisé.'
+
+      setPhotosValidationError(`${invalidFile.name} : ${fileError}`)
+      setLoading(false)
+      return
+    }
+
     for (const file of photoFiles) {
-      const fileName = `${Date.now()}-${Math.random()
-        .toString(36)
-        .substring(2)}-${file.name}`
+      const fileName = createImageFileName(file)
 
       const { error: uploadError } = await supabase.storage
         .from('gallery-images')
@@ -556,13 +573,32 @@ export default function Gallery() {
 
               <input
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/webp"
                 multiple
                 onChange={(e) => {
                   const files = Array.from(
                     e.target.files || [],
                   )
 
+                  const invalidFile = files.find((file) =>
+                    validateImageFile(file),
+                  )
+
+                  if (invalidFile) {
+                    const fileError =
+                      validateImageFile(invalidFile) ||
+                      'Fichier non autorisé.'
+
+                    setPhotoFiles([])
+                    setPhotoPreviews([])
+                    setPhotosValidationError(
+                      `${invalidFile.name} : ${fileError}`,
+                    )
+                    e.currentTarget.value = ''
+                    return
+                  }
+
+                  setPhotosValidationError('')
                   setPhotoFiles(files)
 
                   setPhotoPreviews(
@@ -573,6 +609,16 @@ export default function Gallery() {
                 }}
                 className="w-full rounded-xl border border-white/10 bg-slate-950 px-4 py-3"
               />
+
+              <p className="mt-2 text-xs text-slate-500">
+                JPG, PNG ou WebP — {MAX_IMAGE_SIZE_LABEL} maximum par photo.
+              </p>
+
+              {photosValidationError && (
+                <div role="alert" className="mt-3 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2.5 text-sm font-medium text-red-300">
+                  {photosValidationError}
+                </div>
+              )}
             </div>
 
             {photoPreviews.length > 0 && (
