@@ -2,6 +2,11 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { removeStorageFile } from '@/lib/storage'
 import {
+  createImageFileName,
+  MAX_IMAGE_SIZE_LABEL,
+  validateImageFile,
+} from '@/lib/uploads'
+import {
   Plus,
   Pencil,
   Trash2,
@@ -59,6 +64,7 @@ export default function Club() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
+  const [staffPhotoValidationError, setStaffPhotoValidationError] = useState('')
 
   useEffect(() => {
     fetchData()
@@ -274,9 +280,15 @@ export default function Club() {
     let photoUrl = ''
 
     if (staffImage) {
-      const fileName = `${Date.now()}-${Math.random()
-        .toString(36)
-        .substring(2)}-${staffImage.name}`
+      const staffPhotoError = validateImageFile(staffImage)
+
+      if (staffPhotoError) {
+        setStaffPhotoValidationError(staffPhotoError)
+        setSaving(false)
+        return
+      }
+
+      const fileName = createImageFileName(staffImage)
 
       const { error: uploadError } = await supabase.storage
         .from('staff-images')
@@ -672,17 +684,38 @@ export default function Club() {
 
               <input
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/webp"
                 onChange={(e) => {
                   const file = e.target.files?.[0]
 
                   if (!file) return
 
+                  const staffPhotoError = validateImageFile(file)
+
+                  if (staffPhotoError) {
+                    setStaffImage(null)
+                    setStaffPreview('')
+                    setStaffPhotoValidationError(staffPhotoError)
+                    e.currentTarget.value = ''
+                    return
+                  }
+
+                  setStaffPhotoValidationError('')
                   setStaffImage(file)
                   setStaffPreview(URL.createObjectURL(file))
                 }}
                 className="w-full rounded-xl border border-white/10 bg-slate-950 px-4 py-3"
               />
+
+              <p className="mt-2 text-xs text-slate-500">
+                JPG, PNG ou WebP — {MAX_IMAGE_SIZE_LABEL} maximum.
+              </p>
+
+              {staffPhotoValidationError && (
+                <div role="alert" className="mt-3 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2.5 text-sm font-medium text-red-300">
+                  {staffPhotoValidationError}
+                </div>
+              )}
             </div>
 
             {staffPreview && (
