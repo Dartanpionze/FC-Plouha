@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import {
+  AlertTriangle,
   ArrowLeft,
   Loader2,
+  RefreshCw,
   Shield,
   Shirt,
   UserRound,
@@ -47,73 +49,90 @@ function TeamDetailPage() {
   const [players, setPlayers] = useState<Player[]>([])
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
+  const [error, setError] = useState(false)
+  const [playersError, setPlayersError] = useState(false)
 
   useEffect(() => {
     if (id) {
       fetchTeam(id)
+    } else {
+      setLoading(false)
+      setNotFound(true)
     }
   }, [id])
 
   const fetchTeam = async (teamId: string) => {
     setLoading(true)
     setNotFound(false)
+    setError(false)
+    setPlayersError(false)
 
-    const [teamResult, playersResult] = await Promise.all([
-      supabase
-        .from('teams')
-        .select(`
-          id,
-          name,
-          category,
-          season,
-          coach,
-          assistant_coach,
-          description,
-          image_url,
-          active
-        `)
-        .eq('id', teamId)
-        .eq('active', true)
-        .maybeSingle(),
+    try {
+      const [teamResult, playersResult] = await Promise.all([
+        supabase
+          .from('teams')
+          .select(`
+            id,
+            name,
+            category,
+            season,
+            coach,
+            assistant_coach,
+            description,
+            image_url,
+            active
+          `)
+          .eq('id', teamId)
+          .eq('active', true)
+          .maybeSingle(),
 
-      supabase
-        .from('players')
-        .select(`
-          id,
-          first_name,
-          last_name,
-          position,
-          shirt_number,
-          photo_url,
-          bio,
-          display_order
-        `)
-        .eq('team_id', teamId)
-        .eq('active', true)
-        .order('display_order', { ascending: true })
-        .order('last_name', { ascending: true }),
-    ])
+        supabase
+          .from('players')
+          .select(`
+            id,
+            first_name,
+            last_name,
+            position,
+            shirt_number,
+            photo_url,
+            bio,
+            display_order
+          `)
+          .eq('team_id', teamId)
+          .eq('active', true)
+          .order('display_order', { ascending: true })
+          .order('last_name', { ascending: true }),
+      ])
 
-    if (teamResult.error) {
-      console.error(teamResult.error)
-      setNotFound(true)
+      if (teamResult.error) {
+        console.error(teamResult.error)
+        setTeam(null)
+        setError(true)
+        return
+      }
+
+      if (!teamResult.data) {
+        setTeam(null)
+        setNotFound(true)
+        return
+      }
+
+      setTeam(teamResult.data)
+
+      if (playersResult.error) {
+        console.error(playersResult.error)
+        setPlayers([])
+        setPlayersError(true)
+      } else {
+        setPlayers(playersResult.data || [])
+      }
+    } catch (fetchError) {
+      console.error(fetchError)
+      setTeam(null)
+      setError(true)
+    } finally {
       setLoading(false)
-      return
     }
-
-    if (!teamResult.data) {
-      setNotFound(true)
-      setLoading(false)
-      return
-    }
-
-    if (playersResult.error) {
-      console.error(playersResult.error)
-    }
-
-    setTeam(teamResult.data)
-    setPlayers(playersResult.data || [])
-    setLoading(false)
   }
 
   if (loading) {
@@ -128,6 +147,44 @@ function TeamDetailPage() {
           Chargement de l'équipe...
         </p>
       </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <section className="max-w-5xl mx-auto px-4 sm:px-6 py-24 text-center">
+        <AlertTriangle
+          size={48}
+          className="mx-auto text-[var(--club-red)]"
+        />
+
+        <h1 className="mt-5 text-3xl text-[var(--club-navy-deep)]">
+          Impossible de charger l'équipe
+        </h1>
+
+        <p className="mt-3 text-[var(--club-navy-deep)]/60">
+          Une erreur est survenue pendant le chargement.
+        </p>
+
+        <div className="mt-7 flex flex-col sm:flex-row justify-center gap-3">
+          <button
+            type="button"
+            onClick={() => id && fetchTeam(id)}
+            className="inline-flex items-center justify-center gap-2 bg-[var(--club-yellow)] text-[var(--club-navy-deep)] font-condensed font-bold px-5 py-3 rounded-lg"
+          >
+            <RefreshCw size={17} />
+            Réessayer
+          </button>
+
+          <Link
+            to="/equipes"
+            className="inline-flex items-center justify-center gap-2 border border-[var(--club-navy-deep)]/15 text-[var(--club-navy-deep)] font-condensed font-bold px-5 py-3 rounded-lg"
+          >
+            <ArrowLeft size={17} />
+            Retour aux équipes
+          </Link>
+        </div>
+      </section>
     )
   }
 
@@ -229,6 +286,33 @@ function TeamDetailPage() {
         </div>
 
       </section>
+
+      {playersError && (
+        <div className="bg-amber-50 border-b border-amber-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex items-start gap-3 text-amber-900">
+              <AlertTriangle
+                size={20}
+                className="mt-0.5 shrink-0"
+              />
+
+              <p className="font-condensed text-sm">
+                L'équipe a bien été chargée, mais la liste des joueurs est
+                momentanément indisponible.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => id && fetchTeam(id)}
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-amber-300 bg-white px-4 py-2 font-condensed font-bold text-sm text-amber-900 hover:bg-amber-100 transition-colors"
+            >
+              <RefreshCw size={16} />
+              Réessayer
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ENCADREMENT */}
       {(team.coach || team.assistant_coach) && (
