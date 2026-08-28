@@ -204,7 +204,7 @@ export default function Settings() {
 
   if (loading) {
     return (
-      <div className="p-8 max-w-7xl mx-auto">
+      <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
         <p className="text-slate-400">
           Chargement des paramètres...
         </p>
@@ -214,9 +214,9 @@ export default function Settings() {
 
   if (loadError || !settings) {
     return (
-      <div className="p-8 max-w-5xl mx-auto">
-        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
-          <h1 className="text-2xl font-bold">
+      <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto">
+        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-6">
+          <h1 className="text-xl sm:text-2xl font-bold">
             Paramètres indisponibles
           </h1>
 
@@ -239,14 +239,14 @@ export default function Settings() {
   }
 
   return (
-    <div className="p-8 max-w-5xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto">
 
       <div className="mb-8">
         <p className="text-sm text-slate-400 mb-1">
           Configuration
         </p>
 
-        <h1 className="text-3xl font-bold tracking-tight">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
           Paramètres du club
         </h1>
 
@@ -264,7 +264,7 @@ export default function Settings() {
       <div className="space-y-6">
 
         {/* IDENTITE */}
-        <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+        <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-6">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
               <Building2
@@ -412,7 +412,7 @@ export default function Settings() {
         </section>
 
         {/* ADRESSE */}
-        <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+        <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-6">
 
           <div className="flex items-center gap-3 mb-6">
             <MapPin
@@ -487,7 +487,7 @@ export default function Settings() {
         </section>
 
         {/* CONTACT */}
-        <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+        <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-6">
 
           <h2 className="font-bold text-lg mb-6">
             Contact
@@ -536,7 +536,7 @@ export default function Settings() {
         </section>
 
         {/* RESEAUX SOCIAUX */}
-        <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+        <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-6">
 
           <h2 className="font-bold text-lg mb-6">
             Réseaux sociaux
@@ -586,7 +586,7 @@ export default function Settings() {
         </section>
 
         {/* DESCRIPTION */}
-        <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+        <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-6">
 
           <h2 className="font-bold text-lg mb-2">
             Présentation du club
