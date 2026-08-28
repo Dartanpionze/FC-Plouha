@@ -14,6 +14,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { SectionHeading } from '@/components/SectionHeading'
 import { ClubCrest } from '@/components/ClubCrest'
+import Seo from '@/components/Seo'
 
 type ClubSettings = {
   club_name: string | null
@@ -222,7 +223,9 @@ function Home() {
 
   if (loading) {
     return (
-      <div className="min-h-[65vh] bg-white flex items-center justify-center px-4">
+      <>
+        <Seo />
+        <div className="min-h-[65vh] bg-white flex items-center justify-center px-4">
         <div className="text-center">
           <Loader2
             size={38}
@@ -233,11 +236,13 @@ function Home() {
           </p>
         </div>
       </div>
+      </>
     )
   }
 
   return (
     <div>
+      <Seo />
       {error && (
         <div className="bg-amber-50 border-b border-amber-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
