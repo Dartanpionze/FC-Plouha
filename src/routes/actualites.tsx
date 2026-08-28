@@ -6,6 +6,7 @@ import {
   Newspaper,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import Seo from '@/components/Seo'
 
 type NewsItem = {
   id: number
@@ -56,6 +57,11 @@ function NewsPage() {
 
   return (
     <div>
+      <Seo
+        title="Actualités"
+        description="Retrouvez les dernières actualités du Football Club Plouha, la vie du club et les informations sportives."
+      />
+
       {/* HERO */}
       <section className="bg-[var(--club-navy-deep)] grain-overlay py-16">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 text-center">
