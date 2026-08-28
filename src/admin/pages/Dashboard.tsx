@@ -55,6 +55,7 @@ export default function Dashboard() {
   const [upcomingMatches, setUpcomingMatches] = useState<Match[]>([])
 
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
 
   useEffect(() => {
     fetchDashboard()
@@ -62,22 +63,32 @@ export default function Dashboard() {
 
   const fetchDashboard = async () => {
     setLoading(true)
+    setError(false)
 
-    await Promise.all([
-      fetchNews(),
-      fetchTeams(),
-      fetchMatches(),
-      fetchPartners(),
-      fetchGallery(),
-      fetchPlayers(),
-      fetchRegistrations(),
-    ])
+    try {
+      const results = await Promise.all([
+        fetchNews(),
+        fetchTeams(),
+        fetchMatches(),
+        fetchPartners(),
+        fetchGallery(),
+        fetchPlayers(),
+        fetchRegistrations(),
+      ])
 
-    setLoading(false)
+      if (results.some((success) => !success)) {
+        setError(true)
+      }
+    } catch (fetchError) {
+      console.error(fetchError)
+      setError(true)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const fetchNews = async () => {
-    const { count, data } = await supabase
+    const { count, data, error } = await supabase
       .from('news')
       .select('id, title, created_at, image_url', {
         count: 'exact',
@@ -87,12 +98,18 @@ export default function Dashboard() {
       })
       .limit(5)
 
+    if (error) {
+      console.error(error)
+      return false
+    }
+
     setNewsCount(count || 0)
     setLatestNews(data || [])
+    return true
   }
 
   const fetchTeams = async () => {
-    const { count } = await supabase
+    const { count, error } = await supabase
       .from('teams')
       .select('id', {
         count: 'exact',
@@ -100,7 +117,13 @@ export default function Dashboard() {
       })
       .eq('active', true)
 
+    if (error) {
+      console.error(error)
+      return false
+    }
+
     setTeamsCount(count || 0)
+    return true
   }
 
   const fetchMatches = async () => {
@@ -108,7 +131,7 @@ export default function Dashboard() {
       .toISOString()
       .split('T')[0]
 
-    const { count, data } = await supabase
+    const { count, data, error } = await supabase
       .from('matches')
       .select(
         `
@@ -137,12 +160,18 @@ export default function Dashboard() {
       })
       .limit(5)
 
+    if (error) {
+      console.error(error)
+      return false
+    }
+
     setMatchesCount(count || 0)
     setUpcomingMatches(data || [])
+    return true
   }
 
   const fetchPartners = async () => {
-    const { count } = await supabase
+    const { count, error } = await supabase
       .from('partners')
       .select('id', {
         count: 'exact',
@@ -150,22 +179,34 @@ export default function Dashboard() {
       })
       .eq('active', true)
 
+    if (error) {
+      console.error(error)
+      return false
+    }
+
     setPartnersCount(count || 0)
+    return true
   }
 
   const fetchGallery = async () => {
-    const { count } = await supabase
+    const { count, error } = await supabase
       .from('gallery_photos')
       .select('id', {
         count: 'exact',
         head: true,
       })
 
+    if (error) {
+      console.error(error)
+      return false
+    }
+
     setGalleryCount(count || 0)
+    return true
   }
 
   const fetchPlayers = async () => {
-    const { count } = await supabase
+    const { count, error } = await supabase
       .from('players')
       .select('id', {
         count: 'exact',
@@ -173,11 +214,17 @@ export default function Dashboard() {
       })
       .eq('active', true)
 
+    if (error) {
+      console.error(error)
+      return false
+    }
+
     setPlayersCount(count || 0)
+    return true
   }
 
   const fetchRegistrations = async () => {
-    const { count } = await supabase
+    const { count, error } = await supabase
       .from('registrations')
       .select('id', {
         count: 'exact',
@@ -185,7 +232,13 @@ export default function Dashboard() {
       })
       .eq('status', 'Nouveau')
 
+    if (error) {
+      console.error(error)
+      return false
+    }
+
     setRegistrationsCount(count || 0)
+    return true
   }
 
   const stats: Stat[] = [
@@ -271,6 +324,23 @@ export default function Dashboard() {
         </p>
 
       </div>
+
+      {error && !loading && (
+        <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3">
+          <p className="text-sm text-amber-100">
+            Certaines données du tableau de bord n'ont pas pu être chargées.
+            Les valeurs affichées peuvent être partielles.
+          </p>
+
+          <button
+            type="button"
+            onClick={() => fetchDashboard()}
+            className="shrink-0 rounded-lg border border-amber-400/20 bg-white/[0.05] px-4 py-2 text-sm font-semibold text-white hover:bg-white/[0.1] transition"
+          >
+            Réessayer
+          </button>
+        </div>
+      )}
 
       {/* STATS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6 gap-4">
