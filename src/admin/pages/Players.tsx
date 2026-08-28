@@ -81,53 +81,74 @@ export default function Players() {
   const fetchData = async () => {
     setLoading(true)
 
-    const [playersResult, teamsResult] = await Promise.all([
-      supabase
-        .from('players')
-        .select(`
-          id,
-          created_at,
-          team_id,
-          first_name,
-          last_name,
-          position,
-          shirt_number,
-          photo_url,
-          bio,
-          season,
-          display_order,
-          active,
-          teams (
+    try {
+      const [playersResult, teamsResult] = await Promise.all([
+        supabase
+          .from('players')
+          .select(`
             id,
-            name,
-            category
-          )
-        `)
-        .order('display_order', { ascending: true })
-        .order('last_name', { ascending: true })
-        .order('first_name', { ascending: true }),
+            created_at,
+            team_id,
+            first_name,
+            last_name,
+            position,
+            shirt_number,
+            photo_url,
+            bio,
+            season,
+            display_order,
+            active,
+            teams (
+              id,
+              name,
+              category
+            )
+          `)
+          .order('display_order', { ascending: true })
+          .order('last_name', { ascending: true })
+          .order('first_name', { ascending: true }),
 
-      supabase
-        .from('teams')
-        .select('id, name, category, season, active')
-        .order('name', { ascending: true }),
-    ])
+        supabase
+          .from('teams')
+          .select('id, name, category, season, active')
+          .order('name', { ascending: true }),
+      ])
 
-    if (playersResult.error) {
-      console.error(playersResult.error)
-      setMessage('Impossible de récupérer les joueurs.')
-    } else {
-      setPlayers((playersResult.data || []) as Player[])
+      const errors: string[] = []
+
+      if (playersResult.error) {
+        console.error(playersResult.error)
+        errors.push('les joueurs')
+      } else {
+        setPlayers((playersResult.data || []) as Player[])
+      }
+
+      if (teamsResult.error) {
+        console.error(teamsResult.error)
+        errors.push('les équipes')
+      } else {
+        setTeams((teamsResult.data || []) as Team[])
+      }
+
+      if (errors.length > 0) {
+        setMessage(
+          `Impossible de récupérer ${errors.join(
+            ' et ',
+          )}. Vous pouvez réessayer.`,
+        )
+        return false
+      }
+
+      return true
+    } catch (fetchError) {
+      console.error(fetchError)
+      setMessage(
+        'Impossible de récupérer les joueurs et les équipes. Vous pouvez réessayer.',
+      )
+      return false
+    } finally {
+      setLoading(false)
     }
-
-    if (teamsResult.error) {
-      console.error(teamsResult.error)
-      setMessage('Impossible de récupérer les équipes.')
-    } else {
-      setTeams((teamsResult.data || []) as Team[])
-    }
-
-    setLoading(false)
   }
 
   const resetForm = () => {
@@ -275,13 +296,16 @@ export default function Players() {
     const wasEditing = Boolean(editingId)
 
     resetForm()
-    await fetchData()
 
-    setMessage(
-      wasEditing
-        ? 'Joueur modifié avec succès.'
-        : 'Joueur ajouté avec succès.',
-    )
+    const refreshed = await fetchData()
+
+    if (refreshed) {
+      setMessage(
+        wasEditing
+          ? 'Joueur modifié avec succès.'
+          : 'Joueur ajouté avec succès.',
+      )
+    }
 
     setSaving(false)
   }
@@ -300,7 +324,15 @@ export default function Players() {
       return
     }
 
-    fetchData()
+    const refreshed = await fetchData()
+
+    if (refreshed) {
+      setMessage(
+        player.active
+          ? 'Joueur désactivé.'
+          : 'Joueur activé.',
+      )
+    }
   }
 
   const deletePlayer = async (player: Player) => {
@@ -328,8 +360,11 @@ export default function Players() {
       )
     }
 
-    setMessage('Joueur supprimé.')
-    fetchData()
+    const refreshed = await fetchData()
+
+    if (refreshed) {
+      setMessage('Joueur supprimé.')
+    }
   }
 
   const filteredPlayers = useMemo(() => {
@@ -388,6 +423,17 @@ export default function Players() {
           {message}
         </div>
       )}
+
+      {!loading &&
+        message.startsWith('Impossible de récupérer') && (
+          <button
+            type="button"
+            onClick={() => fetchData()}
+            className="mb-6 inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/[0.08] transition"
+          >
+            Réessayer le chargement
+          </button>
+        )}
 
       {/* FORMULAIRE */}
       {showForm && (
