@@ -387,7 +387,7 @@ export default function Players() {
   }, [players, search, teamFilter])
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
 
       {/* HEADER */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
@@ -397,7 +397,7 @@ export default function Players() {
             Gestion sportive
           </p>
 
-          <h1 className="text-3xl font-bold tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
             Joueurs
           </h1>
 
@@ -409,7 +409,7 @@ export default function Players() {
         <button
           type="button"
           onClick={openNewForm}
-          className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[var(--club-yellow)] text-slate-950 font-bold hover:opacity-90 transition"
+          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[var(--club-yellow)] text-slate-950 font-bold hover:opacity-90 transition"
         >
           <Plus size={19} />
           Nouveau joueur
@@ -437,7 +437,7 @@ export default function Players() {
 
       {/* FORMULAIRE */}
       {showForm && (
-        <section className="mb-8 rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+        <section className="mb-8 rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-6">
 
           <div className="flex items-center justify-between mb-6">
 
@@ -704,7 +704,7 @@ export default function Players() {
       {/* LISTE */}
       <section className="rounded-2xl border border-white/10 bg-white/[0.03] overflow-hidden">
 
-        <div className="p-5 border-b border-white/10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div className="p-4 sm:p-5 border-b border-white/10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
 
           <div>
             <h2 className="font-semibold">
