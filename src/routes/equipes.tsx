@@ -66,20 +66,20 @@ function TeamsPage() {
       />
 
       {/* HERO */}
-      <section className="bg-[var(--club-navy-deep)] grain-overlay py-16">
+      <section className="bg-[var(--club-navy-deep)] grain-overlay py-16 2xl:py-20">
 
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 text-center">
+        <div className="max-w-5xl 2xl:max-w-6xl mx-auto px-4 sm:px-6 2xl:px-8 text-center">
 
           <span className="font-condensed font-bold text-xs tracking-[0.3em] text-[var(--club-yellow)]">
             EFFECTIFS {currentSeason.replace('/', '-')}
           </span>
 
-          <h1 className="mt-4 text-4xl sm:text-6xl text-white">
+          <h1 className="mt-4 2xl:mt-5 text-4xl sm:text-6xl 2xl:text-7xl text-white">
             Nos équipes
           </h1>
 
           {!loading && !error && teams.length > 0 && (
-            <p className="mt-6 text-white/70 font-condensed text-lg max-w-2xl mx-auto">
+            <p className="mt-6 text-white/70 font-condensed text-lg 2xl:text-xl max-w-2xl 2xl:max-w-3xl mx-auto 2xl:leading-relaxed">
               {teams.length} équipe
               {teams.length > 1 ? 's' : ''} porte
               {teams.length > 1 ? 'nt' : ''} les couleurs
@@ -92,7 +92,7 @@ function TeamsPage() {
       </section>
 
       {/* CONTENU */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 py-20">
+      <section className="max-w-7xl 2xl:max-w-[1540px] mx-auto px-4 sm:px-6 2xl:px-8 py-20 2xl:py-24">
 
         {/* CHARGEMENT */}
         {loading && (
@@ -202,7 +202,7 @@ function TeamsPage() {
 
                     <div className="absolute left-5 right-5 bottom-4">
 
-                      <h2 className="font-condensed font-bold text-2xl text-white normal-case">
+                      <h2 className="font-condensed font-bold text-2xl 2xl:text-3xl text-white normal-case">
                         {team.name}
                       </h2>
 
