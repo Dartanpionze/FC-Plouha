@@ -458,7 +458,11 @@ function ContactPage() {
           </div>
 
           {status === 'sent' ? (
-            <div className="rounded-xl bg-[var(--club-yellow)]/15 border border-[var(--club-yellow)] p-6 text-center">
+            <div
+              role="status"
+              aria-live="polite"
+              className="rounded-xl bg-[var(--club-yellow)]/15 border border-[var(--club-yellow)] p-6 text-center"
+            >
 
               <p className="font-condensed font-bold text-[var(--club-navy-deep)]">
                 {isRegistration
@@ -482,6 +486,7 @@ function ContactPage() {
           ) : (
             <form
               onSubmit={handleSubmit}
+              aria-busy={status === 'sending'}
               className="space-y-5"
             >
 
