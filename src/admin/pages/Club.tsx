@@ -67,34 +67,55 @@ export default function Club() {
   const fetchData = async () => {
     setLoading(true)
 
-    const [historyResult, staffResult] = await Promise.all([
-      supabase
-        .from('club_history')
-        .select('*')
-        .order('display_order', { ascending: true })
-        .order('year', { ascending: true }),
-      supabase
-        .from('club_staff')
-        .select('*')
-        .order('display_order', { ascending: true })
-        .order('name', { ascending: true }),
-    ])
+    try {
+      const [historyResult, staffResult] = await Promise.all([
+        supabase
+          .from('club_history')
+          .select('*')
+          .order('display_order', { ascending: true })
+          .order('year', { ascending: true }),
+        supabase
+          .from('club_staff')
+          .select('*')
+          .order('display_order', { ascending: true })
+          .order('name', { ascending: true }),
+      ])
 
-    if (historyResult.error) {
-      console.error(historyResult.error)
-      setMessage("Impossible de récupérer l'histoire du club.")
-    } else {
-      setHistory(historyResult.data || [])
+      const errors: string[] = []
+
+      if (historyResult.error) {
+        console.error(historyResult.error)
+        errors.push("l'histoire du club")
+      } else {
+        setHistory(historyResult.data || [])
+      }
+
+      if (staffResult.error) {
+        console.error(staffResult.error)
+        errors.push('les dirigeants')
+      } else {
+        setStaff(staffResult.data || [])
+      }
+
+      if (errors.length > 0) {
+        setMessage(
+          `Impossible de récupérer ${errors.join(
+            ' et ',
+          )}. Vous pouvez réessayer.`,
+        )
+        return false
+      }
+
+      return true
+    } catch (fetchError) {
+      console.error(fetchError)
+      setMessage(
+        'Impossible de récupérer les données du club. Vous pouvez réessayer.',
+      )
+      return false
+    } finally {
+      setLoading(false)
     }
-
-    if (staffResult.error) {
-      console.error(staffResult.error)
-      setMessage('Impossible de récupérer les dirigeants.')
-    } else {
-      setStaff(staffResult.data || [])
-    }
-
-    setLoading(false)
   }
 
   const resetHistoryForm = () => {
@@ -162,13 +183,16 @@ export default function Club() {
     const wasEditing = Boolean(editingHistoryId)
 
     resetHistoryForm()
-    await fetchData()
 
-    setMessage(
-      wasEditing
-        ? 'Événement modifié avec succès.'
-        : 'Événement ajouté avec succès.',
-    )
+    const refreshed = await fetchData()
+
+    if (refreshed) {
+      setMessage(
+        wasEditing
+          ? 'Événement modifié avec succès.'
+          : 'Événement ajouté avec succès.',
+      )
+    }
 
     setSaving(false)
   }
@@ -191,8 +215,11 @@ export default function Club() {
       return
     }
 
-    setMessage('Événement supprimé.')
-    fetchData()
+    const refreshed = await fetchData()
+
+    if (refreshed) {
+      setMessage('Événement supprimé.')
+    }
   }
 
   const resetStaffForm = () => {
@@ -317,13 +344,16 @@ export default function Club() {
     const wasEditing = Boolean(editingStaffId)
 
     resetStaffForm()
-    await fetchData()
 
-    setMessage(
-      wasEditing
-        ? 'Dirigeant modifié avec succès.'
-        : 'Dirigeant ajouté avec succès.',
-    )
+    const refreshed = await fetchData()
+
+    if (refreshed) {
+      setMessage(
+        wasEditing
+          ? 'Dirigeant modifié avec succès.'
+          : 'Dirigeant ajouté avec succès.',
+      )
+    }
 
     setSaving(false)
   }
@@ -342,7 +372,15 @@ export default function Club() {
       return
     }
 
-    fetchData()
+    const refreshed = await fetchData()
+
+    if (refreshed) {
+      setMessage(
+        member.active
+          ? 'Dirigeant masqué.'
+          : 'Dirigeant affiché.',
+      )
+    }
   }
 
   const deleteStaff = async (member: StaffMember) => {
@@ -370,8 +408,11 @@ export default function Club() {
       )
     }
 
-    setMessage('Dirigeant supprimé.')
-    fetchData()
+    const refreshed = await fetchData()
+
+    if (refreshed) {
+      setMessage('Dirigeant supprimé.')
+    }
   }
 
   if (loading) {
@@ -404,6 +445,17 @@ export default function Club() {
           {message}
         </div>
       )}
+
+      {!loading &&
+        message.startsWith('Impossible de récupérer') && (
+          <button
+            type="button"
+            onClick={() => fetchData()}
+            className="mb-6 inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/[0.08] transition"
+          >
+            Réessayer le chargement
+          </button>
+        )}
 
       {/* FORMULAIRE HISTOIRE */}
       {showHistoryForm && (
