@@ -53,8 +53,6 @@ export default function Gallery() {
   const [message, setMessage] = useState('')
   const [photosValidationError, setPhotosValidationError] = useState('')
   const [loading, setLoading] = useState(false)
-  const [fetchingAlbums, setFetchingAlbums] = useState(true)
-  const [fetchingPhotos, setFetchingPhotos] = useState(false)
 
   useEffect(() => {
     fetchAlbums()
@@ -69,8 +67,6 @@ export default function Gallery() {
   }, [selectedAlbum])
 
   const fetchAlbums = async () => {
-    setFetchingAlbums(true)
-
     try {
       const { data, error } = await supabase
         .from('gallery_albums')
@@ -99,13 +95,10 @@ export default function Gallery() {
       )
       return false
     } finally {
-      setFetchingAlbums(false)
     }
   }
 
   const fetchPhotos = async (albumId: number) => {
-    setFetchingPhotos(true)
-
     try {
       const { data, error } = await supabase
         .from('gallery_photos')
@@ -130,7 +123,6 @@ export default function Gallery() {
       )
       return false
     } finally {
-      setFetchingPhotos(false)
     }
   }
 
