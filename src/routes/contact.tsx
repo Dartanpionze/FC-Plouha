@@ -271,19 +271,19 @@ function ContactPage() {
       />
 
       {/* HERO */}
-      <section className="bg-[var(--club-navy-deep)] grain-overlay py-16">
+      <section className="bg-[var(--club-navy-deep)] grain-overlay py-16 2xl:py-20">
 
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 text-center">
+        <div className="max-w-5xl 2xl:max-w-6xl mx-auto px-4 sm:px-6 2xl:px-8 text-center">
 
           <span className="font-condensed font-bold text-xs tracking-[0.3em] text-[var(--club-yellow)]">
             RESTONS EN CONTACT
           </span>
 
-          <h1 className="mt-4 text-4xl sm:text-6xl text-white">
+          <h1 className="mt-4 2xl:mt-5 text-4xl sm:text-6xl 2xl:text-7xl text-white">
             Contact & inscriptions
           </h1>
 
-          <p className="mt-6 text-white/70 font-condensed text-lg max-w-2xl mx-auto">
+          <p className="mt-6 text-white/70 font-condensed text-lg 2xl:text-xl max-w-2xl 2xl:max-w-3xl mx-auto 2xl:leading-relaxed">
             Inscription au club, bénévolat, partenariat ou simple question :
             choisissez votre demande et contactez le FC Plouha.
           </p>
@@ -319,12 +319,12 @@ function ContactPage() {
         </div>
       )}
 
-      <section className="max-w-6xl mx-auto px-4 sm:px-6 py-20 grid lg:grid-cols-[1fr_1.2fr] gap-14">
+      <section className="max-w-6xl 2xl:max-w-[1380px] mx-auto px-4 sm:px-6 2xl:px-8 py-20 2xl:py-24 grid lg:grid-cols-[1fr_1.2fr] gap-14 2xl:gap-20">
 
         {/* COORDONNEES */}
         <div>
 
-          <h2 className="font-condensed font-bold text-2xl text-[var(--club-navy-deep)] mb-6">
+          <h2 className="font-condensed font-bold text-2xl 2xl:text-3xl text-[var(--club-navy-deep)] mb-6">
             Coordonnées
           </h2>
 
@@ -446,7 +446,7 @@ function ContactPage() {
             </div>
 
             <div>
-              <h2 className="font-condensed font-bold text-2xl text-[var(--club-navy-deep)]">
+              <h2 className="font-condensed font-bold text-2xl 2xl:text-3xl text-[var(--club-navy-deep)]">
                 Votre demande
               </h2>
 
@@ -696,7 +696,7 @@ function ContactPage() {
               <button
                 type="submit"
                 disabled={status === 'sending'}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[var(--club-red)] text-white font-condensed font-bold px-7 py-3 rounded-lg hover:bg-[var(--club-red-deep)] transition-colors disabled:opacity-60"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 2xl:gap-3 bg-[var(--club-red)] text-white font-condensed font-bold 2xl:text-lg px-7 py-3 2xl:px-8 2xl:py-3.5 rounded-lg hover:bg-[var(--club-red-deep)] transition-colors disabled:opacity-60"
               >
                 {status === 'sending'
                   ? 'Envoi en cours...'
