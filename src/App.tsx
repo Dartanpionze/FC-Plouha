@@ -26,7 +26,9 @@ import Partners from './admin/pages/Partners'
 import Settings from './admin/pages/Settings'
 import AdminClub from './admin/pages/Club'
 import Registrations from './admin/pages/Registrations'
+import Users from './admin/pages/Users'
 import RequireAdminPermission from './admin/components/RequireAdminPermission'
+import RequireSuperadmin from './admin/components/RequireSuperadmin'
 
 function App() {
   return (
@@ -65,6 +67,7 @@ function App() {
           <Route path="gallery" element={<RequireAdminPermission module="gallery"><Gallery /></RequireAdminPermission>} />
           <Route path="partners" element={<RequireAdminPermission module="partners"><Partners /></RequireAdminPermission>} />
           <Route path="settings" element={<RequireAdminPermission module="settings"><Settings /></RequireAdminPermission>} />
+          <Route path="users" element={<RequireSuperadmin><Users /></RequireSuperadmin>} />
         </Route>
       </Routes>
     </>
