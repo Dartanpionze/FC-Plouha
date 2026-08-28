@@ -260,7 +260,7 @@ export default function News() {
   )
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
 
       {/* HEADER */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
@@ -269,7 +269,7 @@ export default function News() {
             Gestion du contenu
           </p>
 
-          <h1 className="text-3xl font-bold tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
             Actualités
           </h1>
 
@@ -280,7 +280,7 @@ export default function News() {
 
         <button
           onClick={openNewForm}
-          className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[var(--club-yellow)] text-slate-950 font-bold hover:opacity-90 transition"
+          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[var(--club-yellow)] text-slate-950 font-bold hover:opacity-90 transition"
         >
           <Plus size={19} />
           Nouvelle actualité
@@ -313,7 +313,7 @@ export default function News() {
 
       {/* FORMULAIRE */}
       {showForm && (
-        <div className="mb-8 rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+        <div className="mb-8 rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-6">
 
           <div className="flex items-center justify-between mb-6">
             <div>
@@ -462,7 +462,7 @@ export default function News() {
 
                 <EditorContent
                   editor={editor}
-                  className="p-5 min-h-[280px] prose prose-invert max-w-none"
+                  className="p-3 sm:p-5 min-h-[280px] prose prose-invert max-w-none"
                 />
               </div>
             </div>
@@ -497,7 +497,7 @@ export default function News() {
       {/* LISTE */}
       <div className="rounded-2xl border border-white/10 bg-white/[0.03] overflow-hidden">
 
-        <div className="p-5 border-b border-white/10 flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
+        <div className="p-4 sm:p-5 border-b border-white/10 flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
 
           <div>
             <h2 className="font-semibold">
