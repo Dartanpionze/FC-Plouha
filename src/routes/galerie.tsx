@@ -37,6 +37,19 @@ function GalleryPage() {
   const [lightboxPhoto, setLightboxPhoto] =
     useState<Photo | null>(null)
 
+  useEffect(() => {
+    if (!lightboxPhoto) return
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setLightboxPhoto(null)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [lightboxPhoto])
+
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
 
@@ -265,6 +278,8 @@ function GalleryPage() {
                               photos[0].image_url
                             }
                             alt=""
+                            loading="lazy"
+                            decoding="async"
                             className="absolute inset-0 w-full h-full object-cover opacity-50"
                           />
                         )}
@@ -331,7 +346,9 @@ function GalleryPage() {
                             {cover ? (
                               <img
                                 src={cover}
-                                alt={album.name}
+                                alt={`Album ${album.name}`}
+                                loading="lazy"
+                                decoding="async"
                                 className="w-full h-full object-cover"
                               />
                             ) : (
@@ -421,6 +438,11 @@ function GalleryPage() {
                             photo,
                           )
                         }
+                        aria-label={
+                          photo.caption
+                            ? `Ouvrir la photo : ${photo.caption}`
+                            : 'Ouvrir la photo en grand'
+                        }
                         className="group relative h-52 sm:h-64 rounded-xl overflow-hidden bg-black text-left"
                       >
 
@@ -430,6 +452,7 @@ function GalleryPage() {
                             photo.caption || ''
                           }
                           loading="lazy"
+                          decoding="async"
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
 
@@ -462,6 +485,9 @@ function GalleryPage() {
       {/* LIGHTBOX */}
       {lightboxPhoto && (
         <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Aperçu de la photo"
           className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4 sm:p-8"
           onClick={() =>
             setLightboxPhoto(null)
@@ -489,8 +515,9 @@ function GalleryPage() {
             <img
               src={lightboxPhoto.image_url}
               alt={
-                lightboxPhoto.caption || ''
+                lightboxPhoto.caption || 'Photo du Football Club Plouha'
               }
+              decoding="async"
               className="max-w-full max-h-[80vh] object-contain mx-auto"
             />
 
