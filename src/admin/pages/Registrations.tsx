@@ -256,7 +256,7 @@ export default function Registrations() {
   ).length
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
 
       {/* HEADER */}
       <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-5 mb-8">
@@ -266,7 +266,7 @@ export default function Registrations() {
             Gestion du club
           </p>
 
-          <h1 className="text-3xl font-bold tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
             Inscriptions
           </h1>
 
@@ -303,7 +303,7 @@ export default function Registrations() {
         </button>
       )}
 
-      <div className="grid xl:grid-cols-[1.2fr_0.8fr] gap-6">
+      <div className="grid xl:grid-cols-[1.2fr_0.8fr] gap-4 sm:gap-6">
 
         {/* LISTE */}
         <section className="rounded-2xl border border-white/10 bg-white/[0.03] overflow-hidden">
