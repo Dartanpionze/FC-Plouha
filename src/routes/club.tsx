@@ -466,6 +466,7 @@ function ClubPage() {
                         src={person.photo_url}
                         alt={person.name}
                         loading="lazy"
+                        decoding="async"
                         className="w-full h-full object-cover"
                       />
                     </div>
