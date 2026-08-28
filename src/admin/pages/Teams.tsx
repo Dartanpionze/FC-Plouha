@@ -2,6 +2,11 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { removeStorageFile } from '@/lib/storage'
 import {
+  createImageFileName,
+  MAX_IMAGE_SIZE_LABEL,
+  validateImageFile,
+} from '@/lib/uploads'
+import {
   Plus,
   Search,
   Pencil,
@@ -136,7 +141,15 @@ export default function Teams() {
     let imageUrl = ''
 
     if (image) {
-      const fileName = `${Date.now()}-${image.name}`
+      const imageError = validateImageFile(image)
+
+      if (imageError) {
+        setMessage(imageError)
+        setLoading(false)
+        return
+      }
+
+      const fileName = createImageFileName(image)
 
       const { error: uploadError } = await supabase.storage
         .from('team-images')
@@ -516,12 +529,23 @@ export default function Teams() {
 
                 <input
                   type="file"
-                  accept="image/*"
+                  accept="image/jpeg,image/png,image/webp"
                   className="hidden"
                   onChange={(e) => {
                     const file = e.target.files?.[0]
 
                     if (file) {
+                      const imageError = validateImageFile(file)
+
+                      if (imageError) {
+                        setImage(null)
+                        setPreview('')
+                        setMessage(imageError)
+                        e.currentTarget.value = ''
+                        return
+                      }
+
+                      setMessage('')
                       setImage(file)
                       setPreview(URL.createObjectURL(file))
                     }
