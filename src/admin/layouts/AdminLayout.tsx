@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard,
   Newspaper,
@@ -13,6 +13,8 @@ import {
   LogOut,
   Landmark,
   ClipboardList,
+  Menu,
+  X,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
@@ -67,12 +69,15 @@ const navigation = [
 
 export default function AdminLayout() {
   const navigate = useNavigate()
+  const location = useLocation()
 
   const [session, setSession] = useState<any>(null)
   const [checkingSession, setCheckingSession] =
     useState(true)
   const [newRegistrationsCount, setNewRegistrationsCount] =
     useState(0)
+  const [mobileMenuOpen, setMobileMenuOpen] =
+    useState(false)
 
   useEffect(() => {
     const checkSession = async () => {
@@ -110,6 +115,10 @@ export default function AdminLayout() {
       subscription.unsubscribe()
     }
   }, [navigate])
+
+  useEffect(() => {
+    setMobileMenuOpen(false)
+  }, [location.pathname])
 
   useEffect(() => {
     if (!session) return
@@ -164,6 +173,7 @@ export default function AdminLayout() {
   }, [session])
 
   const handleLogout = async () => {
+    setMobileMenuOpen(false)
     await supabase.auth.signOut()
 
     navigate('/admin/login', {
@@ -191,184 +201,224 @@ export default function AdminLayout() {
   const userInitial =
     userEmail.charAt(0).toUpperCase()
 
-  return (
-    <div className="min-h-screen bg-slate-950 text-white flex">
+  const sidebarContent = (
+    <>
+      {/* LOGO */}
+      <div className="h-20 px-6 flex items-center justify-between border-b border-white/10">
+        <div>
+          <div className="text-xl font-black tracking-tight">
+            FC PLOUHA
+          </div>
 
-      {/* SIDEBAR */}
-      <aside className="w-72 shrink-0 bg-slate-900 border-r border-white/10 flex flex-col">
-
-        {/* LOGO */}
-        <div className="h-20 px-6 flex items-center border-b border-white/10">
-          <div>
-            <div className="text-xl font-black tracking-tight">
-              FC PLOUHA
-            </div>
-
-            <div className="text-xs text-slate-400 mt-0.5">
-              Administration
-            </div>
+          <div className="text-xs text-slate-400 mt-0.5">
+            Administration
           </div>
         </div>
 
-        {/* NAVIGATION */}
-        <nav className="flex-1 p-4 space-y-1">
+        <button
+          type="button"
+          onClick={() => setMobileMenuOpen(false)}
+          className="lg:hidden w-10 h-10 rounded-xl flex items-center justify-center text-slate-400 hover:bg-white/5 hover:text-white transition"
+          aria-label="Fermer le menu d'administration"
+        >
+          <X size={21} />
+        </button>
+      </div>
 
-          <div className="px-3 pt-2 pb-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-            Gestion du club
-          </div>
+      {/* NAVIGATION */}
+      <nav className="flex-1 min-h-0 overflow-y-auto p-4 space-y-1">
+        <div className="px-3 pt-2 pb-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+          Gestion du club
+        </div>
 
-          {navigation.map((item) => {
-            const Icon = item.icon
+        {navigation.map((item) => {
+          const Icon = item.icon
 
-            return (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                end={item.end}
-                className={({ isActive }) =>
-                  `
-                  group flex items-center gap-3 px-3 py-2.5 rounded-xl
-                  text-sm font-medium transition-all
-                  ${
-                    isActive
-                      ? 'bg-white/10 text-white shadow-sm'
-                      : 'text-slate-400 hover:bg-white/5 hover:text-white'
-                  }
-                  `
+          return (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              end={item.end}
+              className={({ isActive }) =>
+                `
+                group flex items-center gap-3 px-3 py-2.5 rounded-xl
+                text-sm font-medium transition-all
+                ${
+                  isActive
+                    ? 'bg-white/10 text-white shadow-sm'
+                    : 'text-slate-400 hover:bg-white/5 hover:text-white'
                 }
-              >
-                {({ isActive }) => (
-                  <>
-                    <Icon
-                      size={19}
-                      className={
-                        isActive
-                          ? 'text-[var(--club-yellow)]'
-                          : 'text-slate-500 group-hover:text-slate-300'
-                      }
-                    />
-
-                    <span className="flex-1">
-                      {item.label}
-                    </span>
-
-                    {item.path === '/admin/registrations' &&
-                      newRegistrationsCount > 0 && (
-                        <span className="min-w-6 h-6 px-1.5 rounded-full bg-red-500 text-white text-[11px] font-bold flex items-center justify-center">
-                          {newRegistrationsCount > 99
-                            ? '99+'
-                            : newRegistrationsCount}
-                        </span>
-                      )}
-                  </>
-                )}
-              </NavLink>
-            )
-          })}
-
-          <div className="px-3 pt-6 pb-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-            Configuration
-          </div>
-
-          <NavLink
-            to="/admin/settings"
-            className={({ isActive }) =>
-              `
-              group flex items-center gap-3 px-3 py-2.5 rounded-xl
-              text-sm font-medium transition-all
-              ${
-                isActive
-                  ? 'bg-white/10 text-white'
-                  : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                `
               }
-              `
-            }
-          >
-            {({ isActive }) => (
-              <>
-                <Settings
-                  size={19}
-                  className={
-                    isActive
-                      ? 'text-[var(--club-yellow)]'
-                      : 'text-slate-500 group-hover:text-slate-300'
-                  }
-                />
+            >
+              {({ isActive }) => (
+                <>
+                  <Icon
+                    size={19}
+                    className={
+                      isActive
+                        ? 'text-[var(--club-yellow)]'
+                        : 'text-slate-500 group-hover:text-slate-300'
+                    }
+                  />
 
-                <span>Paramètres</span>
-              </>
-            )}
-          </NavLink>
+                  <span className="flex-1">
+                    {item.label}
+                  </span>
 
-        </nav>
+                  {item.path === '/admin/registrations' &&
+                    newRegistrationsCount > 0 && (
+                      <span className="min-w-6 h-6 px-1.5 rounded-full bg-red-500 text-white text-[11px] font-bold flex items-center justify-center">
+                        {newRegistrationsCount > 99
+                          ? '99+'
+                          : newRegistrationsCount}
+                      </span>
+                    )}
+                </>
+              )}
+            </NavLink>
+          )
+        })}
 
-        {/* BOTTOM */}
-        <div className="p-4 border-t border-white/10 space-y-2">
-
-          <NavLink
-            to="/"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:bg-white/5 hover:text-white transition"
-          >
-            <ExternalLink size={18} />
-            Voir le site
-          </NavLink>
-
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:bg-red-500/10 hover:text-red-400 transition"
-          >
-            <LogOut size={18} />
-            Déconnexion
-          </button>
-
+        <div className="px-3 pt-6 pb-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+          Configuration
         </div>
 
+        <NavLink
+          to="/admin/settings"
+          className={({ isActive }) =>
+            `
+            group flex items-center gap-3 px-3 py-2.5 rounded-xl
+            text-sm font-medium transition-all
+            ${
+              isActive
+                ? 'bg-white/10 text-white'
+                : 'text-slate-400 hover:bg-white/5 hover:text-white'
+            }
+            `
+          }
+        >
+          {({ isActive }) => (
+            <>
+              <Settings
+                size={19}
+                className={
+                  isActive
+                    ? 'text-[var(--club-yellow)]'
+                    : 'text-slate-500 group-hover:text-slate-300'
+                }
+              />
+
+              <span>Paramètres</span>
+            </>
+          )}
+        </NavLink>
+      </nav>
+
+      {/* BOTTOM */}
+      <div className="p-4 border-t border-white/10 space-y-2">
+        <NavLink
+          to="/"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:bg-white/5 hover:text-white transition"
+        >
+          <ExternalLink size={18} />
+          Voir le site
+        </NavLink>
+
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:bg-red-500/10 hover:text-red-400 transition"
+        >
+          <LogOut size={18} />
+          Déconnexion
+        </button>
+      </div>
+    </>
+  )
+
+  return (
+    <div className="min-h-screen bg-slate-950 text-white lg:flex">
+      {/* SIDEBAR DESKTOP */}
+      <aside className="hidden lg:flex w-72 h-screen sticky top-0 shrink-0 bg-slate-900 border-r border-white/10 flex-col">
+        {sidebarContent}
+      </aside>
+
+      {/* OVERLAY MOBILE */}
+      {mobileMenuOpen && (
+        <button
+          type="button"
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-[2px] lg:hidden"
+          onClick={() => setMobileMenuOpen(false)}
+          aria-label="Fermer le menu"
+        />
+      )}
+
+      {/* SIDEBAR MOBILE */}
+      <aside
+        className={`
+          fixed inset-y-0 left-0 z-50 w-[min(18rem,calc(100vw-3rem))]
+          bg-slate-900 border-r border-white/10 flex flex-col
+          transform transition-transform duration-200 ease-out lg:hidden
+          ${
+            mobileMenuOpen
+              ? 'translate-x-0'
+              : '-translate-x-full'
+          }
+        `}
+        aria-hidden={!mobileMenuOpen}
+      >
+        {sidebarContent}
       </aside>
 
       {/* CONTENU */}
-      <div className="flex-1 min-w-0 flex flex-col">
-
+      <div className="min-w-0 flex-1 flex flex-col min-h-screen">
         {/* TOPBAR */}
-        <header className="h-20 shrink-0 border-b border-white/10 bg-slate-950/80 backdrop-blur flex items-center justify-between px-8">
+        <header className="h-16 sm:h-20 shrink-0 sticky top-0 z-30 border-b border-white/10 bg-slate-950/90 backdrop-blur flex items-center justify-between px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-3 min-w-0">
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(true)}
+              className="lg:hidden w-10 h-10 shrink-0 rounded-xl border border-white/10 bg-white/[0.04] flex items-center justify-center text-slate-300 hover:bg-white/[0.08] hover:text-white transition"
+              aria-label="Ouvrir le menu d'administration"
+              aria-expanded={mobileMenuOpen}
+            >
+              <Menu size={21} />
+            </button>
 
-          <div>
-            <p className="text-sm text-slate-400">
-              Administration du club
-            </p>
+            <div className="min-w-0">
+              <p className="hidden sm:block text-sm text-slate-400">
+                Administration du club
+              </p>
 
-            <h1 className="text-lg font-semibold">
-              FC Plouha
-            </h1>
+              <h1 className="text-base sm:text-lg font-semibold truncate">
+                FC Plouha
+              </h1>
+            </div>
           </div>
 
-          <div className="flex items-center gap-3">
-
-            <div className="hidden sm:block text-right">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="hidden md:block text-right min-w-0">
               <p className="text-sm font-medium">
                 Administrateur
               </p>
 
-              <p className="text-xs text-slate-500">
+              <p className="max-w-56 truncate text-xs text-slate-500">
                 {userEmail}
               </p>
             </div>
 
-            <div className="w-10 h-10 rounded-full bg-white/10 border border-white/10 flex items-center justify-center font-bold">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 shrink-0 rounded-full bg-white/10 border border-white/10 flex items-center justify-center font-bold">
               {userInitial}
             </div>
-
           </div>
-
         </header>
 
         {/* PAGE */}
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 min-w-0 overflow-x-hidden">
           <Outlet />
         </main>
-
       </div>
-
     </div>
   )
 }
