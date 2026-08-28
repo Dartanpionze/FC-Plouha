@@ -142,7 +142,16 @@ function ContactPage() {
     }
   }
 
-  const submitRegistration = async () => {
+  const submitRequest = async () => {
+    const requestType =
+      fields.subject === 'Inscription'
+        ? 'Joueur'
+        : fields.subject === 'Benevolat'
+          ? 'Bénévole'
+          : fields.subject === 'Partenariat'
+            ? 'Partenaire'
+            : 'Autre'
+
     const { error } = await supabase
       .from('registrations')
       .insert([
@@ -150,13 +159,16 @@ function ContactPage() {
           first_name: fields.firstName.trim(),
           last_name: fields.lastName.trim(),
           birth_year:
-            fields.birthYear === ''
-              ? null
-              : Number(fields.birthYear),
-          category: fields.category || null,
+            fields.subject === 'Inscription' && fields.birthYear !== ''
+              ? Number(fields.birthYear)
+              : null,
+          category:
+            fields.subject === 'Inscription'
+              ? fields.category || null
+              : null,
           email: fields.email.trim() || null,
           phone: fields.phone.trim() || null,
-          request_type: 'Joueur',
+          request_type: requestType,
           message: fields.message.trim() || null,
           status: 'Nouveau',
         },
@@ -164,37 +176,6 @@ function ContactPage() {
 
     if (error) {
       throw error
-    }
-  }
-
-  const submitContactMessage = async () => {
-    const response = await fetch('/api/contact', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        name: `${fields.firstName.trim()} ${fields.lastName.trim()}`.trim(),
-        email: fields.email.trim(),
-        subject:
-          fields.subject === 'Benevolat'
-            ? 'Bénévolat'
-            : fields.subject === 'Partenariat'
-              ? 'Partenariat / sponsoring'
-              : 'Autre demande',
-        message: [
-          fields.phone
-            ? `Téléphone : ${fields.phone.trim()}`
-            : null,
-          fields.message.trim(),
-        ]
-          .filter(Boolean)
-          .join('\n\n'),
-      }),
-    })
-
-    if (!response.ok) {
-      throw new Error("Erreur lors de l'envoi du message.")
     }
   }
 
@@ -222,11 +203,7 @@ function ContactPage() {
     setStatus('sending')
 
     try {
-      if (isRegistration) {
-        await submitRegistration()
-      } else {
-        await submitContactMessage()
-      }
+      await submitRequest()
 
       setStatus('sent')
 
