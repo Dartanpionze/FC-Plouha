@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { SectionHeading } from '@/components/SectionHeading'
+import Seo from '@/components/Seo'
 
 type ClubSettings = {
   club_name: string | null
@@ -173,6 +174,10 @@ function ClubPage() {
 
   return (
     <div>
+      <Seo
+        title="Le club"
+        description="Découvrez le Football Club Plouha, son histoire, ses dirigeants, ses bénévoles et les informations essentielles du club."
+      />
 
       {error && (
         <div className="bg-amber-50 border-b border-amber-200">
