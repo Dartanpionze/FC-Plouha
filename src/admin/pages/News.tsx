@@ -32,6 +32,7 @@ export default function News() {
   const [search, setSearch] = useState('')
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
+  const [fetching, setFetching] = useState(true)
   const [showForm, setShowForm] = useState(false)
 
   const editor = useEditor({
@@ -47,18 +48,33 @@ export default function News() {
   }, [])
 
   const fetchNews = async () => {
-    const { data, error } = await supabase
-      .from('news')
-      .select('*')
-      .order('created_at', { ascending: false })
+    setFetching(true)
 
-    if (error) {
-      console.error(error)
-      setMessage('Impossible de récupérer les actualités.')
-      return
+    try {
+      const { data, error } = await supabase
+        .from('news')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error(error)
+        setMessage(
+          'Impossible de récupérer les actualités. Vous pouvez réessayer.',
+        )
+        return false
+      }
+
+      setNews(data || [])
+      return true
+    } catch (fetchError) {
+      console.error(fetchError)
+      setMessage(
+        'Impossible de récupérer les actualités. Vous pouvez réessayer.',
+      )
+      return false
+    } finally {
+      setFetching(false)
     }
-
-    setNews(data || [])
   }
 
   const resetForm = () => {
@@ -188,16 +204,18 @@ export default function News() {
 
     const wasEditing = Boolean(editingId)
 
-    setMessage(
-      wasEditing
-        ? 'Actualité modifiée avec succès.'
-        : 'Actualité publiée avec succès.',
-    )
-
-    await fetchNews()
-
     resetForm()
-    setShowForm(false)
+
+    const refreshed = await fetchNews()
+
+    if (refreshed) {
+      setMessage(
+        wasEditing
+          ? 'Actualité modifiée avec succès.'
+          : 'Actualité publiée avec succès.',
+      )
+    }
+
     setLoading(false)
   }
 
@@ -230,8 +248,11 @@ export default function News() {
       )
     }
 
-    setMessage('Actualité supprimée.')
-    fetchNews()
+    const refreshed = await fetchNews()
+
+    if (refreshed) {
+      setMessage('Actualité supprimée.')
+    }
   }
 
   const filteredNews = news.filter((item) =>
@@ -272,6 +293,23 @@ export default function News() {
           {message}
         </div>
       )}
+
+      {fetching && (
+        <div className="mb-6 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-slate-400">
+          Chargement des actualités...
+        </div>
+      )}
+
+      {!fetching &&
+        message.startsWith('Impossible de récupérer') && (
+          <button
+            type="button"
+            onClick={() => fetchNews()}
+            className="mb-6 inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/[0.08] transition"
+          >
+            Réessayer le chargement
+          </button>
+        )}
 
       {/* FORMULAIRE */}
       {showForm && (
