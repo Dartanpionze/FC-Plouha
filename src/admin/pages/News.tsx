@@ -36,6 +36,7 @@ export default function News() {
   const [editingId, setEditingId] = useState<number | null>(null)
   const [search, setSearch] = useState('')
   const [message, setMessage] = useState('')
+  const [imageValidationError, setImageValidationError] = useState('')
   const [loading, setLoading] = useState(false)
   const [fetching, setFetching] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -90,6 +91,7 @@ export default function News() {
     setPreview('')
     setEditingId(null)
     setMessage('')
+    setImageValidationError('')
 
     editor?.commands.setContent('')
     setShowForm(false)
@@ -111,6 +113,7 @@ export default function News() {
     editor?.commands.setContent(item.content || '')
 
     setMessage('')
+    setImageValidationError('')
     setShowForm(true)
 
     window.scrollTo({
@@ -138,7 +141,7 @@ export default function News() {
       const imageError = validateImageFile(image)
 
       if (imageError) {
-        setMessage(imageError)
+        setImageValidationError(imageError)
         setLoading(false)
         return
       }
@@ -407,18 +410,31 @@ export default function News() {
                       if (imageError) {
                         setImage(null)
                         setPreview('')
-                        setMessage(imageError)
+                        setImageValidationError(imageError)
                         e.currentTarget.value = ''
                         return
                       }
 
-                      setMessage('')
+                      setImageValidationError('')
                       setImage(file)
                       setPreview(URL.createObjectURL(file))
                     }
                   }}
                 />
               </label>
+
+              <p className="mt-2 text-xs text-slate-500">
+                JPG, PNG ou WebP — {MAX_IMAGE_SIZE_LABEL} maximum.
+              </p>
+
+              {imageValidationError && (
+                <div
+                  role="alert"
+                  className="mt-3 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2.5 text-sm font-medium text-red-300"
+                >
+                  {imageValidationError}
+                </div>
+              )}
 
               {preview && (
                 <img
