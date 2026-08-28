@@ -2,6 +2,11 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { removeStorageFile } from '@/lib/storage'
 import {
+  createImageFileName,
+  MAX_IMAGE_SIZE_LABEL,
+  validateImageFile,
+} from '@/lib/uploads'
+import {
   Plus,
   Search,
   Pencil,
@@ -218,9 +223,15 @@ export default function Players() {
     let photoUrl = ''
 
     if (photo) {
-      const fileName = `${Date.now()}-${Math.random()
-        .toString(36)
-        .substring(2)}-${photo.name}`
+      const photoError = validateImageFile(photo)
+
+      if (photoError) {
+        setMessage(photoError)
+        setSaving(false)
+        return
+      }
+
+      const fileName = createImageFileName(photo)
 
       const { error: uploadError } = await supabase.storage
         .from('player-images')
@@ -626,19 +637,31 @@ export default function Players() {
 
               <input
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/webp"
                 onChange={(e) => {
                   const file = e.target.files?.[0]
 
                   if (!file) return
 
+                  const photoError = validateImageFile(file)
+
+                  if (photoError) {
+                    setPhoto(null)
+                    setPreview('')
+                    setMessage(photoError)
+                    e.currentTarget.value = ''
+                    return
+                  }
+
+                  setMessage('')
                   setPhoto(file)
-                  setPreview(
-                    URL.createObjectURL(file),
-                  )
+                  setPreview(URL.createObjectURL(file))
                 }}
                 className="w-full rounded-xl border border-white/10 bg-slate-950 px-4 py-3"
               />
+                <p className="mt-2 text-xs text-slate-500">
+                  JPG, PNG ou WebP — {MAX_IMAGE_SIZE_LABEL} maximum.
+                </p>
             </div>
 
             {preview && (
