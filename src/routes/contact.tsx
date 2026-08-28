@@ -700,9 +700,12 @@ function ContactPage() {
                     : 'Envoyer le message'}
               </button>
 
-              {status === 'error' && (
-                <p className="text-sm text-[var(--club-red)]">
-                  Vérifiez les champs obligatoires ou réessayez dans quelques instants.
+              {status === 'error' && formError && (
+                <p
+                  role="alert"
+                  className="text-sm text-[var(--club-red)]"
+                >
+                  {formError}
                 </p>
               )}
 
