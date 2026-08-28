@@ -67,6 +67,16 @@ type Partner = {
   display_order: number
 }
 
+function singleRelation<T>(
+  relation: T | T[] | null | undefined,
+): T | null {
+  if (Array.isArray(relation)) {
+    return relation[0] ?? null
+  }
+
+  return relation ?? null
+}
+
 function formatDate(value: string) {
   return new Date(value).toLocaleDateString('fr-FR', {
     weekday: 'short',
@@ -173,7 +183,12 @@ function Home() {
       setSettings(settingsResult.data || null)
       setNews(newsResult.data || [])
       setTeams(teamsResult.data || [])
-      setMatches((matchesResult.data || []) as Match[])
+      setMatches(
+        (matchesResult.data || []).map((match) => ({
+          ...match,
+          teams: singleRelation(match.teams),
+        })),
+      )
       setGalleryPhotos(galleryResult.data || [])
       setPartners(partnersResult.data || [])
     } catch (fetchError) {
