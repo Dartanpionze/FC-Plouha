@@ -42,6 +42,16 @@ type Match = {
   } | null
 }
 
+function singleRelation<T>(
+  relation: T | T[] | null | undefined,
+): T | null {
+  if (Array.isArray(relation)) {
+    return relation[0] ?? null
+  }
+
+  return relation ?? null
+}
+
 export default function Dashboard() {
   const [newsCount, setNewsCount] = useState(0)
   const [teamsCount, setTeamsCount] = useState(0)
@@ -166,7 +176,12 @@ export default function Dashboard() {
     }
 
     setMatchesCount(count || 0)
-    setUpcomingMatches(data || [])
+    setUpcomingMatches(
+      (data || []).map((match) => ({
+        ...match,
+        teams: singleRelation(match.teams),
+      })),
+    )
     return true
   }
 
