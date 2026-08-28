@@ -306,7 +306,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
 
       {/* HEADER */}
       <div className="mb-8">
@@ -315,7 +315,7 @@ export default function Dashboard() {
           Vue d'ensemble
         </p>
 
-        <h1 className="text-3xl font-bold tracking-tight">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
           Tableau de bord
         </h1>
 
@@ -534,7 +534,7 @@ export default function Dashboard() {
         {/* ACTUALITÉS */}
         <div className="rounded-2xl border border-white/10 bg-white/[0.03] overflow-hidden">
 
-          <div className="p-5 border-b border-white/10 flex items-center justify-between">
+          <div className="p-4 sm:p-5 border-b border-white/10 flex items-center justify-between">
 
             <div>
 
@@ -630,7 +630,7 @@ export default function Dashboard() {
         {/* MATCHS */}
         <div className="rounded-2xl border border-white/10 bg-white/[0.03] overflow-hidden">
 
-          <div className="p-5 border-b border-white/10 flex items-center justify-between">
+          <div className="p-4 sm:p-5 border-b border-white/10 flex items-center justify-between">
 
             <div>
 
