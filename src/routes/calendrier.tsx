@@ -153,14 +153,14 @@ function CalendarPage() {
       />
 
       {/* HERO */}
-      <section className="bg-[var(--club-navy-deep)] grain-overlay py-16">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 text-center">
+      <section className="bg-[var(--club-navy-deep)] grain-overlay py-16 2xl:py-20">
+        <div className="max-w-5xl 2xl:max-w-6xl mx-auto px-4 sm:px-6 2xl:px-8 text-center">
 
           <span className="font-condensed font-bold text-xs tracking-[0.3em] text-[var(--club-yellow)]">
             SAISON {currentSeason.replace('/', '-')}
           </span>
 
-          <h1 className="mt-4 text-4xl sm:text-6xl text-white">
+          <h1 className="mt-4 2xl:mt-5 text-4xl sm:text-6xl 2xl:text-7xl text-white">
             Calendrier
           </h1>
 
@@ -172,7 +172,7 @@ function CalendarPage() {
         </div>
       </section>
 
-      <section className="max-w-5xl mx-auto px-4 sm:px-6 py-20">
+      <section className="max-w-5xl 2xl:max-w-6xl mx-auto px-4 sm:px-6 2xl:px-8 py-20 2xl:py-24">
 
         {/* CHARGEMENT */}
         {loading && (
@@ -222,7 +222,7 @@ function CalendarPage() {
                   className="text-[var(--club-red)]"
                 />
 
-                <h2 className="font-condensed font-bold text-2xl text-[var(--club-navy-deep)]">
+                <h2 className="font-condensed font-bold text-2xl 2xl:text-3xl text-[var(--club-navy-deep)]">
                   Prochains matchs
                 </h2>
 
@@ -317,7 +317,7 @@ function CalendarPage() {
                   className="text-[var(--club-yellow)]"
                 />
 
-                <h2 className="font-condensed font-bold text-2xl text-[var(--club-navy-deep)]">
+                <h2 className="font-condensed font-bold text-2xl 2xl:text-3xl text-[var(--club-navy-deep)]">
                   Résultats récents
                 </h2>
 
@@ -357,7 +357,7 @@ function CalendarPage() {
                           {getHomeTeam(match)}
                         </span>
 
-                        <span className="px-3 py-1 rounded-md bg-[var(--club-navy-deep)] text-white text-base">
+                        <span className="px-3 py-1 rounded-md bg-[var(--club-navy-deep)] text-white text-base 2xl:text-lg">
 
                           {match.home_score ?? '-'}
                           {' - '}
