@@ -56,52 +56,75 @@ export default function Matches() {
   const [search, setSearch] = useState('')
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
+  const [fetching, setFetching] = useState(true)
   const [showForm, setShowForm] = useState(false)
 
   useEffect(() => {
-    fetchTeams()
-    fetchMatches()
+    fetchPageData()
   }, [])
 
-  const fetchTeams = async () => {
-    const { data, error } = await supabase
-      .from('teams')
-      .select('*')
-      .eq('active', true)
-      .order('name', { ascending: true })
+  const fetchPageData = async () => {
+    setFetching(true)
 
-    if (error) {
-      console.error(error)
-      setMessage('Impossible de récupérer les équipes.')
-      return
-    }
+    try {
+      const [teamsResult, matchesResult] = await Promise.all([
+        supabase
+          .from('teams')
+          .select('*')
+          .eq('active', true)
+          .order('name', { ascending: true }),
 
-    setTeams(data || [])
-  }
+        supabase
+          .from('matches')
+          .select(`
+            *,
+            teams (
+              id,
+              name,
+              category,
+              season,
+              active
+            )
+          `)
+          .order('match_date', { ascending: true })
+          .order('match_time', { ascending: true }),
+      ])
 
-  const fetchMatches = async () => {
-    const { data, error } = await supabase
-      .from('matches')
-      .select(`
-        *,
-        teams (
-          id,
-          name,
-          category,
-          season,
-          active
+      const errors: string[] = []
+
+      if (teamsResult.error) {
+        console.error(teamsResult.error)
+        errors.push('les équipes')
+      } else {
+        setTeams(teamsResult.data || [])
+      }
+
+      if (matchesResult.error) {
+        console.error(matchesResult.error)
+        errors.push('les matchs')
+      } else {
+        setMatches(matchesResult.data || [])
+      }
+
+      if (errors.length > 0) {
+        setMessage(
+          `Impossible de récupérer ${errors.join(
+            ' et ',
+          )}. Vous pouvez réessayer.`,
         )
-      `)
-      .order('match_date', { ascending: true })
-      .order('match_time', { ascending: true })
+        return false
+      }
 
-    if (error) {
-      console.error(error)
-      setMessage('Impossible de récupérer les matchs.')
-      return
+      return true
+    } catch (fetchError) {
+      console.error(fetchError)
+      setMessage(
+        'Impossible de récupérer les données du calendrier. Vous pouvez réessayer.',
+      )
+      return false
+    } finally {
+      setFetching(false)
     }
-
-    setMatches(data || [])
   }
 
   const resetForm = () => {
@@ -218,17 +241,19 @@ export default function Matches() {
       return
     }
 
-    await fetchMatches()
-
     const wasEditing = Boolean(editingId)
 
     resetForm()
 
-    setMessage(
-      wasEditing
-        ? 'Match modifié avec succès.'
-        : 'Match ajouté avec succès.',
-    )
+    const refreshed = await fetchPageData()
+
+    if (refreshed) {
+      setMessage(
+        wasEditing
+          ? 'Match modifié avec succès.'
+          : 'Match ajouté avec succès.',
+      )
+    }
 
     setLoading(false)
   }
@@ -251,8 +276,11 @@ export default function Matches() {
       return
     }
 
-    setMessage('Match supprimé.')
-    fetchMatches()
+    const refreshed = await fetchPageData()
+
+    if (refreshed) {
+      setMessage('Match supprimé.')
+    }
   }
 
   const filteredMatches = matches.filter((match) => {
@@ -336,6 +364,23 @@ export default function Matches() {
           {message}
         </div>
       )}
+
+      {fetching && (
+        <div className="mb-6 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-slate-400">
+          Chargement du calendrier...
+        </div>
+      )}
+
+      {!fetching &&
+        message.startsWith('Impossible de récupérer') && (
+          <button
+            type="button"
+            onClick={() => fetchPageData()}
+            className="mb-6 inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/[0.08] transition"
+          >
+            Réessayer le chargement
+          </button>
+        )}
 
       {/* FORMULAIRE */}
       {showForm && (
