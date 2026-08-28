@@ -17,6 +17,13 @@ import {
   X,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import {
+  getCurrentAdminProfile,
+  getCurrentPermissions,
+  isSuperadmin,
+  type AdminPermission,
+  type AdminProfile,
+} from '@/lib/adminPermissions'
 
 const navigation = [
   {
@@ -74,44 +81,84 @@ export default function AdminLayout() {
   const [session, setSession] = useState<any>(null)
   const [checkingSession, setCheckingSession] =
     useState(true)
+  const [adminProfile, setAdminProfile] =
+    useState<AdminProfile | null>(null)
+  const [permissions, setPermissions] =
+    useState<AdminPermission[]>([])
+  const [superadmin, setSuperadmin] = useState(false)
+  const [adminAccessError, setAdminAccessError] = useState('')
   const [newRegistrationsCount, setNewRegistrationsCount] =
     useState(0)
   const [mobileMenuOpen, setMobileMenuOpen] =
     useState(false)
 
   useEffect(() => {
-    const checkSession = async () => {
+    let cancelled = false
+
+    const loadAdminAccess = async () => {
       const {
         data: { session },
       } = await supabase.auth.getSession()
 
+      if (cancelled) return
       setSession(session)
-      setCheckingSession(false)
 
       if (!session) {
-        navigate('/admin/login', {
-          replace: true,
-        })
+        setCheckingSession(false)
+        navigate('/admin/login', { replace: true })
+        return
+      }
+
+      try {
+        const [profile, userPermissions, isRootAdmin] = await Promise.all([
+          getCurrentAdminProfile(),
+          getCurrentPermissions(),
+          isSuperadmin(),
+        ])
+
+        if (cancelled) return
+
+        if (!profile || !profile.active) {
+          await supabase.auth.signOut()
+          setSession(null)
+          setCheckingSession(false)
+          navigate('/admin/login', { replace: true })
+          return
+        }
+
+        setAdminProfile(profile)
+        setPermissions(userPermissions)
+        setSuperadmin(isRootAdmin)
+        setAdminAccessError('')
+      } catch (error) {
+        console.error(error)
+        if (!cancelled) {
+          setAdminAccessError(
+            "Impossible de vérifier les droits d'administration.",
+          )
+        }
+      } finally {
+        if (!cancelled) setCheckingSession(false)
       }
     }
 
-    checkSession()
+    loadAdminAccess()
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSession(session)
+    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession)
 
-        if (!session) {
-          navigate('/admin/login', {
-            replace: true,
-          })
-        }
-      },
-    )
+      if (!nextSession) {
+        setAdminProfile(null)
+        setPermissions([])
+        setSuperadmin(false)
+        navigate('/admin/login', { replace: true })
+      }
+    })
 
     return () => {
+      cancelled = true
       subscription.unsubscribe()
     }
   }, [navigate])
@@ -121,7 +168,7 @@ export default function AdminLayout() {
   }, [location.pathname])
 
   useEffect(() => {
-    if (!session) return
+    if (!session || !canView('registrations')) return
 
     const fetchNewRegistrationsCount = async () => {
       const { count, error } = await supabase
@@ -170,7 +217,7 @@ export default function AdminLayout() {
       )
       supabase.removeChannel(channel)
     }
-  }, [session])
+  }, [session, permissions, superadmin])
 
   const handleLogout = async () => {
     setMobileMenuOpen(false)
@@ -180,6 +227,13 @@ export default function AdminLayout() {
       replace: true,
     })
   }
+
+  const canView = (module: AdminPermission['module']) =>
+    superadmin ||
+    permissions.some(
+      (permission) =>
+        permission.module === module && permission.can_view,
+    )
 
   if (checkingSession) {
     return (
@@ -191,7 +245,25 @@ export default function AdminLayout() {
     )
   }
 
-  if (!session) {
+  if (adminAccessError) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center px-4">
+        <div className="max-w-md rounded-2xl border border-red-500/20 bg-red-500/10 p-6 text-center">
+          <h1 className="text-lg font-bold">Accès administrateur indisponible</h1>
+          <p className="mt-2 text-sm text-red-100/80">{adminAccessError}</p>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="mt-5 rounded-xl bg-white px-4 py-2 text-sm font-bold text-slate-950"
+          >
+            Se déconnecter
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (!session || !adminProfile) {
     return null
   }
 
@@ -231,7 +303,21 @@ export default function AdminLayout() {
           Gestion du club
         </div>
 
-        {navigation.map((item) => {
+        {navigation.filter((item) => {
+          if (item.path === '/admin') return true
+          const moduleByPath: Record<string, AdminPermission['module']> = {
+            '/admin/news': 'news',
+            '/admin/club': 'club',
+            '/admin/teams': 'teams',
+            '/admin/players': 'players',
+            '/admin/registrations': 'registrations',
+            '/admin/matches': 'matches',
+            '/admin/gallery': 'gallery',
+            '/admin/partners': 'partners',
+          }
+          const module = moduleByPath[item.path]
+          return module ? canView(module) : false
+        }).map((item) => {
           const Icon = item.icon
 
           return (
@@ -284,8 +370,9 @@ export default function AdminLayout() {
           Configuration
         </div>
 
+        {canView('settings') && (
         <NavLink
-          to="/admin/settings"
+            to="/admin/settings"
           className={({ isActive }) =>
             `
             group flex items-center gap-3 px-3 py-2.5 rounded-xl
@@ -313,6 +400,7 @@ export default function AdminLayout() {
             </>
           )}
         </NavLink>
+        )}
       </nav>
 
       {/* BOTTOM */}
@@ -400,7 +488,8 @@ export default function AdminLayout() {
           <div className="flex items-center gap-3 min-w-0">
             <div className="hidden md:block text-right min-w-0">
               <p className="text-sm font-medium">
-                Administrateur
+                {adminProfile.display_name ||
+                  (superadmin ? 'Super administrateur' : 'Administrateur')}
               </p>
 
               <p className="max-w-56 truncate text-xs text-slate-500">
