@@ -12,6 +12,7 @@ import ArticlePage from './routes/article'
 import GalleryPage from './routes/galerie'
 import SponsorsPage from './routes/partenaires'
 import Contact from './routes/contact'
+import NotFoundPage from './routes/not-found'
 
 import AdminLayout from './admin/layouts/AdminLayout'
 import Dashboard from './admin/pages/Dashboard'
@@ -44,6 +45,9 @@ function App() {
           <Route path="/galerie" element={<GalleryPage />} />
           <Route path="/partenaires" element={<SponsorsPage />} />
           <Route path="/contact" element={<Contact />} />
+
+          {/* Toute route publique inconnue affiche la page 404 */}
+          <Route path="*" element={<NotFoundPage />} />
         </Route>
 
         {/* ADMINISTRATION - séparée du Navbar/Footer public */}
