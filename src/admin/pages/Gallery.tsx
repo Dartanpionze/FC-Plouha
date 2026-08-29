@@ -6,6 +6,7 @@ import {
   MAX_IMAGE_SIZE_LABEL,
   validateImageFile,
 } from '@/lib/uploads'
+import { useAdminAccess } from '@/admin/hooks/useAdminAccess'
 import {
   Plus,
   Trash2,
@@ -35,6 +36,11 @@ type Photo = {
 }
 
 export default function Gallery() {
+  const { can } = useAdminAccess()
+  const canCreate = can('gallery', 'create')
+  const canUpdate = can('gallery', 'update')
+  const canDelete = can('gallery', 'delete')
+
   const [albums, setAlbums] = useState<Album[]>([])
   const [photos, setPhotos] = useState<Photo[]>([])
 
@@ -140,6 +146,11 @@ export default function Gallery() {
   }
 
   const createAlbum = async () => {
+    if (!canCreate) {
+      setMessage("Vous n'avez pas l'autorisation de créer un album.")
+      return
+    }
+
     if (!albumName.trim()) {
       setMessage("Le nom de l'album est obligatoire.")
       return
@@ -183,6 +194,11 @@ export default function Gallery() {
   }
 
   const uploadPhotos = async () => {
+    if (!canCreate) {
+      setMessage("Vous n'avez pas l'autorisation d'ajouter des photos.")
+      return
+    }
+
     if (!selectedAlbum) {
       setMessage('Sélectionnez un album.')
       return
@@ -290,6 +306,11 @@ export default function Gallery() {
   }
 
   const deletePhoto = async (photo: Photo) => {
+    if (!canDelete) {
+      setMessage("Vous n'avez pas l'autorisation de supprimer une photo.")
+      return
+    }
+
     const confirmDelete = window.confirm(
       'Supprimer définitivement cette photo ?',
     )
@@ -322,6 +343,11 @@ export default function Gallery() {
   }
 
   const togglePhoto = async (photo: Photo) => {
+    if (!canUpdate) {
+      setMessage("Vous n'avez pas l'autorisation de modifier une photo.")
+      return
+    }
+
     const { error } = await supabase
       .from('gallery_photos')
       .update({
@@ -349,6 +375,11 @@ export default function Gallery() {
   }
 
   const deleteAlbum = async (album: Album) => {
+    if (!canDelete) {
+      setMessage("Vous n'avez pas l'autorisation de supprimer un album.")
+      return
+    }
+
     const confirmDelete = window.confirm(
       `Supprimer l'album "${album.name}" et toutes ses photos ?`,
     )
@@ -422,27 +453,29 @@ export default function Gallery() {
           </p>
         </div>
 
+        {canCreate && (
         <div className="flex gap-3">
-
-          <button
-            onClick={() => setShowAlbumForm(true)}
-            className="inline-flex items-center gap-2 px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 font-semibold transition"
-          >
-            <FolderOpen size={18} />
-            Nouvel album
-          </button>
-
-          {selectedAlbum && (
+  
             <button
-              onClick={() => setShowPhotoForm(true)}
-              className="inline-flex items-center gap-2 px-4 py-3 rounded-xl bg-[var(--club-yellow)] text-slate-950 font-bold hover:opacity-90 transition"
+              onClick={() => setShowAlbumForm(true)}
+              className="inline-flex items-center gap-2 px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 font-semibold transition"
             >
-              <Plus size={18} />
-              Ajouter des photos
+              <FolderOpen size={18} />
+              Nouvel album
             </button>
-          )}
-
-        </div>
+  
+            {selectedAlbum && (
+              <button
+                onClick={() => setShowPhotoForm(true)}
+                className="inline-flex items-center gap-2 px-4 py-3 rounded-xl bg-[var(--club-yellow)] text-slate-950 font-bold hover:opacity-90 transition"
+              >
+                <Plus size={18} />
+                Ajouter des photos
+              </button>
+            )}
+  
+          </div>
+        )}
 
       </div>
 
@@ -704,15 +737,17 @@ export default function Gallery() {
                     }
                   />
 
+                  {canDelete && (
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      deleteAlbum(album)
-                    }}
-                    className="text-slate-600 hover:text-red-400 transition"
-                  >
-                    <Trash2 size={17} />
-                  </button>
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        deleteAlbum(album)
+                      }}
+                      className="text-slate-600 hover:text-red-400 transition"
+                    >
+                      <Trash2 size={17} />
+                    </button>
+                  )}
 
                 </div>
 
@@ -785,31 +820,37 @@ export default function Gallery() {
 
                     <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition">
 
+                      {(canUpdate || canDelete) && (
                       <div className="flex justify-end gap-2">
-
-                        <button
-                          onClick={() =>
-                            togglePhoto(photo)
-                          }
-                          className="w-9 h-9 rounded-lg bg-black/60 text-white flex items-center justify-center hover:bg-black/80"
-                        >
-                          {photo.active ? (
-                            <EyeOff size={16} />
-                          ) : (
-                            <Eye size={16} />
+  
+                          {canUpdate && (
+                          <button
+                              onClick={() =>
+                                togglePhoto(photo)
+                              }
+                              className="w-9 h-9 rounded-lg bg-black/60 text-white flex items-center justify-center hover:bg-black/80"
+                            >
+                              {photo.active ? (
+                                <EyeOff size={16} />
+                              ) : (
+                                <Eye size={16} />
+                              )}
+                            </button>
                           )}
-                        </button>
-
-                        <button
-                          onClick={() =>
-                            deletePhoto(photo)
-                          }
-                          className="w-9 h-9 rounded-lg bg-red-500/70 text-white flex items-center justify-center hover:bg-red-500"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-
-                      </div>
+  
+                          {canDelete && (
+                          <button
+                              onClick={() =>
+                                deletePhoto(photo)
+                              }
+                              className="w-9 h-9 rounded-lg bg-red-500/70 text-white flex items-center justify-center hover:bg-red-500"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          )}
+  
+                        </div>
+                      )}
 
                     </div>
 
