@@ -10,6 +10,10 @@ import {
   MessageSquare,
   Trash2,
   Save,
+  RefreshCw,
+  Clock3,
+  CheckCircle2,
+  XCircle,
 } from 'lucide-react'
 
 type Registration = {
@@ -95,7 +99,23 @@ export default function Registrations() {
         return false
       }
 
-      setRegistrations(data || [])
+      const nextRegistrations = data || []
+      setRegistrations(nextRegistrations)
+
+      if (selected) {
+        const refreshedSelected = nextRegistrations.find(
+          (registration) => registration.id === selected.id,
+        )
+
+        if (refreshedSelected) {
+          setSelected(refreshedSelected)
+          setNotes(refreshedSelected.admin_notes || '')
+        } else {
+          setSelected(null)
+          setNotes('')
+        }
+      }
+
       return true
     } catch (error) {
       console.error(error)
@@ -275,6 +295,18 @@ export default function Registrations() {
     (item) => item.status === 'Nouveau',
   ).length
 
+  const contactedCount = registrations.filter(
+    (item) => item.status === 'Contacté',
+  ).length
+
+  const validatedCount = registrations.filter(
+    (item) => item.status === 'Validé',
+  ).length
+
+  const refusedCount = registrations.filter(
+    (item) => item.status === 'Refusé',
+  ).length
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
 
@@ -291,19 +323,75 @@ export default function Registrations() {
           </h1>
 
           <p className="mt-2 text-slate-400">
-            Gérez les demandes reçues depuis le site.
+            Traitez les demandes reçues depuis le site et suivez leur avancement.
           </p>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-3">
-          <div className="text-xs text-slate-500">
-            Nouvelles demandes
-          </div>
+        <button
+          type="button"
+          onClick={() => void fetchRegistrations()}
+          disabled={loading}
+          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-white/10 bg-white/[0.04] text-sm font-semibold hover:bg-white/[0.08] disabled:opacity-50 transition"
+        >
+          <RefreshCw
+            size={17}
+            className={loading ? 'animate-spin' : ''}
+          />
+          Actualiser
+        </button>
 
-          <div className="text-2xl font-black text-[var(--club-yellow)]">
-            {newCount}
+      </div>
+
+      {/* INDICATEURS */}
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 mb-8">
+
+        <button
+          type="button"
+          onClick={() => setStatusFilter('Nouveau')}
+          className="text-left rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-5 hover:bg-white/[0.06] transition"
+        >
+          <div className="flex items-center gap-2 text-sm text-slate-400">
+            <UserPlus size={18} className="text-red-400" />
+            Nouvelles
           </div>
-        </div>
+          <p className="mt-3 text-2xl sm:text-3xl font-bold">{newCount}</p>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setStatusFilter('Contacté')}
+          className="text-left rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-5 hover:bg-white/[0.06] transition"
+        >
+          <div className="flex items-center gap-2 text-sm text-slate-400">
+            <Clock3 size={18} className="text-blue-400" />
+            Contactées
+          </div>
+          <p className="mt-3 text-2xl sm:text-3xl font-bold">{contactedCount}</p>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setStatusFilter('Validé')}
+          className="text-left rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-5 hover:bg-white/[0.06] transition"
+        >
+          <div className="flex items-center gap-2 text-sm text-slate-400">
+            <CheckCircle2 size={18} className="text-green-400" />
+            Validées
+          </div>
+          <p className="mt-3 text-2xl sm:text-3xl font-bold">{validatedCount}</p>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setStatusFilter('Refusé')}
+          className="text-left rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-5 hover:bg-white/[0.06] transition"
+        >
+          <div className="flex items-center gap-2 text-sm text-slate-400">
+            <XCircle size={18} className="text-slate-400" />
+            Refusées
+          </div>
+          <p className="mt-3 text-2xl sm:text-3xl font-bold">{refusedCount}</p>
+        </button>
 
       </div>
 
@@ -336,10 +424,10 @@ export default function Registrations() {
               </h2>
 
               <p className="text-sm text-slate-500 mt-1">
-                {registrations.length} demande
-                {registrations.length > 1
-                  ? 's'
-                  : ''}
+                {filteredRegistrations.length} demande
+                {filteredRegistrations.length > 1 ? 's' : ''}
+                {(statusFilter !== 'Tous' || search.trim()) &&
+                  ` sur ${registrations.length}`}
               </p>
             </div>
 
