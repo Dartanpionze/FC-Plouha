@@ -69,3 +69,184 @@ code {
 .animate-rise {
   animation: rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
+
+/* ============================================================
+   CMS — EDITEUR D'ARTICLE
+   ============================================================ */
+.cms-editor-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.cms-editor-button,
+.cms-editor-select {
+  min-height: 2.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.6rem;
+  background: rgba(255, 255, 255, 0.05);
+  color: #e2e8f0;
+  font-size: 0.82rem;
+  line-height: 1;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.cms-editor-button {
+  padding: 0.55rem 0.7rem;
+}
+
+.cms-editor-button-wide {
+  padding-inline: 0.9rem;
+}
+
+.cms-editor-select {
+  padding: 0.5rem 2rem 0.5rem 0.7rem;
+  outline: none;
+}
+
+.cms-editor-select option {
+  background: #0f172a;
+  color: #fff;
+}
+
+.cms-editor-button:hover:not(:disabled),
+.cms-editor-button.is-active,
+.cms-editor-select:hover {
+  border-color: rgba(250, 204, 21, 0.35);
+  background: rgba(250, 204, 21, 0.12);
+  color: #fde047;
+}
+
+.cms-editor-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+
+.cms-editor-separator {
+  width: 1px;
+  height: 1.8rem;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.cms-editor-workspace {
+  padding: 1rem;
+  background: #0f172a;
+}
+
+.cms-editor-content {
+  min-height: 520px;
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 3rem 3.5rem;
+  border-radius: 0.35rem;
+  background: #fff;
+  color: #172033;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
+  outline: none;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.04rem;
+  line-height: 1.78;
+}
+
+.cms-editor-content > *:first-child,
+.article-richtext > *:first-child {
+  margin-top: 0;
+}
+
+.cms-editor-content > *:last-child,
+.article-richtext > *:last-child {
+  margin-bottom: 0;
+}
+
+.cms-editor-content p,
+.article-richtext p {
+  margin: 0 0 1.1em;
+}
+
+.cms-editor-content h2,
+.article-richtext h2 {
+  margin: 1.7em 0 0.65em;
+  font-size: 1.8rem;
+  line-height: 1.2;
+}
+
+.cms-editor-content h3,
+.article-richtext h3 {
+  margin: 1.5em 0 0.55em;
+  font-size: 1.35rem;
+  line-height: 1.25;
+}
+
+.cms-editor-content ul,
+.cms-editor-content ol,
+.article-richtext ul,
+.article-richtext ol {
+  margin: 0 0 1.2em 1.5rem;
+  padding: 0;
+}
+
+.cms-editor-content ul,
+.article-richtext ul {
+  list-style: disc;
+}
+
+.cms-editor-content ol,
+.article-richtext ol {
+  list-style: decimal;
+}
+
+.cms-editor-content li,
+.article-richtext li {
+  margin: 0.35em 0;
+}
+
+.cms-editor-content blockquote,
+.article-richtext blockquote {
+  margin: 1.5em 0;
+  padding: 0.75rem 1.25rem;
+  border-left: 4px solid var(--club-yellow);
+  background: rgba(15, 23, 42, 0.045);
+  font-style: italic;
+}
+
+.cms-editor-content hr,
+.article-richtext hr {
+  margin: 2rem 0;
+  border: 0;
+  border-top: 1px solid rgba(15, 23, 42, 0.18);
+}
+
+.cms-editor-content strong,
+.article-richtext strong {
+  font-weight: 700;
+}
+
+.article-richtext {
+  color: rgba(16, 20, 28, 0.88);
+  font-size: 1.08rem;
+  line-height: 1.8;
+}
+
+@media (max-width: 640px) {
+  .cms-editor-toolbar {
+    gap: 0.4rem;
+  }
+
+  .cms-editor-separator {
+    display: none;
+  }
+
+  .cms-editor-workspace {
+    padding: 0.55rem;
+  }
+
+  .cms-editor-content {
+    min-height: 420px;
+    padding: 2rem 1.25rem;
+    font-size: 1rem;
+  }
+}
