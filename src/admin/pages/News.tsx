@@ -34,7 +34,7 @@ function applyInlineMarkdown(value: string) {
   let html = escapeHtml(value)
 
   html = html.replace(
-    /\[([^\]]+)\]\((https?:\\/\\/[^\\s)]+)\)/g,
+    /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
     '<a href="$2">$1</a>',
   )
   html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
