@@ -17,6 +17,10 @@ import {
   Eye,
   EyeOff,
   Save,
+  ExternalLink,
+  ImageOff,
+  RefreshCw,
+  UsersRound,
 } from 'lucide-react'
 
 type Team = {
@@ -257,6 +261,25 @@ export default function Players() {
       return
     }
 
+    if (
+      shirtNumber !== '' &&
+      (!Number.isInteger(Number(shirtNumber)) ||
+        Number(shirtNumber) < 0 ||
+        Number(shirtNumber) > 99)
+    ) {
+      setMessage('Le numéro de maillot doit être compris entre 0 et 99.')
+      return
+    }
+
+    if (
+      displayOrder !== '' &&
+      (!Number.isInteger(Number(displayOrder)) ||
+        Number(displayOrder) < 0)
+    ) {
+      setMessage("L'ordre d'affichage doit être un nombre entier positif.")
+      return
+    }
+
     setSaving(true)
     setMessage('')
 
@@ -365,6 +388,45 @@ export default function Players() {
     setSaving(false)
   }
 
+  const removePlayerPhoto = async (player: Player) => {
+    if (!canUpdate) {
+      setMessage("Vous n'avez pas l'autorisation de modifier un joueur.")
+      return
+    }
+
+    if (!player.photo_url) return
+
+    const confirmed = window.confirm(
+      `Retirer la photo de ${player.first_name} ${player.last_name} ?`,
+    )
+
+    if (!confirmed) return
+
+    const { error } = await supabase
+      .from('players')
+      .update({
+        photo_url: null,
+      })
+      .eq('id', player.id)
+
+    if (error) {
+      console.error(error)
+      setMessage('Impossible de retirer la photo du joueur.')
+      return
+    }
+
+    await removeStorageFile(
+      'player-images',
+      player.photo_url,
+    )
+
+    const refreshed = await fetchData()
+
+    if (refreshed) {
+      setMessage('Photo du joueur retirée.')
+    }
+  }
+
   const togglePlayer = async (player: Player) => {
     if (!canUpdate) {
       setMessage("Vous n'avez pas l'autorisation de modifier un joueur.")
@@ -451,11 +513,24 @@ export default function Players() {
     })
   }, [players, search, teamFilter])
 
+  const activePlayersCount = players.filter(
+    (player) => player.active,
+  ).length
+
+  const hiddenPlayersCount =
+    players.length - activePlayersCount
+
+  const teamsWithPlayersCount = new Set(
+    players
+      .map((player) => player.team_id)
+      .filter((team): team is number => team !== null),
+  ).size
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
 
       {/* HEADER */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+      <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-8">
 
         <div>
           <p className="text-sm text-slate-400 mb-1">
@@ -467,20 +542,88 @@ export default function Players() {
           </h1>
 
           <p className="mt-2 text-slate-400">
-            Gérez les effectifs du FC Plouha par équipe.
+            Gérez les effectifs, leur équipe et leur visibilité sur le site public.
           </p>
         </div>
 
-        {canCreate && (
-        <button
-            type="button"
-            onClick={openNewForm}
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[var(--club-yellow)] text-slate-950 font-bold hover:opacity-90 transition"
+        <div className="flex flex-col sm:flex-row gap-3">
+
+          <a
+            href="/equipes"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-white/10 bg-white/[0.04] text-sm font-semibold hover:bg-white/[0.08] transition"
           >
-            <Plus size={19} />
-            Nouveau joueur
+            <ExternalLink size={17} />
+            Voir les équipes
+          </a>
+
+          <button
+            type="button"
+            onClick={() => void fetchData()}
+            disabled={loading}
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-white/10 bg-white/[0.04] text-sm font-semibold hover:bg-white/[0.08] disabled:opacity-50 transition"
+          >
+            <RefreshCw
+              size={17}
+              className={loading ? 'animate-spin' : ''}
+            />
+            Actualiser
           </button>
-        )}
+
+          {canCreate && (
+            <button
+              type="button"
+              onClick={openNewForm}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[var(--club-yellow)] text-slate-950 font-bold hover:opacity-90 transition"
+            >
+              <Plus size={19} />
+              Nouveau joueur
+            </button>
+          )}
+
+        </div>
+
+      </div>
+
+      {/* INDICATEURS */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
+
+        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+          <div className="flex items-center gap-3">
+            <UserRound size={20} className="text-[var(--club-yellow)]" />
+            <span className="text-sm text-slate-400">Effectif total</span>
+          </div>
+          <p className="mt-3 text-3xl font-bold">{players.length}</p>
+          <p className="mt-1 text-xs text-slate-500">joueurs enregistrés</p>
+        </div>
+
+        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+          <div className="flex items-center gap-3">
+            <Eye size={20} className="text-green-400" />
+            <span className="text-sm text-slate-400">Visibles</span>
+          </div>
+          <p className="mt-3 text-3xl font-bold">{activePlayersCount}</p>
+          <p className="mt-1 text-xs text-slate-500">affichés publiquement</p>
+        </div>
+
+        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+          <div className="flex items-center gap-3">
+            <EyeOff size={20} className="text-slate-400" />
+            <span className="text-sm text-slate-400">Masqués</span>
+          </div>
+          <p className="mt-3 text-3xl font-bold">{hiddenPlayersCount}</p>
+          <p className="mt-1 text-xs text-slate-500">non visibles publiquement</p>
+        </div>
+
+        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+          <div className="flex items-center gap-3">
+            <UsersRound size={20} className="text-blue-400" />
+            <span className="text-sm text-slate-400">Équipes</span>
+          </div>
+          <p className="mt-3 text-3xl font-bold">{teamsWithPlayersCount}</p>
+          <p className="mt-1 text-xs text-slate-500">avec au moins un joueur</p>
+        </div>
 
       </div>
 
@@ -734,10 +877,16 @@ export default function Players() {
                 <div className="w-40 h-48 rounded-2xl overflow-hidden border border-white/10 bg-white/5">
                   <img
                     src={preview}
-                    alt="Aperçu"
+                    alt="Aperçu du joueur"
                     className="w-full h-full object-cover"
                   />
                 </div>
+
+                {editingId && !photo && (
+                  <p className="mt-2 text-xs text-slate-500">
+                    Photo actuelle. Choisissez un nouveau fichier pour la remplacer.
+                  </p>
+                )}
               </div>
             )}
 
@@ -800,8 +949,10 @@ export default function Players() {
             </h2>
 
             <p className="text-sm text-slate-500 mt-1">
-              {players.length} joueur
-              {players.length > 1 ? 's' : ''}
+              {filteredPlayers.length} joueur
+              {filteredPlayers.length > 1 ? 's' : ''}
+              {(search.trim() || teamFilter !== 'all') &&
+                ` sur ${players.length}`}
             </p>
           </div>
 
@@ -942,58 +1093,70 @@ export default function Players() {
 
                 </div>
 
-                {(canUpdate || canDelete) && (
                 <div className="flex flex-wrap gap-2 shrink-0">
-  
-                    {canUpdate && (
+
+                  {player.teams?.id && player.active && (
+                    <a
+                      href={`/equipes/${player.teams.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm transition"
+                    >
+                      <ExternalLink size={15} />
+                      Voir équipe
+                    </a>
+                  )}
+
+                  {canUpdate && player.photo_url && (
                     <button
-                        type="button"
-                        onClick={() =>
-                          togglePlayer(player)
-                        }
-                        className="w-10 h-10 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center"
-                        title={
-                          player.active
-                            ? 'Masquer'
-                            : 'Afficher'
-                        }
-                      >
-                        {player.active ? (
-                          <EyeOff size={17} />
-                        ) : (
-                          <Eye size={17} />
-                        )}
-                      </button>
-                    )}
-  
-                    {canUpdate && (
+                      type="button"
+                      onClick={() => void removePlayerPhoto(player)}
+                      className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm transition"
+                    >
+                      <ImageOff size={15} />
+                      Retirer photo
+                    </button>
+                  )}
+
+                  {canUpdate && (
                     <button
-                        type="button"
-                        onClick={() =>
-                          editPlayer(player)
-                        }
-                        className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm"
-                      >
-                        <Pencil size={16} />
-                        Modifier
-                      </button>
-                    )}
-  
-                    {canDelete && (
+                      type="button"
+                      onClick={() => void togglePlayer(player)}
+                      className="w-10 h-10 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center transition"
+                      title={player.active ? 'Masquer' : 'Afficher'}
+                      aria-label={player.active ? 'Masquer le joueur' : 'Afficher le joueur'}
+                    >
+                      {player.active ? (
+                        <EyeOff size={17} />
+                      ) : (
+                        <Eye size={17} />
+                      )}
+                    </button>
+                  )}
+
+                  {canUpdate && (
                     <button
-                        type="button"
-                        onClick={() =>
-                          deletePlayer(player)
-                        }
-                        className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-sm"
-                      >
-                        <Trash2 size={16} />
-                        Supprimer
-                      </button>
-                    )}
-  
-                  </div>
-                )}
+                      type="button"
+                      onClick={() => editPlayer(player)}
+                      className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm transition"
+                    >
+                      <Pencil size={16} />
+                      Modifier
+                    </button>
+                  )}
+
+                  {canDelete && (
+                    <button
+                      type="button"
+                      onClick={() => void deletePlayer(player)}
+                      className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-sm transition"
+                    >
+                      <Trash2 size={16} />
+                      Supprimer
+                    </button>
+                  )}
+
+                </div>
 
               </div>
             ))}
