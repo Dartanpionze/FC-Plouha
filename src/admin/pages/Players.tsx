@@ -6,6 +6,7 @@ import {
   MAX_IMAGE_SIZE_LABEL,
   validateImageFile,
 } from '@/lib/uploads'
+import { useAdminAccess } from '@/admin/hooks/useAdminAccess'
 import {
   Plus,
   Search,
@@ -64,6 +65,11 @@ const positions = [
 ]
 
 export default function Players() {
+  const { can } = useAdminAccess()
+  const canCreate = can('players', 'create')
+  const canUpdate = can('players', 'update')
+  const canDelete = can('players', 'delete')
+
   const [players, setPlayers] = useState<Player[]>([])
   const [teams, setTeams] = useState<Team[]>([])
 
@@ -188,6 +194,11 @@ export default function Players() {
   }
 
   const openNewForm = () => {
+    if (!canCreate) {
+      setMessage("Vous n'avez pas l'autorisation de créer un joueur.")
+      return
+    }
+
     resetForm()
     setMessage('')
     setPhotoValidationError('')
@@ -195,6 +206,11 @@ export default function Players() {
   }
 
   const editPlayer = (player: Player) => {
+    if (!canUpdate) {
+      setMessage("Vous n'avez pas l'autorisation de modifier un joueur.")
+      return
+    }
+
     setEditingId(player.id)
     setTeamId(player.team_id?.toString() || '')
     setFirstName(player.first_name)
@@ -221,6 +237,16 @@ export default function Players() {
   }
 
   const savePlayer = async () => {
+    if (editingId && !canUpdate) {
+      setMessage("Vous n'avez pas l'autorisation de modifier un joueur.")
+      return
+    }
+
+    if (!editingId && !canCreate) {
+      setMessage("Vous n'avez pas l'autorisation de créer un joueur.")
+      return
+    }
+
     if (!firstName.trim() || !lastName.trim()) {
       setMessage('Le prénom et le nom sont obligatoires.')
       return
@@ -340,6 +366,11 @@ export default function Players() {
   }
 
   const togglePlayer = async (player: Player) => {
+    if (!canUpdate) {
+      setMessage("Vous n'avez pas l'autorisation de modifier un joueur.")
+      return
+    }
+
     const { error } = await supabase
       .from('players')
       .update({
@@ -365,6 +396,11 @@ export default function Players() {
   }
 
   const deletePlayer = async (player: Player) => {
+    if (!canDelete) {
+      setMessage("Vous n'avez pas l'autorisation de supprimer un joueur.")
+      return
+    }
+
     const confirmed = window.confirm(
       `Supprimer définitivement ${player.first_name} ${player.last_name} ?`,
     )
@@ -435,14 +471,16 @@ export default function Players() {
           </p>
         </div>
 
+        {canCreate && (
         <button
-          type="button"
-          onClick={openNewForm}
-          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[var(--club-yellow)] text-slate-950 font-bold hover:opacity-90 transition"
-        >
-          <Plus size={19} />
-          Nouveau joueur
-        </button>
+            type="button"
+            onClick={openNewForm}
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[var(--club-yellow)] text-slate-950 font-bold hover:opacity-90 transition"
+          >
+            <Plus size={19} />
+            Nouveau joueur
+          </button>
+        )}
 
       </div>
 
@@ -904,50 +942,58 @@ export default function Players() {
 
                 </div>
 
+                {(canUpdate || canDelete) && (
                 <div className="flex flex-wrap gap-2 shrink-0">
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      togglePlayer(player)
-                    }
-                    className="w-10 h-10 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center"
-                    title={
-                      player.active
-                        ? 'Masquer'
-                        : 'Afficher'
-                    }
-                  >
-                    {player.active ? (
-                      <EyeOff size={17} />
-                    ) : (
-                      <Eye size={17} />
+  
+                    {canUpdate && (
+                    <button
+                        type="button"
+                        onClick={() =>
+                          togglePlayer(player)
+                        }
+                        className="w-10 h-10 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center"
+                        title={
+                          player.active
+                            ? 'Masquer'
+                            : 'Afficher'
+                        }
+                      >
+                        {player.active ? (
+                          <EyeOff size={17} />
+                        ) : (
+                          <Eye size={17} />
+                        )}
+                      </button>
                     )}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      editPlayer(player)
-                    }
-                    className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm"
-                  >
-                    <Pencil size={16} />
-                    Modifier
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      deletePlayer(player)
-                    }
-                    className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-sm"
-                  >
-                    <Trash2 size={16} />
-                    Supprimer
-                  </button>
-
-                </div>
+  
+                    {canUpdate && (
+                    <button
+                        type="button"
+                        onClick={() =>
+                          editPlayer(player)
+                        }
+                        className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm"
+                      >
+                        <Pencil size={16} />
+                        Modifier
+                      </button>
+                    )}
+  
+                    {canDelete && (
+                    <button
+                        type="button"
+                        onClick={() =>
+                          deletePlayer(player)
+                        }
+                        className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-sm"
+                      >
+                        <Trash2 size={16} />
+                        Supprimer
+                      </button>
+                    )}
+  
+                  </div>
+                )}
 
               </div>
             ))}
