@@ -308,3 +308,23 @@ code {
 .article-richtext span[style*="font-size"] {
   line-height: inherit;
 }
+
+
+/* Barre d'outils de l'éditeur visible pendant le défilement */
+.cms-editor-shell {
+  overflow: visible;
+}
+
+.cms-editor-toolbar {
+  position: sticky;
+  top: 0.75rem;
+  z-index: 30;
+  border-radius: 1rem 1rem 0 0;
+  box-shadow: 0 10px 30px rgba(2, 6, 23, 0.22);
+}
+
+@media (max-width: 640px) {
+  .cms-editor-toolbar {
+    top: 0.5rem;
+  }
+}
