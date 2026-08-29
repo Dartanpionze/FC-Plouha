@@ -19,6 +19,52 @@ type Article = {
   created_at: string
 }
 
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+}
+
+function plainTextToHtml(value: string) {
+  const normalized = value.replace(/\r\n?/g, '\n').trim()
+
+  if (!normalized) {
+    return ''
+  }
+
+  const explicitParagraphs = normalized
+    .split(/\n\s*\n/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean)
+
+  const paragraphs =
+    explicitParagraphs.length > 1
+      ? explicitParagraphs
+      : normalized.includes('\n')
+        ? normalized
+            .split('\n')
+            .map((paragraph) => paragraph.trim())
+            .filter(Boolean)
+        : [normalized]
+
+  return paragraphs
+    .map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`)
+    .join('')
+}
+
+function getRenderableContent(value: string | null) {
+  if (!value?.trim()) {
+    return ''
+  }
+
+  const looksLikeHtml = /<\/?[a-z][\s\S]*>/i.test(value)
+
+  return looksLikeHtml ? value : plainTextToHtml(value)
+}
+
 function ArticlePage() {
   const { id } = useParams()
   const [article, setArticle] = useState<Article | null>(null)
@@ -185,31 +231,60 @@ function ArticlePage() {
         image={article.image_url}
       />
 
-      <article className="max-w-5xl 2xl:max-w-6xl mx-auto px-6 2xl:px-8 py-20 2xl:py-24">
-      {article.image_url && (
-        <img
-          src={article.image_url}
-          alt={article.title}
-          decoding="async"
-          fetchPriority="high"
-          className="w-full h-64 sm:h-96 object-cover rounded-3xl"
-        />
-      )}
+      <article className="article-page">
+        <div className="article-page-inner">
+          <Link to="/actualites" className="article-back-link">
+            <ArrowLeft size={17} />
+            Retour aux actualités
+          </Link>
 
-      <div className="mt-8">
-        <p className="text-sm text-gray-500">
-          {new Date(article.created_at).toLocaleDateString('fr-FR')}
-        </p>
+          <header className="article-header">
+            <p className="article-kicker">Actualité du club</p>
 
-        <h1 className="mt-3 text-4xl 2xl:text-5xl font-bold">
-          {article.title}
-        </h1>
+            <h1 className="article-title">{article.title}</h1>
 
-        <div
-          className="article-richtext mt-8"
-          dangerouslySetInnerHTML={{ __html: article.content || '' }}
-        />
-      </div>
+            <div className="article-meta">
+              <time dateTime={article.created_at}>
+                {new Date(article.created_at).toLocaleDateString('fr-FR', {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+                })}
+              </time>
+            </div>
+
+            {article.excerpt && (
+              <p className="article-lead">{article.excerpt}</p>
+            )}
+          </header>
+
+          {article.image_url && (
+            <figure className="article-cover">
+              <img
+                src={article.image_url}
+                alt={article.title}
+                decoding="async"
+                fetchPriority="high"
+              />
+            </figure>
+          )}
+
+          <div className="article-body-card">
+            <div
+              className="article-richtext"
+              dangerouslySetInnerHTML={{
+                __html: getRenderableContent(article.content),
+              }}
+            />
+          </div>
+
+          <footer className="article-footer">
+            <Link to="/actualites" className="article-footer-link">
+              <ArrowLeft size={17} />
+              Toutes les actualités
+            </Link>
+          </footer>
+        </div>
       </article>
     </>
   )
