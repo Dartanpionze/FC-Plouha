@@ -10,6 +10,8 @@ import {
   MapPin,
   Users,
   ClipboardList,
+  RefreshCw,
+  UserRound,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
@@ -43,6 +45,15 @@ type Match = {
   } | null
 }
 
+type RegistrationPreview = {
+  id: number
+  first_name: string
+  last_name: string
+  category: string | null
+  request_type: string
+  created_at: string
+}
+
 function singleRelation<T>(
   relation: T | T[] | null | undefined,
 ): T | null {
@@ -57,6 +68,7 @@ export default function Dashboard() {
   const {
     loading: accessLoading,
     can,
+    profile,
   } = useAdminAccess()
 
   const [newsCount, setNewsCount] = useState(0)
@@ -69,6 +81,8 @@ export default function Dashboard() {
 
   const [latestNews, setLatestNews] = useState<NewsItem[]>([])
   const [upcomingMatches, setUpcomingMatches] = useState<Match[]>([])
+  const [latestRegistrations, setLatestRegistrations] =
+    useState<RegistrationPreview[]>([])
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
@@ -296,13 +310,19 @@ export default function Dashboard() {
   }
 
   const fetchRegistrations = async () => {
-    const { count, error } = await supabase
+    const { count, data, error } = await supabase
       .from('registrations')
-      .select('id', {
-        count: 'exact',
-        head: true,
-      })
+      .select(
+        'id, first_name, last_name, category, request_type, created_at',
+        {
+          count: 'exact',
+        },
+      )
       .eq('status', 'Nouveau')
+      .order('created_at', {
+        ascending: false,
+      })
+      .limit(5)
 
     if (error) {
       console.error(error)
@@ -310,6 +330,7 @@ export default function Dashboard() {
     }
 
     setRegistrationsCount(count || 0)
+    setLatestRegistrations(data || [])
 
     return true
   }
@@ -357,6 +378,19 @@ export default function Dashboard() {
       })
     }
 
+    if (canViewGallery) {
+      items.push({
+        label: 'Galerie',
+        value: galleryCount,
+        description:
+          galleryCount > 1
+            ? 'photos publiées'
+            : 'photo publiée',
+        icon: Images,
+        path: '/admin/gallery',
+      })
+    }
+
     if (canViewPlayers) {
       items.push({
         label: 'Joueurs',
@@ -382,12 +416,14 @@ export default function Dashboard() {
 
     return items
   }, [
+    canViewGallery,
     canViewMatches,
     canViewNews,
     canViewPartners,
     canViewPlayers,
     canViewRegistrations,
     canViewTeams,
+    galleryCount,
     matchesCount,
     newsCount,
     partnersCount,
@@ -433,25 +469,45 @@ export default function Dashboard() {
 
   const hasRecentContent =
     canViewNews ||
-    canViewMatches
+    canViewMatches ||
+    canViewRegistrations
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
 
       {/* HEADER */}
-      <div className="mb-8">
+      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
 
-        <p className="text-sm text-slate-400 mb-1">
-          Vue d'ensemble
-        </p>
+        <div>
 
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-          Tableau de bord
-        </h1>
+          <p className="text-sm text-slate-400 mb-1">
+            Vue d'ensemble
+          </p>
 
-        <p className="mt-2 text-slate-400">
-          Gérez facilement les rubriques auxquelles vous avez accès.
-        </p>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+            Tableau de bord
+          </h1>
+
+          <p className="mt-2 text-slate-400">
+            {profile?.display_name
+              ? `Bonjour ${profile.display_name}, voici l'activité du club.`
+              : "Retrouvez ici l'activité et les éléments à traiter."}
+          </p>
+
+        </div>
+
+        <button
+          type="button"
+          onClick={() => void fetchDashboard()}
+          disabled={loading}
+          className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-semibold text-slate-200 hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-50 transition"
+        >
+          <RefreshCw
+            size={16}
+            className={loading ? 'animate-spin' : ''}
+          />
+          Actualiser
+        </button>
 
       </div>
 
@@ -477,7 +533,7 @@ export default function Dashboard() {
       {/* STATS */}
       {stats.length > 0 ? (
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
 
           {stats.map((stat) => {
             const Icon = stat.icon
@@ -697,7 +753,7 @@ export default function Dashboard() {
 
       {/* CONTENU RECENT */}
       {hasRecentContent && (
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mt-8">
+        <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-6 mt-8">
 
           {/* ACTUALITÉS */}
           {canViewNews && (
@@ -926,14 +982,104 @@ export default function Dashboard() {
             </div>
           )}
 
-        </div>
-      )}
+          {/* INSCRIPTIONS À TRAITER */}
+          {canViewRegistrations && (
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] overflow-hidden">
 
-      {/* GALERIE */}
-      {canViewGallery && (
-        <div className="mt-6 text-sm text-slate-500">
-          {galleryCount} élément
-          {galleryCount > 1 ? 's' : ''} dans la galerie.
+              <div className="p-4 sm:p-5 border-b border-white/10 flex items-center justify-between gap-4">
+
+                <div>
+
+                  <h2 className="font-semibold">
+                    Inscriptions à traiter
+                  </h2>
+
+                  <p className="text-sm text-slate-500 mt-1">
+                    Les dernières demandes encore au statut Nouveau.
+                  </p>
+
+                </div>
+
+                <Link
+                  to="/admin/registrations"
+                  className="text-sm text-slate-400 hover:text-white transition shrink-0"
+                >
+                  Tout voir
+                </Link>
+
+              </div>
+
+              <div className="divide-y divide-white/5">
+
+                {latestRegistrations.length === 0 ? (
+
+                  <div className="p-8 text-center">
+
+                    <ClipboardList
+                      size={24}
+                      className="mx-auto text-slate-600"
+                    />
+
+                    <p className="mt-3 text-sm text-slate-500">
+                      Aucune nouvelle demande à traiter.
+                    </p>
+
+                  </div>
+
+                ) : (
+
+                  latestRegistrations.map((registration) => (
+
+                    <Link
+                      key={registration.id}
+                      to="/admin/registrations"
+                      className="p-4 flex items-center gap-4 hover:bg-white/[0.02] transition"
+                    >
+
+                      <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center shrink-0">
+
+                        <UserRound
+                          size={18}
+                          className="text-red-400"
+                        />
+
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+
+                        <h3 className="font-semibold truncate">
+                          {registration.first_name}{' '}
+                          {registration.last_name}
+                        </h3>
+
+                        <p className="text-xs text-slate-500 mt-1 truncate">
+                          {registration.category ||
+                            registration.request_type}
+                          {' · '}
+                          {new Date(
+                            registration.created_at,
+                          ).toLocaleDateString(
+                            'fr-FR',
+                          )}
+                        </p>
+
+                      </div>
+
+                      <span className="rounded-full bg-red-500/10 px-2.5 py-1 text-[11px] font-semibold text-red-400">
+                        Nouveau
+                      </span>
+
+                    </Link>
+
+                  ))
+
+                )}
+
+              </div>
+
+            </div>
+          )}
+
         </div>
       )}
 
