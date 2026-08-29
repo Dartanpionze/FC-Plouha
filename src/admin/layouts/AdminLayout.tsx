@@ -536,7 +536,7 @@ export default function AdminLayout() {
         </header>
 
         {/* PAGE */}
-        <main className="flex-1 min-w-0 overflow-x-hidden">
+        <main className="flex-1 min-w-0 overflow-x-clip">
           <Outlet />
         </main>
       </div>
