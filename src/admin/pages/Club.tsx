@@ -6,6 +6,7 @@ import {
   MAX_IMAGE_SIZE_LABEL,
   validateImageFile,
 } from '@/lib/uploads'
+import { useAdminAccess } from '@/admin/hooks/useAdminAccess'
 import {
   Plus,
   Pencil,
@@ -41,6 +42,11 @@ type StaffMember = {
 }
 
 export default function Club() {
+  const { can } = useAdminAccess()
+  const canCreate = can('club', 'create')
+  const canUpdate = can('club', 'update')
+  const canDelete = can('club', 'delete')
+
   const [history, setHistory] = useState<HistoryItem[]>([])
   const [staff, setStaff] = useState<StaffMember[]>([])
 
@@ -134,12 +140,22 @@ export default function Club() {
   }
 
   const openHistoryForm = () => {
+    if (!canCreate) {
+      setMessage("Vous n'avez pas l'autorisation d'ajouter un événement.")
+      return
+    }
+
     resetHistoryForm()
     setMessage('')
     setShowHistoryForm(true)
   }
 
   const editHistory = (item: HistoryItem) => {
+    if (!canUpdate) {
+      setMessage("Vous n'avez pas l'autorisation de modifier un événement.")
+      return
+    }
+
     setEditingHistoryId(item.id)
     setHistoryYear(item.year.toString())
     setHistoryTitle(item.title)
@@ -155,6 +171,16 @@ export default function Club() {
   }
 
   const saveHistory = async () => {
+    if (editingHistoryId && !canUpdate) {
+      setMessage("Vous n'avez pas l'autorisation de modifier un événement.")
+      return
+    }
+
+    if (!editingHistoryId && !canCreate) {
+      setMessage("Vous n'avez pas l'autorisation d'ajouter un événement.")
+      return
+    }
+
     if (!historyYear || !historyTitle.trim()) {
       setMessage("L'année et le titre sont obligatoires.")
       return
@@ -204,6 +230,11 @@ export default function Club() {
   }
 
   const deleteHistory = async (item: HistoryItem) => {
+    if (!canDelete) {
+      setMessage("Vous n'avez pas l'autorisation de supprimer un événement.")
+      return
+    }
+
     const confirmed = window.confirm(
       `Supprimer l'événement "${item.title}" ?`,
     )
@@ -241,12 +272,22 @@ export default function Club() {
   }
 
   const openStaffForm = () => {
+    if (!canCreate) {
+      setMessage("Vous n'avez pas l'autorisation d'ajouter un dirigeant.")
+      return
+    }
+
     resetStaffForm()
     setMessage('')
     setShowStaffForm(true)
   }
 
   const editStaff = (member: StaffMember) => {
+    if (!canUpdate) {
+      setMessage("Vous n'avez pas l'autorisation de modifier un dirigeant.")
+      return
+    }
+
     setEditingStaffId(member.id)
     setStaffName(member.name)
     setStaffRole(member.role)
@@ -265,6 +306,16 @@ export default function Club() {
   }
 
   const saveStaff = async () => {
+    if (editingStaffId && !canUpdate) {
+      setMessage("Vous n'avez pas l'autorisation de modifier un dirigeant.")
+      return
+    }
+
+    if (!editingStaffId && !canCreate) {
+      setMessage("Vous n'avez pas l'autorisation d'ajouter un dirigeant.")
+      return
+    }
+
     if (!staffName.trim() || !staffRole.trim()) {
       setMessage('Le nom et la fonction sont obligatoires.')
       return
@@ -371,6 +422,11 @@ export default function Club() {
   }
 
   const toggleStaff = async (member: StaffMember) => {
+    if (!canUpdate) {
+      setMessage("Vous n'avez pas l'autorisation de modifier un dirigeant.")
+      return
+    }
+
     const { error } = await supabase
       .from('club_staff')
       .update({
@@ -396,6 +452,11 @@ export default function Club() {
   }
 
   const deleteStaff = async (member: StaffMember) => {
+    if (!canDelete) {
+      setMessage("Vous n'avez pas l'autorisation de supprimer un dirigeant.")
+      return
+    }
+
     const confirmed = window.confirm(
       `Supprimer définitivement "${member.name}" ?`,
     )
@@ -778,14 +839,16 @@ export default function Club() {
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={openHistoryForm}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[var(--club-yellow)] text-slate-950 font-bold text-sm"
-            >
-              <Plus size={17} />
-              Ajouter
-            </button>
+            {canCreate && (
+              <button
+                type="button"
+                onClick={openHistoryForm}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[var(--club-yellow)] text-slate-950 font-bold text-sm"
+              >
+                <Plus size={17} />
+                Ajouter
+              </button>
+            )}
           </div>
 
           {history.length === 0 ? (
@@ -822,25 +885,31 @@ export default function Club() {
                           </p>
                         </div>
 
-                        <div className="flex gap-2 shrink-0">
-                          <button
-                            type="button"
-                            onClick={() => editHistory(item)}
-                            className="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center"
-                            title="Modifier"
-                          >
-                            <Pencil size={16} />
-                          </button>
+                        {(canUpdate || canDelete) && (
+                          <div className="flex gap-2 shrink-0">
+                            {canUpdate && (
+                              <button
+                                type="button"
+                                onClick={() => editHistory(item)}
+                                className="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center"
+                                title="Modifier"
+                              >
+                                <Pencil size={16} />
+                              </button>
+                            )}
 
-                          <button
-                            type="button"
-                            onClick={() => deleteHistory(item)}
-                            className="w-9 h-9 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 flex items-center justify-center"
-                            title="Supprimer"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
+                            {canDelete && (
+                              <button
+                                type="button"
+                                onClick={() => deleteHistory(item)}
+                                className="w-9 h-9 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 flex items-center justify-center"
+                                title="Supprimer"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -868,14 +937,16 @@ export default function Club() {
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={openStaffForm}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[var(--club-yellow)] text-slate-950 font-bold text-sm"
-            >
-              <Plus size={17} />
-              Ajouter
-            </button>
+            {canCreate && (
+              <button
+                type="button"
+                onClick={openStaffForm}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[var(--club-yellow)] text-slate-950 font-bold text-sm"
+              >
+                <Plus size={17} />
+                Ajouter
+              </button>
+            )}
           </div>
 
           {staff.length === 0 ? (
@@ -938,38 +1009,46 @@ export default function Club() {
                       </p>
                     </div>
 
-                    <div className="flex gap-2 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => toggleStaff(member)}
-                        className="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center"
-                        title={member.active ? 'Masquer' : 'Afficher'}
-                      >
-                        {member.active ? (
-                          <EyeOff size={16} />
-                        ) : (
-                          <Eye size={16} />
+                    {(canUpdate || canDelete) && (
+                      <div className="flex gap-2 shrink-0">
+                        {canUpdate && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => toggleStaff(member)}
+                              className="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center"
+                              title={member.active ? 'Masquer' : 'Afficher'}
+                            >
+                              {member.active ? (
+                                <EyeOff size={16} />
+                              ) : (
+                                <Eye size={16} />
+                              )}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => editStaff(member)}
+                              className="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center"
+                              title="Modifier"
+                            >
+                              <Pencil size={16} />
+                            </button>
+                          </>
                         )}
-                      </button>
 
-                      <button
-                        type="button"
-                        onClick={() => editStaff(member)}
-                        className="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center"
-                        title="Modifier"
-                      >
-                        <Pencil size={16} />
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => deleteStaff(member)}
-                        className="w-9 h-9 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 flex items-center justify-center"
-                        title="Supprimer"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
+                        {canDelete && (
+                          <button
+                            type="button"
+                            onClick={() => deleteStaff(member)}
+                            className="w-9 h-9 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 flex items-center justify-center"
+                            title="Supprimer"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        )}
+                      </div>
+                    )}
 
                   </div>
                 </div>
