@@ -33,6 +33,7 @@ type Photo = {
   image_url: string
   caption: string | null
   active: boolean
+  home_slot: number | null
 }
 
 export default function Gallery() {
@@ -372,6 +373,55 @@ export default function Gallery() {
         )
       }
     }
+  }
+
+  const setHomeSlot = async (photo: Photo, slot: number | null) => {
+    if (!canUpdate) {
+      setMessage(
+        "Vous n'avez pas l'autorisation de modifier la galerie.",
+      )
+      return
+    }
+
+    setMessage('')
+
+    if (slot !== null) {
+      const { error: clearError } = await supabase
+        .from('gallery_photos')
+        .update({ home_slot: null })
+        .eq('home_slot', slot)
+
+      if (clearError) {
+        console.error(clearError)
+        setMessage(
+          "Impossible de libérer cet emplacement de la page d'accueil.",
+        )
+        return
+      }
+    }
+
+    const { error } = await supabase
+      .from('gallery_photos')
+      .update({ home_slot: slot })
+      .eq('id', photo.id)
+
+    if (error) {
+      console.error(error)
+      setMessage(
+        "Impossible de modifier les photos de la page d'accueil.",
+      )
+      return
+    }
+
+    if (selectedAlbum) {
+      await fetchPhotos(selectedAlbum)
+    }
+
+    setMessage(
+      slot === null
+        ? "Photo retirée de la présentation de la page d'accueil."
+        : `Photo définie en position ${slot} sur la page d'accueil.`,
+    )
   }
 
   const deleteAlbum = async (album: Album) => {
@@ -818,6 +868,12 @@ export default function Gallery() {
                       className="w-full h-52 object-cover"
                     />
 
+                    {photo.home_slot && (
+                      <div className="absolute top-3 left-3 rounded-full bg-[var(--club-yellow)] px-3 py-1 text-xs font-bold text-slate-950 shadow-lg">
+                        Accueil · position {photo.home_slot}
+                      </div>
+                    )}
+
                     <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition">
 
                       {(canUpdate || canDelete) && (
@@ -855,6 +911,46 @@ export default function Gallery() {
                     </div>
 
                   </div>
+
+                  {canUpdate && (
+                    <div className="border-t border-white/10 p-3">
+                      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        Présentation de l'accueil
+                      </p>
+
+                      <div className="flex flex-wrap gap-2">
+                        {[1, 2, 3].map((slot) => (
+                          <button
+                            key={slot}
+                            type="button"
+                            onClick={() =>
+                              setHomeSlot(
+                                photo,
+                                photo.home_slot === slot ? null : slot,
+                              )
+                            }
+                            className={`rounded-lg border px-3 py-2 text-xs font-bold transition ${
+                              photo.home_slot === slot
+                                ? 'border-[var(--club-yellow)] bg-[var(--club-yellow)] text-slate-950'
+                                : 'border-white/10 bg-white/5 text-slate-300 hover:bg-white/10'
+                            }`}
+                          >
+                            Position {slot}
+                          </button>
+                        ))}
+
+                        {photo.home_slot && (
+                          <button
+                            type="button"
+                            onClick={() => setHomeSlot(photo, null)}
+                            className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs font-bold text-red-300 hover:bg-red-500/20 transition"
+                          >
+                            Retirer
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
                   {photo.caption && (
                     <div className="p-3">
