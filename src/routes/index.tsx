@@ -91,6 +91,7 @@ function Home() {
   const [news, setNews] = useState<any[]>([])
   const [teams, setTeams] = useState<Team[]>([])
   const [matches, setMatches] = useState<Match[]>([])
+  const [homeStoryPhotos, setHomeStoryPhotos] = useState<GalleryPhoto[]>([])
   const [galleryPhotos, setGalleryPhotos] = useState<GalleryPhoto[]>([])
   const [partners, setPartners] = useState<Partner[]>([])
   const [loading, setLoading] = useState(true)
@@ -106,6 +107,7 @@ function Home() {
         newsResult,
         teamsResult,
         matchesResult,
+        homeStoryResult,
         galleryResult,
         partnersResult,
       ] = await Promise.all([
@@ -152,6 +154,14 @@ function Home() {
           .from('gallery_photos')
           .select('*')
           .eq('active', true)
+          .not('home_slot', 'is', null)
+          .order('home_slot', { ascending: true })
+          .limit(3),
+
+        supabase
+          .from('gallery_photos')
+          .select('*')
+          .eq('active', true)
           .order('created_at', { ascending: false })
           .limit(8),
 
@@ -168,6 +178,7 @@ function Home() {
         newsResult,
         teamsResult,
         matchesResult,
+        homeStoryResult,
         galleryResult,
         partnersResult,
       ]
@@ -190,6 +201,7 @@ function Home() {
           teams: singleRelation(match.teams),
         })),
       )
+      setHomeStoryPhotos(homeStoryResult.data || [])
       setGalleryPhotos(galleryResult.data || [])
       setPartners(partnersResult.data || [])
     } catch (fetchError) {
@@ -387,7 +399,7 @@ function Home() {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 py-20 grid lg:grid-cols-[0.9fr_1.1fr] gap-14 items-center">
         <div className="relative">
           <div className="grid grid-cols-2 gap-4">
-            {galleryPhotos.slice(0, 3).map((photo, index) => (
+            {homeStoryPhotos.map((photo, index) => (
               <Link
                 key={photo.id}
                 to="/galerie"
@@ -412,7 +424,7 @@ function Home() {
               </Link>
             ))}
 
-            {galleryPhotos.length === 0 && (
+            {homeStoryPhotos.length === 0 && (
               <div className="h-56 col-span-2 rounded-2xl bg-[var(--club-navy)]/[0.05] flex items-center justify-center text-[var(--club-navy-deep)]/40 font-condensed">
                 Les photos du club apparaîtront ici.
               </div>
