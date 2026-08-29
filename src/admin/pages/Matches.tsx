@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { useAdminAccess } from '@/admin/hooks/useAdminAccess'
 import {
   Plus,
   Search,
@@ -37,6 +38,11 @@ type Match = {
 }
 
 export default function Matches() {
+  const { can } = useAdminAccess()
+  const canCreate = can('matches', 'create')
+  const canUpdate = can('matches', 'update')
+  const canDelete = can('matches', 'delete')
+
   const [matches, setMatches] = useState<Match[]>([])
   const [teams, setTeams] = useState<Team[]>([])
 
@@ -146,11 +152,21 @@ export default function Matches() {
   }
 
   const openNewForm = () => {
+    if (!canCreate) {
+      setMessage("Vous n'avez pas l'autorisation de créer un match.")
+      return
+    }
+
     resetForm()
     setShowForm(true)
   }
 
   const editMatch = (match: Match) => {
+    if (!canUpdate) {
+      setMessage("Vous n'avez pas l'autorisation de modifier un match.")
+      return
+    }
+
     setEditingId(match.id)
 
     setTeamId(match.team_id?.toString() || '')
@@ -183,6 +199,16 @@ export default function Matches() {
   }
 
   const saveMatch = async () => {
+    if (editingId && !canUpdate) {
+      setMessage("Vous n'avez pas l'autorisation de modifier un match.")
+      return
+    }
+
+    if (!editingId && !canCreate) {
+      setMessage("Vous n'avez pas l'autorisation de créer un match.")
+      return
+    }
+
     if (!teamId) {
       setMessage("Veuillez sélectionner l'équipe.")
       return
@@ -259,6 +285,11 @@ export default function Matches() {
   }
 
   const deleteMatch = async (id: number) => {
+    if (!canDelete) {
+      setMessage("Vous n'avez pas l'autorisation de supprimer un match.")
+      return
+    }
+
     const confirmDelete = window.confirm(
       'Supprimer définitivement ce match ?',
     )
@@ -348,13 +379,15 @@ export default function Matches() {
           </p>
         </div>
 
+        {canCreate && (
         <button
-          onClick={openNewForm}
-          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[var(--club-yellow)] text-slate-950 font-bold hover:opacity-90 transition"
-        >
-          <Plus size={19} />
-          Ajouter un match
-        </button>
+            onClick={openNewForm}
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[var(--club-yellow)] text-slate-950 font-bold hover:opacity-90 transition"
+          >
+            <Plus size={19} />
+            Ajouter un match
+          </button>
+        )}
 
       </div>
 
@@ -835,27 +868,33 @@ export default function Matches() {
                 </div>
 
                 {/* ACTIONS */}
+                {(canUpdate || canDelete) && (
                 <div className="flex gap-2 shrink-0">
-
-                  <button
-                    onClick={() => editMatch(match)}
-                    className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm transition"
-                  >
-                    <Pencil size={16} />
-                    Modifier
-                  </button>
-
-                  <button
-                    onClick={() =>
-                      deleteMatch(match.id)
-                    }
-                    className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-sm transition"
-                  >
-                    <Trash2 size={16} />
-                    Supprimer
-                  </button>
-
-                </div>
+  
+                    {canUpdate && (
+                    <button
+                        onClick={() => editMatch(match)}
+                        className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm transition"
+                      >
+                        <Pencil size={16} />
+                        Modifier
+                      </button>
+                    )}
+  
+                    {canDelete && (
+                    <button
+                        onClick={() =>
+                          deleteMatch(match.id)
+                        }
+                        className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-sm transition"
+                      >
+                        <Trash2 size={16} />
+                        Supprimer
+                      </button>
+                    )}
+  
+                  </div>
+                )}
 
               </div>
 
