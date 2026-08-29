@@ -6,6 +6,7 @@ import {
   MAX_IMAGE_SIZE_LABEL,
   validateImageFile,
 } from '@/lib/uploads'
+import { useAdminAccess } from '@/admin/hooks/useAdminAccess'
 import {
   Plus,
   Pencil,
@@ -30,6 +31,11 @@ type Partner = {
 }
 
 export default function Partners() {
+  const { can } = useAdminAccess()
+  const canCreate = can('partners', 'create')
+  const canUpdate = can('partners', 'update')
+  const canDelete = can('partners', 'delete')
+
   const [partners, setPartners] = useState<Partner[]>([])
 
   const [name, setName] = useState('')
@@ -99,12 +105,22 @@ export default function Partners() {
   }
 
   const openNewForm = () => {
+    if (!canCreate) {
+      setMessage("Vous n'avez pas l'autorisation de créer un partenaire.")
+      return
+    }
+
     resetForm()
     setShowForm(true)
     setMessage('')
   }
 
   const editPartner = (partner: Partner) => {
+    if (!canUpdate) {
+      setMessage("Vous n'avez pas l'autorisation de modifier un partenaire.")
+      return
+    }
+
     setEditingId(partner.id)
 
     setName(partner.name)
@@ -128,6 +144,16 @@ export default function Partners() {
   }
 
   const savePartner = async () => {
+    if (editingId && !canUpdate) {
+      setMessage("Vous n'avez pas l'autorisation de modifier un partenaire.")
+      return
+    }
+
+    if (!editingId && !canCreate) {
+      setMessage("Vous n'avez pas l'autorisation de créer un partenaire.")
+      return
+    }
+
     if (!name.trim()) {
       setMessage('Le nom du partenaire est obligatoire.')
       return
@@ -246,6 +272,11 @@ export default function Partners() {
   }
 
   const togglePartner = async (partner: Partner) => {
+    if (!canUpdate) {
+      setMessage("Vous n'avez pas l'autorisation de modifier un partenaire.")
+      return
+    }
+
     const { error } = await supabase
       .from('partners')
       .update({
@@ -273,6 +304,11 @@ export default function Partners() {
   }
 
   const deletePartner = async (partner: Partner) => {
+    if (!canDelete) {
+      setMessage("Vous n'avez pas l'autorisation de supprimer un partenaire.")
+      return
+    }
+
     const confirmDelete = window.confirm(
       `Supprimer définitivement "${partner.name}" ?`,
     )
@@ -337,13 +373,15 @@ export default function Partners() {
           </p>
         </div>
 
+        {canCreate && (
         <button
-          onClick={openNewForm}
-          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[var(--club-yellow)] text-slate-950 font-bold hover:opacity-90 transition"
-        >
-          <Plus size={19} />
-          Ajouter un partenaire
-        </button>
+            onClick={openNewForm}
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[var(--club-yellow)] text-slate-950 font-bold hover:opacity-90 transition"
+          >
+            <Plus size={19} />
+            Ajouter un partenaire
+          </button>
+        )}
 
       </div>
 
@@ -706,53 +744,61 @@ export default function Partners() {
                   </div>
 
                   {/* ACTIONS */}
+                  {(canUpdate || canDelete) && (
                   <div className="flex gap-2 shrink-0">
-
-                    <button
-                      onClick={() =>
-                        togglePartner(
-                          partner,
-                        )
-                      }
-                      title={
-                        partner.active
-                          ? 'Masquer'
-                          : 'Afficher'
-                      }
-                      className="w-10 h-10 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center transition"
-                    >
-                      {partner.active ? (
-                        <EyeOff size={17} />
-                      ) : (
-                        <Eye size={17} />
+  
+                      {canUpdate && (
+                      <button
+                          onClick={() =>
+                            togglePartner(
+                              partner,
+                            )
+                          }
+                          title={
+                            partner.active
+                              ? 'Masquer'
+                              : 'Afficher'
+                          }
+                          className="w-10 h-10 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center transition"
+                        >
+                          {partner.active ? (
+                            <EyeOff size={17} />
+                          ) : (
+                            <Eye size={17} />
+                          )}
+                        </button>
                       )}
-                    </button>
-
-                    <button
-                      onClick={() =>
-                        editPartner(
-                          partner,
-                        )
-                      }
-                      className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm transition"
-                    >
-                      <Pencil size={16} />
-                      Modifier
-                    </button>
-
-                    <button
-                      onClick={() =>
-                        deletePartner(
-                          partner,
-                        )
-                      }
-                      className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-sm transition"
-                    >
-                      <Trash2 size={16} />
-                      Supprimer
-                    </button>
-
-                  </div>
+  
+                      {canUpdate && (
+                      <button
+                          onClick={() =>
+                            editPartner(
+                              partner,
+                            )
+                          }
+                          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm transition"
+                        >
+                          <Pencil size={16} />
+                          Modifier
+                        </button>
+                      )}
+  
+                      {canDelete && (
+                      <button
+                          onClick={() =>
+                            deletePartner(
+                              partner,
+                            )
+                          }
+                          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-sm transition"
+                        >
+                          <Trash2 size={16} />
+                          Supprimer
+                        </button>
+                      )}
+  
+                    </div>
+                  )}
 
                 </div>
 
