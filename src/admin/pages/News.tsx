@@ -6,6 +6,7 @@ import {
   MAX_IMAGE_SIZE_LABEL,
   validateImageFile,
 } from '@/lib/uploads'
+import { useAdminAccess } from '@/admin/hooks/useAdminAccess'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import {
@@ -27,6 +28,8 @@ type NewsItem = {
 }
 
 export default function News() {
+  const { loading: accessLoading, can } = useAdminAccess()
+
   const [news, setNews] = useState<NewsItem[]>([])
   const [title, setTitle] = useState('')
   const [excerpt, setExcerpt] = useState('')
@@ -41,6 +44,10 @@ export default function News() {
   const [fetching, setFetching] = useState(true)
   const [showForm, setShowForm] = useState(false)
 
+  const canCreate = can('news', 'create')
+  const canUpdate = can('news', 'update')
+  const canDelete = can('news', 'delete')
+
   const editor = useEditor({
     extensions: [StarterKit],
     content: '',
@@ -50,7 +57,7 @@ export default function News() {
   })
 
   useEffect(() => {
-    fetchNews()
+    void fetchNews()
   }, [])
 
   const fetchNews = async () => {
@@ -98,11 +105,25 @@ export default function News() {
   }
 
   const openNewForm = () => {
+    if (!canCreate) {
+      setMessage(
+        "Vous n'avez pas l'autorisation de créer une actualité.",
+      )
+      return
+    }
+
     resetForm()
     setShowForm(true)
   }
 
   const editNews = (item: NewsItem) => {
+    if (!canUpdate) {
+      setMessage(
+        "Vous n'avez pas l'autorisation de modifier une actualité.",
+      )
+      return
+    }
+
     setEditingId(item.id)
     setTitle(item.title)
     setExcerpt(item.excerpt || '')
@@ -123,6 +144,20 @@ export default function News() {
   }
 
   const saveNews = async () => {
+    if (editingId && !canUpdate) {
+      setMessage(
+        "Vous n'avez pas l'autorisation de modifier une actualité.",
+      )
+      return
+    }
+
+    if (!editingId && !canCreate) {
+      setMessage(
+        "Vous n'avez pas l'autorisation de créer une actualité.",
+      )
+      return
+    }
+
     if (!title.trim()) {
       setMessage('Le titre est obligatoire.')
       return
@@ -236,6 +271,13 @@ export default function News() {
   }
 
   const deleteNews = async (id: number) => {
+    if (!canDelete) {
+      setMessage(
+        "Vous n'avez pas l'autorisation de supprimer une actualité.",
+      )
+      return
+    }
+
     const confirmDelete = window.confirm(
       'Supprimer définitivement cette actualité ?',
     )
@@ -275,11 +317,22 @@ export default function News() {
     item.title.toLowerCase().includes(search.toLowerCase()),
   )
 
+  if (accessLoading) {
+    return (
+      <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
+        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-8 text-center text-slate-400">
+          Vérification des droits...
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
 
       {/* HEADER */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+
         <div>
           <p className="text-sm text-slate-400 mb-1">
             Gestion du contenu
@@ -294,13 +347,16 @@ export default function News() {
           </p>
         </div>
 
-        <button
-          onClick={openNewForm}
-          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[var(--club-yellow)] text-slate-950 font-bold hover:opacity-90 transition"
-        >
-          <Plus size={19} />
-          Nouvelle actualité
-        </button>
+        {canCreate && (
+          <button
+            onClick={openNewForm}
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[var(--club-yellow)] text-slate-950 font-bold hover:opacity-90 transition"
+          >
+            <Plus size={19} />
+            Nouvelle actualité
+          </button>
+        )}
+
       </div>
 
       {/* MESSAGE */}
@@ -320,7 +376,7 @@ export default function News() {
         message.startsWith('Impossible de récupérer') && (
           <button
             type="button"
-            onClick={() => fetchNews()}
+            onClick={() => void fetchNews()}
             className="mb-6 inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/[0.08] transition"
           >
             Réessayer le chargement
@@ -332,6 +388,7 @@ export default function News() {
         <div className="mb-8 rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-6">
 
           <div className="flex items-center justify-between mb-6">
+
             <div>
               <h2 className="text-xl font-bold">
                 {editingId
@@ -350,6 +407,7 @@ export default function News() {
             >
               <X size={19} />
             </button>
+
           </div>
 
           <div className="space-y-6">
@@ -391,7 +449,11 @@ export default function News() {
               </label>
 
               <label className="flex items-center gap-3 cursor-pointer rounded-xl border border-dashed border-white/15 bg-slate-950 px-4 py-4 hover:bg-white/[0.03] transition">
-                <ImageIcon size={20} className="text-slate-500" />
+
+                <ImageIcon
+                  size={20}
+                  className="text-slate-500"
+                />
 
                 <span className="text-sm text-slate-400">
                   Choisir une image
@@ -405,7 +467,8 @@ export default function News() {
                     const file = e.target.files?.[0]
 
                     if (file) {
-                      const imageError = validateImageFile(file)
+                      const imageError =
+                        validateImageFile(file)
 
                       if (imageError) {
                         setImage(null)
@@ -417,10 +480,13 @@ export default function News() {
 
                       setImageValidationError('')
                       setImage(file)
-                      setPreview(URL.createObjectURL(file))
+                      setPreview(
+                        URL.createObjectURL(file),
+                      )
                     }
                   }}
                 />
+
               </label>
 
               <p className="mt-2 text-xs text-slate-500">
@@ -443,6 +509,7 @@ export default function News() {
                   className="mt-4 w-full max-h-72 object-cover rounded-xl border border-white/10"
                 />
               )}
+
             </div>
 
             {/* EDITEUR */}
@@ -458,7 +525,11 @@ export default function News() {
                   <button
                     type="button"
                     onClick={() =>
-                      editor?.chain().focus().toggleBold().run()
+                      editor
+                        ?.chain()
+                        .focus()
+                        .toggleBold()
+                        .run()
                     }
                     className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 font-bold"
                   >
@@ -468,7 +539,11 @@ export default function News() {
                   <button
                     type="button"
                     onClick={() =>
-                      editor?.chain().focus().toggleItalic().run()
+                      editor
+                        ?.chain()
+                        .focus()
+                        .toggleItalic()
+                        .run()
                     }
                     className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 italic"
                   >
@@ -481,7 +556,9 @@ export default function News() {
                       editor
                         ?.chain()
                         .focus()
-                        .toggleHeading({ level: 2 })
+                        .toggleHeading({
+                          level: 2,
+                        })
                         .run()
                     }
                     className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10"
@@ -492,18 +569,24 @@ export default function News() {
                   <button
                     type="button"
                     onClick={() =>
-                      editor?.chain().focus().toggleBulletList().run()
+                      editor
+                        ?.chain()
+                        .focus()
+                        .toggleBulletList()
+                        .run()
                     }
                     className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10"
                   >
                     Liste
                   </button>
+
                 </div>
 
                 <EditorContent
                   editor={editor}
                   className="p-3 sm:p-5 min-h-[280px] prose prose-invert max-w-none"
                 />
+
               </div>
             </div>
 
@@ -530,6 +613,7 @@ export default function News() {
               </button>
 
             </div>
+
           </div>
         </div>
       )}
@@ -550,6 +634,7 @@ export default function News() {
           </div>
 
           <div className="relative w-full md:w-72">
+
             <Search
               size={17}
               className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
@@ -559,10 +644,14 @@ export default function News() {
               type="text"
               placeholder="Rechercher..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) =>
+                setSearch(e.target.value)
+              }
               className="w-full rounded-xl border border-white/10 bg-slate-950 pl-10 pr-4 py-2.5 text-sm outline-none placeholder:text-slate-600 focus:border-white/30"
             />
+
           </div>
+
         </div>
 
         <div className="divide-y divide-white/5">
@@ -587,7 +676,10 @@ export default function News() {
                 />
               ) : (
                 <div className="w-full md:w-28 h-20 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
-                  <ImageIcon size={22} className="text-slate-600" />
+                  <ImageIcon
+                    size={22}
+                    className="text-slate-600"
+                  />
                 </div>
               )}
 
@@ -598,7 +690,9 @@ export default function News() {
                 </h3>
 
                 <p className="text-sm text-slate-500 mt-1">
-                  {new Date(item.created_at).toLocaleDateString(
+                  {new Date(
+                    item.created_at,
+                  ).toLocaleDateString(
                     'fr-FR',
                   )}
                 </p>
@@ -611,31 +705,42 @@ export default function News() {
 
               </div>
 
-              <div className="flex gap-2 shrink-0">
+              {(canUpdate || canDelete) && (
+                <div className="flex gap-2 shrink-0">
 
-                <button
-                  onClick={() => editNews(item)}
-                  className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm transition"
-                >
-                  <Pencil size={16} />
-                  Modifier
-                </button>
+                  {canUpdate && (
+                    <button
+                      onClick={() =>
+                        editNews(item)
+                      }
+                      className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm transition"
+                    >
+                      <Pencil size={16} />
+                      Modifier
+                    </button>
+                  )}
 
-                <button
-                  onClick={() => deleteNews(item.id)}
-                  className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-sm transition"
-                >
-                  <Trash2 size={16} />
-                  Supprimer
-                </button>
+                  {canDelete && (
+                    <button
+                      onClick={() =>
+                        deleteNews(item.id)
+                      }
+                      className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-sm transition"
+                    >
+                      <Trash2 size={16} />
+                      Supprimer
+                    </button>
+                  )}
 
-              </div>
+                </div>
+              )}
 
             </div>
           ))}
 
         </div>
       </div>
+
     </div>
   )
 }
