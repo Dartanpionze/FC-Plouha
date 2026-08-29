@@ -6,6 +6,7 @@ import {
   MAX_IMAGE_SIZE_LABEL,
   validateImageFile,
 } from '@/lib/uploads'
+import { useAdminAccess } from '@/admin/hooks/useAdminAccess'
 import {
   Plus,
   Search,
@@ -29,6 +30,11 @@ type Team = {
 }
 
 export default function Teams() {
+  const { can } = useAdminAccess()
+  const canCreate = can('teams', 'create')
+  const canUpdate = can('teams', 'update')
+  const canDelete = can('teams', 'delete')
+
   const [teams, setTeams] = useState<Team[]>([])
 
   const [name, setName] = useState('')
@@ -101,11 +107,21 @@ export default function Teams() {
   }
 
   const openNewForm = () => {
+    if (!canCreate) {
+      setMessage("Vous n'avez pas l'autorisation de créer une équipe.")
+      return
+    }
+
     resetForm()
     setShowForm(true)
   }
 
   const editTeam = (team: Team) => {
+    if (!canUpdate) {
+      setMessage("Vous n'avez pas l'autorisation de modifier une équipe.")
+      return
+    }
+
     setEditingId(team.id)
 
     setName(team.name)
@@ -129,6 +145,16 @@ export default function Teams() {
   }
 
   const saveTeam = async () => {
+    if (editingId && !canUpdate) {
+      setMessage("Vous n'avez pas l'autorisation de modifier une équipe.")
+      return
+    }
+
+    if (!editingId && !canCreate) {
+      setMessage("Vous n'avez pas l'autorisation de créer une équipe.")
+      return
+    }
+
     if (!name.trim()) {
       setMessage("Le nom de l'équipe est obligatoire.")
       return
@@ -248,6 +274,11 @@ export default function Teams() {
   }
 
   const deleteTeam = async (id: number) => {
+    if (!canDelete) {
+      setMessage("Vous n'avez pas l'autorisation de supprimer une équipe.")
+      return
+    }
+
     const confirmDelete = window.confirm(
       'Supprimer définitivement cette équipe ?',
     )
@@ -284,6 +315,11 @@ export default function Teams() {
   }
 
   const toggleActive = async (team: Team) => {
+    if (!canUpdate) {
+      setMessage("Vous n'avez pas l'autorisation de modifier une équipe.")
+      return
+    }
+
     const { error } = await supabase
       .from('teams')
       .update({
@@ -338,13 +374,15 @@ export default function Teams() {
           </p>
         </div>
 
+        {canCreate && (
         <button
-          onClick={openNewForm}
-          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[var(--club-yellow)] text-slate-950 font-bold hover:opacity-90 transition"
-        >
-          <Plus size={19} />
-          Nouvelle équipe
-        </button>
+            onClick={openNewForm}
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[var(--club-yellow)] text-slate-950 font-bold hover:opacity-90 transition"
+          >
+            <Plus size={19} />
+            Nouvelle équipe
+          </button>
+        )}
 
       </div>
 
@@ -707,32 +745,40 @@ export default function Teams() {
               </div>
 
               {/* ACTIONS */}
+              {(canUpdate || canDelete) && (
               <div className="flex flex-wrap gap-2 shrink-0">
-
-                <button
-                  onClick={() => toggleActive(team)}
-                  className="px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm transition"
-                >
-                  {team.active ? 'Masquer' : 'Afficher'}
-                </button>
-
-                <button
-                  onClick={() => editTeam(team)}
-                  className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm transition"
-                >
-                  <Pencil size={16} />
-                  Modifier
-                </button>
-
-                <button
-                  onClick={() => deleteTeam(team.id)}
-                  className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-sm transition"
-                >
-                  <Trash2 size={16} />
-                  Supprimer
-                </button>
-
-              </div>
+  
+                  {canUpdate && (
+                  <button
+                      onClick={() => toggleActive(team)}
+                      className="px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm transition"
+                    >
+                      {team.active ? 'Masquer' : 'Afficher'}
+                    </button>
+                  )}
+  
+                  {canUpdate && (
+                  <button
+                      onClick={() => editTeam(team)}
+                      className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm transition"
+                    >
+                      <Pencil size={16} />
+                      Modifier
+                    </button>
+                  )}
+  
+                  {canDelete && (
+                  <button
+                      onClick={() => deleteTeam(team.id)}
+                      className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-sm transition"
+                    >
+                      <Trash2 size={16} />
+                      Supprimer
+                    </button>
+                  )}
+  
+                </div>
+              )}
 
             </div>
 
