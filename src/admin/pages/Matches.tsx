@@ -10,6 +10,11 @@ import {
   CalendarDays,
   MapPin,
   Clock,
+  RefreshCw,
+  ExternalLink,
+  Trophy,
+  Ban,
+  CircleDot,
 } from 'lucide-react'
 
 type Team = {
@@ -60,6 +65,7 @@ export default function Matches() {
 
   const [editingId, setEditingId] = useState<number | null>(null)
   const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
   const [fetching, setFetching] = useState(true)
@@ -224,23 +230,43 @@ export default function Matches() {
       return
     }
 
+    if (status === 'finished') {
+      if (homeScore === '' || awayScore === '') {
+        setMessage('Renseignez les deux scores pour un match terminé.')
+        return
+      }
+
+      const parsedHomeScore = Number(homeScore)
+      const parsedAwayScore = Number(awayScore)
+
+      if (
+        !Number.isInteger(parsedHomeScore) ||
+        !Number.isInteger(parsedAwayScore) ||
+        parsedHomeScore < 0 ||
+        parsedAwayScore < 0
+      ) {
+        setMessage('Les scores doivent être des nombres entiers positifs.')
+        return
+      }
+    }
+
     setLoading(true)
     setMessage('')
 
     const payload = {
       team_id: Number(teamId),
-      opponent,
+      opponent: opponent.trim(),
       match_date: matchDate,
       match_time: matchTime || null,
-      location: location || null,
+      location: location.trim() || null,
       is_home: isHome,
-      competition: competition || null,
+      competition: competition.trim() || null,
       status,
       home_score:
-        homeScore === '' ? null : Number(homeScore),
+        status === 'finished' ? Number(homeScore) : null,
       away_score:
-        awayScore === '' ? null : Number(awayScore),
-      notes: notes || null,
+        status === 'finished' ? Number(awayScore) : null,
+      notes: notes.trim() || null,
     }
 
     let error
@@ -315,15 +341,33 @@ export default function Matches() {
   }
 
   const filteredMatches = matches.filter((match) => {
-    const query = search.toLowerCase()
+    const query = search.trim().toLowerCase()
 
-    return (
+    const matchesStatus =
+      statusFilter === 'all' ||
+      match.status === statusFilter
+
+    const matchesSearch =
+      !query ||
       match.opponent.toLowerCase().includes(query) ||
       match.teams?.name.toLowerCase().includes(query) ||
       match.competition?.toLowerCase().includes(query) ||
       match.location?.toLowerCase().includes(query)
-    )
+
+    return matchesStatus && Boolean(matchesSearch)
   })
+
+  const scheduledCount = matches.filter(
+    (match) => match.status === 'scheduled',
+  ).length
+
+  const finishedCount = matches.filter(
+    (match) => match.status === 'finished',
+  ).length
+
+  const cancelledCount = matches.filter(
+    (match) => match.status === 'cancelled',
+  ).length
 
   const formatDate = (date: string) => {
     return new Date(`${date}T12:00:00`).toLocaleDateString(
@@ -363,11 +407,11 @@ export default function Matches() {
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
 
       {/* HEADER */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+      <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-8">
 
         <div>
           <p className="text-sm text-slate-400 mb-1">
-            Gestion du club
+            Gestion sportive
           </p>
 
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
@@ -375,19 +419,86 @@ export default function Matches() {
           </h1>
 
           <p className="mt-2 text-slate-400">
-            Gérez les matchs et les résultats du FC Plouha.
+            Programmez les rencontres et publiez les résultats du FC Plouha.
           </p>
         </div>
 
-        {canCreate && (
-        <button
-            onClick={openNewForm}
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[var(--club-yellow)] text-slate-950 font-bold hover:opacity-90 transition"
+        <div className="flex flex-col sm:flex-row gap-3">
+
+          <a
+            href="/calendrier"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-white/10 bg-white/[0.04] text-sm font-semibold hover:bg-white/[0.08] transition"
           >
-            <Plus size={19} />
-            Ajouter un match
+            <ExternalLink size={17} />
+            Voir le calendrier public
+          </a>
+
+          <button
+            type="button"
+            onClick={() => void fetchPageData()}
+            disabled={fetching}
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-white/10 bg-white/[0.04] text-sm font-semibold hover:bg-white/[0.08] disabled:opacity-50 transition"
+          >
+            <RefreshCw
+              size={17}
+              className={fetching ? 'animate-spin' : ''}
+            />
+            Actualiser
           </button>
-        )}
+
+          {canCreate && (
+            <button
+              onClick={openNewForm}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[var(--club-yellow)] text-slate-950 font-bold hover:opacity-90 transition"
+            >
+              <Plus size={19} />
+              Ajouter un match
+            </button>
+          )}
+
+        </div>
+      </div>
+
+      {/* INDICATEURS */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+
+        <button
+          type="button"
+          onClick={() => setStatusFilter('scheduled')}
+          className="text-left rounded-2xl border border-white/10 bg-white/[0.03] p-5 hover:bg-white/[0.06] transition"
+        >
+          <div className="flex items-center gap-3 text-sm text-slate-400">
+            <CircleDot size={19} className="text-green-400" />
+            À venir
+          </div>
+          <p className="mt-3 text-3xl font-bold">{scheduledCount}</p>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setStatusFilter('finished')}
+          className="text-left rounded-2xl border border-white/10 bg-white/[0.03] p-5 hover:bg-white/[0.06] transition"
+        >
+          <div className="flex items-center gap-3 text-sm text-slate-400">
+            <Trophy size={19} className="text-blue-400" />
+            Terminés
+          </div>
+          <p className="mt-3 text-3xl font-bold">{finishedCount}</p>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setStatusFilter('cancelled')}
+          className="text-left rounded-2xl border border-white/10 bg-white/[0.03] p-5 hover:bg-white/[0.06] transition"
+        >
+          <div className="flex items-center gap-3 text-sm text-slate-400">
+            <Ban size={19} className="text-red-400" />
+            Annulés
+          </div>
+          <p className="mt-3 text-3xl font-bold">{cancelledCount}</p>
+        </button>
 
       </div>
 
@@ -732,27 +843,44 @@ export default function Matches() {
             </h2>
 
             <p className="text-sm text-slate-500 mt-1">
-              {matches.length} match
-              {matches.length > 1 ? 's' : ''}
+              {filteredMatches.length} match
+              {filteredMatches.length > 1 ? 's' : ''}
+              {(statusFilter !== 'all' || search.trim()) &&
+                ` sur ${matches.length}`}
             </p>
           </div>
 
-          <div className="relative w-full md:w-72">
+          <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
 
-            <Search
-              size={17}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
-            />
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="rounded-xl border border-white/10 bg-slate-950 px-4 py-2.5 text-sm text-white outline-none"
+            >
+              <option value="all">Tous les statuts</option>
+              <option value="scheduled">À venir</option>
+              <option value="finished">Terminés</option>
+              <option value="cancelled">Annulés</option>
+            </select>
 
-            <input
-              type="text"
-              placeholder="Rechercher..."
-              value={search}
-              onChange={(e) =>
-                setSearch(e.target.value)
-              }
-              className="w-full rounded-xl border border-white/10 bg-slate-950 pl-10 pr-4 py-2.5 text-sm outline-none placeholder:text-slate-600 focus:border-white/30"
-            />
+            <div className="relative w-full sm:w-72">
+
+              <Search
+                size={17}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
+              />
+
+              <input
+                type="text"
+                placeholder="Rechercher..."
+                value={search}
+                onChange={(e) =>
+                  setSearch(e.target.value)
+                }
+                className="w-full rounded-xl border border-white/10 bg-slate-950 pl-10 pr-4 py-2.5 text-sm outline-none placeholder:text-slate-600 focus:border-white/30"
+              />
+
+            </div>
 
           </div>
 
