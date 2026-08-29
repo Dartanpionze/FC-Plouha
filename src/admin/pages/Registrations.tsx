@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { useAdminAccess } from '@/admin/hooks/useAdminAccess'
 import {
   Search,
   UserPlus,
@@ -49,6 +50,10 @@ function statusClasses(status: string) {
 }
 
 export default function Registrations() {
+  const { can } = useAdminAccess()
+  const canUpdate = can('registrations', 'update')
+  const canDelete = can('registrations', 'delete')
+
   const [registrations, setRegistrations] =
     useState<Registration[]>([])
 
@@ -116,6 +121,11 @@ export default function Registrations() {
     registration: Registration,
     status: string,
   ) => {
+    if (!canUpdate) {
+      setMessage("Vous n'avez pas l'autorisation de modifier cette demande.")
+      return
+    }
+
     const { error } = await supabase
       .from('registrations')
       .update({ status })
@@ -145,6 +155,11 @@ export default function Registrations() {
 
   const saveNotes = async () => {
     if (!selected) return
+
+    if (!canUpdate) {
+      setMessage("Vous n'avez pas l'autorisation de modifier cette demande.")
+      return
+    }
 
     setSaving(true)
     setMessage('')
@@ -182,6 +197,11 @@ export default function Registrations() {
   const deleteRegistration = async (
     registration: Registration,
   ) => {
+    if (!canDelete) {
+      setMessage("Vous n'avez pas l'autorisation de supprimer cette demande.")
+      return
+    }
+
     const confirmed = window.confirm(
       `Supprimer définitivement la demande de ${registration.first_name} ${registration.last_name} ?`,
     )
@@ -521,6 +541,7 @@ export default function Registrations() {
 
                   <select
                     value={selected.status}
+                    disabled={!canUpdate}
                     onChange={(e) =>
                       updateStatus(
                         selected,
@@ -621,6 +642,7 @@ export default function Registrations() {
                   <textarea
                     rows={5}
                     value={notes}
+                    disabled={!canUpdate}
                     onChange={(e) =>
                       setNotes(e.target.value)
                     }
@@ -628,30 +650,34 @@ export default function Registrations() {
                     className="w-full rounded-xl border border-white/10 bg-slate-950 px-4 py-3 text-white outline-none resize-none placeholder:text-slate-600"
                   />
 
-                  <button
-                    type="button"
-                    onClick={saveNotes}
-                    disabled={saving}
-                    className="w-full mt-3 inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--club-yellow)] text-slate-950 py-3 font-bold disabled:opacity-50"
-                  >
-                    <Save size={17} />
-                    {saving
-                      ? 'Enregistrement...'
-                      : 'Enregistrer les notes'}
-                  </button>
+                  {canUpdate && (
+                    <button
+                      type="button"
+                      onClick={saveNotes}
+                      disabled={saving}
+                      className="w-full mt-3 inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--club-yellow)] text-slate-950 py-3 font-bold disabled:opacity-50"
+                    >
+                      <Save size={17} />
+                      {saving
+                        ? 'Enregistrement...'
+                        : 'Enregistrer les notes'}
+                    </button>
+                  )}
                 </div>
 
                 {/* SUPPRESSION */}
-                <button
-                  type="button"
-                  onClick={() =>
-                    deleteRegistration(selected)
-                  }
-                  className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 py-3 font-semibold"
-                >
-                  <Trash2 size={17} />
-                  Supprimer la demande
-                </button>
+                {canDelete && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      deleteRegistration(selected)
+                    }
+                    className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 py-3 font-semibold"
+                  >
+                    <Trash2 size={17} />
+                    Supprimer la demande
+                  </button>
+                )}
 
               </div>
             </>
