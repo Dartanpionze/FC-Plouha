@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { removeStorageFile } from '@/lib/storage'
 import {
@@ -18,6 +19,11 @@ import {
   EyeOff,
   Image as ImageIcon,
   Save,
+  ArrowUp,
+  ArrowDown,
+  ExternalLink,
+  RefreshCw,
+  ImageOff,
 } from 'lucide-react'
 
 type HistoryItem = {
@@ -186,11 +192,22 @@ export default function Club() {
       return
     }
 
+    const parsedYear = Number(historyYear)
+
+    if (
+      !Number.isInteger(parsedYear) ||
+      parsedYear < 1900 ||
+      parsedYear > 2100
+    ) {
+      setMessage("L'année doit être comprise entre 1900 et 2100.")
+      return
+    }
+
     setSaving(true)
     setMessage('')
 
     const payload = {
-      year: Number(historyYear),
+      year: parsedYear,
       title: historyTitle.trim(),
       description: historyDescription || null,
       display_order: Number(historyOrder) || 0,
@@ -257,6 +274,61 @@ export default function Club() {
     if (refreshed) {
       setMessage('Événement supprimé.')
     }
+  }
+
+  const moveHistory = async (
+    item: HistoryItem,
+    direction: 'up' | 'down',
+  ) => {
+    if (!canUpdate) {
+      setMessage("Vous n'avez pas l'autorisation de réordonner l'histoire.")
+      return
+    }
+
+    const currentIndex = history.findIndex(
+      (historyItem) => historyItem.id === item.id,
+    )
+
+    const targetIndex =
+      direction === 'up'
+        ? currentIndex - 1
+        : currentIndex + 1
+
+    if (
+      currentIndex === -1 ||
+      targetIndex < 0 ||
+      targetIndex >= history.length
+    ) {
+      return
+    }
+
+    const reordered = [...history]
+    const [movedItem] = reordered.splice(currentIndex, 1)
+
+    reordered.splice(targetIndex, 0, movedItem)
+
+    const results = await Promise.all(
+      reordered.map((historyItem, index) =>
+        supabase
+          .from('club_history')
+          .update({
+            display_order: index,
+          })
+          .eq('id', historyItem.id),
+      ),
+    )
+
+    const reorderError = results.find(
+      (result) => result.error,
+    )?.error
+
+    if (reorderError) {
+      console.error(reorderError)
+      setMessage("Impossible de modifier l'ordre de la frise.")
+      return
+    }
+
+    await fetchData()
   }
 
   const resetStaffForm = () => {
@@ -451,6 +523,95 @@ export default function Club() {
     }
   }
 
+  const moveStaff = async (
+    member: StaffMember,
+    direction: 'up' | 'down',
+  ) => {
+    if (!canUpdate) {
+      setMessage("Vous n'avez pas l'autorisation de réordonner les dirigeants.")
+      return
+    }
+
+    const currentIndex = staff.findIndex(
+      (staffMember) => staffMember.id === member.id,
+    )
+
+    const targetIndex =
+      direction === 'up'
+        ? currentIndex - 1
+        : currentIndex + 1
+
+    if (
+      currentIndex === -1 ||
+      targetIndex < 0 ||
+      targetIndex >= staff.length
+    ) {
+      return
+    }
+
+    const reordered = [...staff]
+    const [movedMember] = reordered.splice(currentIndex, 1)
+
+    reordered.splice(targetIndex, 0, movedMember)
+
+    const results = await Promise.all(
+      reordered.map((staffMember, index) =>
+        supabase
+          .from('club_staff')
+          .update({
+            display_order: index,
+          })
+          .eq('id', staffMember.id),
+      ),
+    )
+
+    const reorderError = results.find(
+      (result) => result.error,
+    )?.error
+
+    if (reorderError) {
+      console.error(reorderError)
+      setMessage("Impossible de modifier l'ordre des dirigeants.")
+      return
+    }
+
+    await fetchData()
+  }
+
+  const removeStaffPhoto = async (member: StaffMember) => {
+    if (!canUpdate || !member.photo_url) return
+
+    const confirmed = window.confirm(
+      `Retirer la photo de "${member.name}" ?`,
+    )
+
+    if (!confirmed) return
+
+    const { error } = await supabase
+      .from('club_staff')
+      .update({
+        photo_url: null,
+      })
+      .eq('id', member.id)
+
+    if (error) {
+      console.error(error)
+      setMessage("Impossible de retirer la photo du dirigeant.")
+      return
+    }
+
+    await removeStorageFile(
+      'staff-images',
+      member.photo_url,
+    )
+
+    const refreshed = await fetchData()
+
+    if (refreshed) {
+      setMessage('Photo du dirigeant retirée.')
+    }
+  }
+
   const deleteStaff = async (member: StaffMember) => {
     if (!canDelete) {
       setMessage("Vous n'avez pas l'autorisation de supprimer un dirigeant.")
@@ -488,6 +649,13 @@ export default function Club() {
     }
   }
 
+  const activeStaffCount = staff.filter(
+    (member) => member.active,
+  ).length
+
+  const hiddenStaffCount =
+    staff.length - activeStaffCount
+
   if (loading) {
     return (
       <div className="p-8 max-w-7xl mx-auto text-slate-400">
@@ -499,18 +667,81 @@ export default function Club() {
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
 
-      <div className="mb-8">
-        <p className="text-sm text-slate-400 mb-1">
-          Gestion du club
-        </p>
+      <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
 
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-          Club
-        </h1>
+        <div>
+          <p className="text-sm text-slate-400 mb-1">
+            Gestion du club
+          </p>
 
-        <p className="mt-2 text-slate-400">
-          Gérez l'histoire du FC Plouha et les membres du bureau.
-        </p>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+            Club
+          </h1>
+
+          <p className="mt-2 text-slate-400">
+            Gérez l'histoire du FC Plouha et les membres du bureau.
+          </p>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-3">
+          <button
+            type="button"
+            onClick={() => void fetchData()}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-semibold text-slate-200 hover:bg-white/[0.08] transition"
+          >
+            <RefreshCw size={16} />
+            Actualiser
+          </button>
+
+          <Link
+            to="/club"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--club-yellow)] px-4 py-2.5 text-sm font-bold text-slate-950 hover:opacity-90 transition"
+          >
+            <ExternalLink size={16} />
+            Voir la page publique
+          </Link>
+        </div>
+
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+          <p className="text-sm text-slate-500">
+            Frise historique
+          </p>
+          <p className="mt-2 text-3xl font-black">
+            {history.length}
+          </p>
+          <p className="mt-1 text-xs text-slate-600">
+            événement{history.length > 1 ? 's' : ''} publié{history.length > 1 ? 's' : ''}
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+          <p className="text-sm text-slate-500">
+            Dirigeants visibles
+          </p>
+          <p className="mt-2 text-3xl font-black text-emerald-400">
+            {activeStaffCount}
+          </p>
+          <p className="mt-1 text-xs text-slate-600">
+            affiché{activeStaffCount > 1 ? 's' : ''} sur le site
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+          <p className="text-sm text-slate-500">
+            Dirigeants masqués
+          </p>
+          <p className="mt-2 text-3xl font-black text-slate-400">
+            {hiddenStaffCount}
+          </p>
+          <p className="mt-1 text-xs text-slate-600">
+            non visible{hiddenStaffCount > 1 ? 's' : ''} publiquement
+          </p>
+        </div>
       </div>
 
       {message && (
@@ -564,6 +795,8 @@ export default function Club() {
 
               <input
                 type="number"
+                min="1900"
+                max="2100"
                 value={historyYear}
                 onChange={(e) => setHistoryYear(e.target.value)}
                 placeholder="2026"
@@ -886,16 +1119,38 @@ export default function Club() {
                         </div>
 
                         {(canUpdate || canDelete) && (
-                          <div className="flex gap-2 shrink-0">
+                          <div className="flex flex-wrap justify-end gap-2 shrink-0">
                             {canUpdate && (
-                              <button
-                                type="button"
-                                onClick={() => editHistory(item)}
-                                className="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center"
-                                title="Modifier"
-                              >
-                                <Pencil size={16} />
-                              </button>
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => moveHistory(item, 'up')}
+                                  disabled={history[0]?.id === item.id}
+                                  className="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center disabled:opacity-25 disabled:cursor-not-allowed"
+                                  title="Monter"
+                                >
+                                  <ArrowUp size={16} />
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => moveHistory(item, 'down')}
+                                  disabled={history[history.length - 1]?.id === item.id}
+                                  className="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center disabled:opacity-25 disabled:cursor-not-allowed"
+                                  title="Descendre"
+                                >
+                                  <ArrowDown size={16} />
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => editHistory(item)}
+                                  className="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center"
+                                  title="Modifier"
+                                >
+                                  <Pencil size={16} />
+                                </button>
+                              </>
                             )}
 
                             {canDelete && (
@@ -1010,9 +1265,29 @@ export default function Club() {
                     </div>
 
                     {(canUpdate || canDelete) && (
-                      <div className="flex gap-2 shrink-0">
+                      <div className="flex flex-wrap justify-end gap-2 shrink-0">
                         {canUpdate && (
                           <>
+                            <button
+                              type="button"
+                              onClick={() => moveStaff(member, 'up')}
+                              disabled={staff[0]?.id === member.id}
+                              className="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center disabled:opacity-25 disabled:cursor-not-allowed"
+                              title="Monter"
+                            >
+                              <ArrowUp size={16} />
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => moveStaff(member, 'down')}
+                              disabled={staff[staff.length - 1]?.id === member.id}
+                              className="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center disabled:opacity-25 disabled:cursor-not-allowed"
+                              title="Descendre"
+                            >
+                              <ArrowDown size={16} />
+                            </button>
+
                             <button
                               type="button"
                               onClick={() => toggleStaff(member)}
@@ -1025,6 +1300,17 @@ export default function Club() {
                                 <Eye size={16} />
                               )}
                             </button>
+
+                            {member.photo_url && (
+                              <button
+                                type="button"
+                                onClick={() => removeStaffPhoto(member)}
+                                className="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-300"
+                                title="Retirer la photo"
+                              >
+                                <ImageOff size={16} />
+                              </button>
+                            )}
 
                             <button
                               type="button"
