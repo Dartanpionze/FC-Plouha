@@ -9,6 +9,9 @@ import {
   MapPin,
   Facebook,
   Instagram,
+  RefreshCw,
+  ExternalLink,
+  ShieldCheck,
 } from 'lucide-react'
 
 type ClubSettings = {
@@ -155,6 +158,63 @@ export default function Settings() {
       return
     }
 
+    const parsedFoundedYear =
+      foundedYear === '' ? null : Number(foundedYear)
+
+    if (
+      parsedFoundedYear !== null &&
+      (!Number.isInteger(parsedFoundedYear) ||
+        parsedFoundedYear < 1800 ||
+        parsedFoundedYear > 2100)
+    ) {
+      setMessage("L'année de fondation doit être comprise entre 1800 et 2100.")
+      return
+    }
+
+    const numericCounts = [
+      ['Licenciés', membersCount],
+      ['Bénévoles', volunteersCount],
+      ['Titres District', districtTitles],
+    ] as const
+
+    for (const [label, value] of numericCounts) {
+      if (
+        value !== '' &&
+        (!Number.isInteger(Number(value)) || Number(value) < 0)
+      ) {
+        setMessage(`${label} doit être un nombre entier positif.`)
+        return
+      }
+    }
+
+    if (
+      email.trim() &&
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+    ) {
+      setMessage("L'adresse e-mail n'est pas valide.")
+      return
+    }
+
+    const socialUrls = [
+      ['Facebook', facebookUrl],
+      ['Instagram', instagramUrl],
+    ] as const
+
+    for (const [label, value] of socialUrls) {
+      if (!value.trim()) continue
+
+      try {
+        const parsedUrl = new URL(value.trim())
+
+        if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+          throw new Error('unsupported protocol')
+        }
+      } catch {
+        setMessage(`L'adresse ${label} doit être une URL complète valide.`)
+        return
+      }
+    }
+
     setSaving(true)
     setMessage('')
 
@@ -250,19 +310,59 @@ export default function Settings() {
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto">
 
-      <div className="mb-8">
-        <p className="text-sm text-slate-400 mb-1">
-          Configuration
-        </p>
+      <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-8">
 
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-          Paramètres du club
-        </h1>
+        <div>
+          <p className="text-sm text-slate-400 mb-1">
+            Configuration
+          </p>
 
-        <p className="mt-2 text-slate-400">
-          Modifiez les informations générales du FC Plouha.
-        </p>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+            Paramètres du club
+          </h1>
+
+          <p className="mt-2 text-slate-400">
+            Centralisez les informations générales utilisées sur le site.
+          </p>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-3">
+
+          <a
+            href="/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-white/10 bg-white/[0.04] text-sm font-semibold hover:bg-white/[0.08] transition"
+          >
+            <ExternalLink size={17} />
+            Voir le site
+          </a>
+
+          <button
+            type="button"
+            onClick={() => void fetchSettings()}
+            disabled={loading || saving}
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-white/10 bg-white/[0.04] text-sm font-semibold hover:bg-white/[0.08] disabled:opacity-50 transition"
+          >
+            <RefreshCw size={17} />
+            Recharger
+          </button>
+
+        </div>
+
       </div>
+
+      {!canUpdate && (
+        <div className="mb-6 flex items-start gap-3 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-slate-300">
+          <ShieldCheck
+            size={18}
+            className="mt-0.5 shrink-0 text-[var(--club-yellow)]"
+          />
+          <span>
+            Consultation uniquement : votre compte ne peut pas modifier les paramètres.
+          </span>
+        </div>
+      )}
 
       {message && (
         <div className="mb-6 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-slate-300">
