@@ -9,6 +9,9 @@ import {
 import { useAdminAccess } from '@/admin/hooks/useAdminAccess'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
+import Link from '@tiptap/extension-link'
+import TextAlign from '@tiptap/extension-text-align'
+import Underline from '@tiptap/extension-underline'
 import {
   Plus,
   Search,
@@ -17,6 +20,257 @@ import {
   X,
   Image as ImageIcon,
 } from 'lucide-react'
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+}
+
+function applyInlineMarkdown(value: string) {
+  let html = escapeHtml(value)
+
+  html = html.replace(
+    /\[([^\]]+)\]\((https?:\\/\\/[^\\s)]+)\)/g,
+    '<a href="$2">$1</a>',
+  )
+  html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+  html = html.replace(/__([^_]+)__/g, '<strong>$1</strong>')
+  html = html.replace(/~~([^~]+)~~/g, '<s>$1</s>')
+  html = html.replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, '<em>$1</em>')
+
+  return html
+}
+
+function plainTextToRichHtml(value: string) {
+  const lines = value.replace(/\r\n?/g, '\n').split('\n')
+  const output: string[] = []
+  let listType: 'ul' | 'ol' | null = null
+  let listItems: string[] = []
+
+  const flushList = () => {
+    if (!listType || listItems.length === 0) return
+
+    output.push(
+      `<${listType}>${listItems
+        .map((item) => `<li>${applyInlineMarkdown(item)}</li>`)
+        .join('')}</${listType}>`,
+    )
+    listType = null
+    listItems = []
+  }
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim()
+
+    if (!line) {
+      flushList()
+      continue
+    }
+
+    const unorderedMatch = line.match(/^[-*•]\s+(.+)$/)
+    const orderedMatch = line.match(/^\d+[.)]\s+(.+)$/)
+
+    if (unorderedMatch) {
+      if (listType !== 'ul') {
+        flushList()
+        listType = 'ul'
+      }
+      listItems.push(unorderedMatch[1])
+      continue
+    }
+
+    if (orderedMatch) {
+      if (listType !== 'ol') {
+        flushList()
+        listType = 'ol'
+      }
+      listItems.push(orderedMatch[1])
+      continue
+    }
+
+    flushList()
+
+    if (/^#{1,2}\s+/.test(line)) {
+      output.push(
+        `<h2>${applyInlineMarkdown(line.replace(/^#{1,2}\s+/, ''))}</h2>`,
+      )
+      continue
+    }
+
+    if (/^#{3,6}\s+/.test(line)) {
+      output.push(
+        `<h3>${applyInlineMarkdown(line.replace(/^#{3,6}\s+/, ''))}</h3>`,
+      )
+      continue
+    }
+
+    if (/^>\s?/.test(line)) {
+      output.push(
+        `<blockquote><p>${applyInlineMarkdown(line.replace(/^>\s?/, ''))}</p></blockquote>`,
+      )
+      continue
+    }
+
+    if (/^([-*_])\1\1+$/.test(line.replace(/\s/g, ''))) {
+      output.push('<hr>')
+      continue
+    }
+
+    output.push(`<p>${applyInlineMarkdown(line)}</p>`)
+  }
+
+  flushList()
+  return output.join('')
+}
+
+function normalizePastedHtml(html: string) {
+  if (typeof DOMParser === 'undefined') {
+    return html
+  }
+
+  const document = new DOMParser().parseFromString(html, 'text/html')
+  const body = document.body
+
+  const topLevelChildren = Array.from(body.children)
+  const rebuilt = document.createElement('div')
+  let currentList: HTMLUListElement | HTMLOListElement | null = null
+  let currentListType: 'ul' | 'ol' | null = null
+
+  for (const originalChild of topLevelChildren) {
+    const child = originalChild.cloneNode(true) as HTMLElement
+    const style = child.getAttribute('style') || ''
+    const className = child.getAttribute('class') || ''
+    const isWordList =
+      child.tagName === 'P' &&
+      (/mso-list/i.test(style) || /MsoListParagraph/i.test(className))
+
+    if (isWordList) {
+      child
+        .querySelectorAll<HTMLElement>('[style*="mso-list:Ignore"]')
+        .forEach((element) => element.remove())
+
+      const plainText = child.textContent?.trim() || ''
+      const ordered = /^\d+[.)]\s*/.test(plainText)
+      const type: 'ul' | 'ol' = ordered ? 'ol' : 'ul'
+
+      if (!currentList || currentListType !== type) {
+        currentList = document.createElement(type)
+        currentListType = type
+        rebuilt.appendChild(currentList)
+      }
+
+      const listItem = document.createElement('li')
+      listItem.innerHTML = child.innerHTML
+      currentList.appendChild(listItem)
+      continue
+    }
+
+    currentList = null
+    currentListType = null
+    rebuilt.appendChild(child)
+  }
+
+  body.innerHTML = rebuilt.innerHTML
+
+  body.querySelectorAll<HTMLElement>('h1').forEach((element) => {
+    const replacement = document.createElement('h2')
+    replacement.innerHTML = element.innerHTML
+    replacement.setAttribute('style', element.getAttribute('style') || '')
+    element.replaceWith(replacement)
+  })
+
+  body
+    .querySelectorAll<HTMLElement>('h4, h5, h6')
+    .forEach((element) => {
+      const replacement = document.createElement('h3')
+      replacement.innerHTML = element.innerHTML
+      replacement.setAttribute('style', element.getAttribute('style') || '')
+      element.replaceWith(replacement)
+    })
+
+  body.querySelectorAll<HTMLElement>('p').forEach((element) => {
+    const source = `${element.className} ${element.getAttribute('style') || ''}`
+
+    if (/heading\s*1|titre\s*1|MsoHeading1/i.test(source)) {
+      const replacement = document.createElement('h2')
+      replacement.innerHTML = element.innerHTML
+      replacement.setAttribute('style', element.getAttribute('style') || '')
+      element.replaceWith(replacement)
+      return
+    }
+
+    if (/heading\s*[2-6]|titre\s*[2-6]|MsoHeading[2-6]/i.test(source)) {
+      const replacement = document.createElement('h3')
+      replacement.innerHTML = element.innerHTML
+      replacement.setAttribute('style', element.getAttribute('style') || '')
+      element.replaceWith(replacement)
+    }
+  })
+
+  body.querySelectorAll<HTMLElement>('*').forEach((element) => {
+    const style = element.getAttribute('style') || ''
+    const fontWeight = style.match(/font-weight\s*:\s*([^;]+)/i)?.[1] || ''
+    const fontStyle = style.match(/font-style\s*:\s*([^;]+)/i)?.[1] || ''
+    const decoration = style.match(/text-decoration(?:-line)?\s*:\s*([^;]+)/i)?.[1] || ''
+    const textAlign = style.match(/text-align\s*:\s*(left|center|right|justify)/i)?.[1]
+
+    if (
+      /bold|[6-9]00/i.test(fontWeight) &&
+      !['STRONG', 'B'].includes(element.tagName)
+    ) {
+      const strong = document.createElement('strong')
+      while (element.firstChild) strong.appendChild(element.firstChild)
+      element.appendChild(strong)
+    }
+
+    if (/italic/i.test(fontStyle) && !['EM', 'I'].includes(element.tagName)) {
+      const italic = document.createElement('em')
+      while (element.firstChild) italic.appendChild(element.firstChild)
+      element.appendChild(italic)
+    }
+
+    if (/underline/i.test(decoration) && element.tagName !== 'U') {
+      const underline = document.createElement('u')
+      while (element.firstChild) underline.appendChild(element.firstChild)
+      element.appendChild(underline)
+    }
+
+    if (/line-through/i.test(decoration) && !['S', 'STRIKE'].includes(element.tagName)) {
+      const strike = document.createElement('s')
+      while (element.firstChild) strike.appendChild(element.firstChild)
+      element.appendChild(strike)
+    }
+
+    const allowedStyle =
+      textAlign && ['P', 'H2', 'H3'].includes(element.tagName)
+        ? `text-align: ${textAlign}`
+        : ''
+
+    Array.from(element.attributes).forEach((attribute) => {
+      if (attribute.name === 'href' && element.tagName === 'A') return
+      if (attribute.name === 'target' && element.tagName === 'A') return
+      if (attribute.name === 'rel' && element.tagName === 'A') return
+      element.removeAttribute(attribute.name)
+    })
+
+    if (allowedStyle) {
+      element.setAttribute('style', allowedStyle)
+    }
+  })
+
+  body.querySelectorAll<HTMLElement>('a').forEach((element) => {
+    const href = element.getAttribute('href') || ''
+    if (!/^https?:\/\//i.test(href) && !/^mailto:/i.test(href)) {
+      element.removeAttribute('href')
+    }
+  })
+
+  return body.innerHTML
+}
 
 type NewsItem = {
   id: number
@@ -49,12 +303,32 @@ export default function News() {
   const canDelete = can('news', 'delete')
 
   const editor = useEditor({
-    extensions: [StarterKit],
+    extensions: [
+      StarterKit.configure({
+        heading: {
+          levels: [2, 3],
+        },
+      }),
+      Underline,
+      Link.configure({
+        openOnClick: false,
+        autolink: true,
+        linkOnPaste: true,
+        HTMLAttributes: {
+          target: '_blank',
+          rel: 'noopener noreferrer',
+        },
+      }),
+      TextAlign.configure({
+        types: ['heading', 'paragraph'],
+      }),
+    ],
     content: '',
     editorProps: {
       attributes: {
         class: 'cms-editor-content',
       },
+      transformPastedHTML: normalizePastedHtml,
     },
     onUpdate({ editor }) {
       setContent(editor.getHTML())
@@ -525,12 +799,12 @@ export default function News() {
                     Contenu
                   </label>
                   <p className="mt-1 text-xs text-slate-500">
-                    Rédigez l’article comme dans un traitement de texte.
+                    Rédigez ici ou collez directement un article depuis Word, OpenOffice ou ChatGPT.
                   </p>
                 </div>
 
                 <span className="hidden sm:inline text-xs text-slate-600">
-                  Aperçu proche du rendu public
+                  Collage avec mise en forme conservée
                 </span>
               </div>
 
@@ -587,12 +861,54 @@ export default function News() {
 
                   <button
                     type="button"
+                    title="Souligné"
+                    aria-pressed={editor?.isActive('underline') || false}
+                    onClick={() => editor?.chain().focus().toggleUnderline().run()}
+                    className={`cms-editor-button ${editor?.isActive('underline') ? 'is-active' : ''}`}
+                  >
+                    <span className="underline">U</span>
+                  </button>
+
+                  <button
+                    type="button"
                     title="Barré"
                     aria-pressed={editor?.isActive('strike') || false}
                     onClick={() => editor?.chain().focus().toggleStrike().run()}
                     className={`cms-editor-button ${editor?.isActive('strike') ? 'is-active' : ''}`}
                   >
                     <span className="line-through">S</span>
+                  </button>
+
+                  <span className="cms-editor-separator" />
+
+                  <button
+                    type="button"
+                    title="Aligner à gauche"
+                    aria-pressed={editor?.isActive({ textAlign: 'left' }) || false}
+                    onClick={() => editor?.chain().focus().setTextAlign('left').run()}
+                    className={`cms-editor-button ${editor?.isActive({ textAlign: 'left' }) ? 'is-active' : ''}`}
+                  >
+                    Gauche
+                  </button>
+
+                  <button
+                    type="button"
+                    title="Centrer"
+                    aria-pressed={editor?.isActive({ textAlign: 'center' }) || false}
+                    onClick={() => editor?.chain().focus().setTextAlign('center').run()}
+                    className={`cms-editor-button ${editor?.isActive({ textAlign: 'center' }) ? 'is-active' : ''}`}
+                  >
+                    Centre
+                  </button>
+
+                  <button
+                    type="button"
+                    title="Aligner à droite"
+                    aria-pressed={editor?.isActive({ textAlign: 'right' }) || false}
+                    onClick={() => editor?.chain().focus().setTextAlign('right').run()}
+                    className={`cms-editor-button ${editor?.isActive({ textAlign: 'right' }) ? 'is-active' : ''}`}
+                  >
+                    Droite
                   </button>
 
                   <span className="cms-editor-separator" />
@@ -675,7 +991,31 @@ export default function News() {
                   </button>
                 </div>
 
-                <div className="cms-editor-workspace">
+                <div
+                  className="cms-editor-workspace"
+                  onPaste={(event) => {
+                    const clipboardHtml =
+                      event.clipboardData.getData('text/html')
+
+                    if (clipboardHtml) {
+                      return
+                    }
+
+                    const clipboardText =
+                      event.clipboardData.getData('text/plain')
+
+                    if (!clipboardText.trim()) {
+                      return
+                    }
+
+                    event.preventDefault()
+                    editor
+                      ?.chain()
+                      .focus()
+                      .insertContent(plainTextToRichHtml(clipboardText))
+                      .run()
+                  }}
+                >
                   <EditorContent editor={editor} />
                 </div>
               </div>
