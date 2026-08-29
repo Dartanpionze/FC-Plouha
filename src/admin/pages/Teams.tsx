@@ -14,6 +14,11 @@ import {
   Trash2,
   X,
   Shield,
+  ExternalLink,
+  ImageOff,
+  RefreshCw,
+  UsersRound,
+  EyeOff,
 } from 'lucide-react'
 
 type Team = {
@@ -314,6 +319,40 @@ export default function Teams() {
     }
   }
 
+  const removeTeamImage = async (team: Team) => {
+    if (!canUpdate) {
+      setMessage("Vous n'avez pas l'autorisation de modifier une équipe.")
+      return
+    }
+
+    if (!team.image_url) return
+
+    const confirmRemove = window.confirm(
+      `Retirer la photo de l'équipe "${team.name}" ?`,
+    )
+
+    if (!confirmRemove) return
+
+    const { error } = await supabase
+      .from('teams')
+      .update({ image_url: null })
+      .eq('id', team.id)
+
+    if (error) {
+      console.error(error)
+      setMessage("Impossible de retirer la photo de l'équipe.")
+      return
+    }
+
+    await removeStorageFile('team-images', team.image_url)
+
+    const refreshed = await fetchTeams()
+
+    if (refreshed) {
+      setMessage("Photo de l'équipe retirée.")
+    }
+  }
+
   const toggleActive = async (team: Team) => {
     if (!canUpdate) {
       setMessage("Vous n'avez pas l'autorisation de modifier une équipe.")
@@ -354,15 +393,22 @@ export default function Teams() {
     )
   })
 
+  const activeTeamsCount = teams.filter(
+    (team) => team.active,
+  ).length
+
+  const hiddenTeamsCount =
+    teams.length - activeTeamsCount
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
 
       {/* HEADER */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+      <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-8">
 
         <div>
           <p className="text-sm text-slate-400 mb-1">
-            Gestion du club
+            Gestion sportive
           </p>
 
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
@@ -370,20 +416,76 @@ export default function Teams() {
           </h1>
 
           <p className="mt-2 text-slate-400">
-            Gérez les équipes du FC Plouha.
+            Gérez les équipes et contrôlez leur affichage sur le site public.
           </p>
         </div>
 
-        {canCreate && (
-        <button
-            onClick={openNewForm}
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[var(--club-yellow)] text-slate-950 font-bold hover:opacity-90 transition"
-          >
-            <Plus size={19} />
-            Nouvelle équipe
-          </button>
-        )}
+        <div className="flex flex-col sm:flex-row gap-3">
 
+          <a
+            href="/equipes"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-white/10 bg-white/[0.04] text-sm font-semibold hover:bg-white/[0.08] transition"
+          >
+            <ExternalLink size={17} />
+            Voir la page publique
+          </a>
+
+          <button
+            type="button"
+            onClick={() => void fetchTeams()}
+            disabled={fetching}
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-white/10 bg-white/[0.04] text-sm font-semibold hover:bg-white/[0.08] disabled:opacity-50 transition"
+          >
+            <RefreshCw
+              size={17}
+              className={fetching ? 'animate-spin' : ''}
+            />
+            Actualiser
+          </button>
+
+          {canCreate && (
+            <button
+              onClick={openNewForm}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[var(--club-yellow)] text-slate-950 font-bold hover:opacity-90 transition"
+            >
+              <Plus size={19} />
+              Nouvelle équipe
+            </button>
+          )}
+
+        </div>
+      </div>
+
+      {/* INDICATEURS */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+          <div className="flex items-center gap-3">
+            <UsersRound size={20} className="text-[var(--club-yellow)]" />
+            <span className="text-sm text-slate-400">Total</span>
+          </div>
+          <p className="mt-3 text-3xl font-bold">{teams.length}</p>
+          <p className="mt-1 text-xs text-slate-500">équipes enregistrées</p>
+        </div>
+
+        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+          <div className="flex items-center gap-3">
+            <Shield size={20} className="text-green-400" />
+            <span className="text-sm text-slate-400">Publiées</span>
+          </div>
+          <p className="mt-3 text-3xl font-bold">{activeTeamsCount}</p>
+          <p className="mt-1 text-xs text-slate-500">visibles sur le site</p>
+        </div>
+
+        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+          <div className="flex items-center gap-3">
+            <EyeOff size={20} className="text-slate-400" />
+            <span className="text-sm text-slate-400">Masquées</span>
+          </div>
+          <p className="mt-3 text-3xl font-bold">{hiddenTeamsCount}</p>
+          <p className="mt-1 text-xs text-slate-500">non visibles publiquement</p>
+        </div>
       </div>
 
       {/* MESSAGE */}
@@ -461,27 +563,37 @@ export default function Teams() {
                   Catégorie
                 </label>
 
-                <select
+                <input
+                  type="text"
+                  list="team-categories"
+                  placeholder="Ex : Seniors, U18, Féminines..."
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="w-full rounded-xl border border-white/10 bg-slate-950 px-4 py-3 text-white outline-none focus:border-white/30"
-                >
-                  <option value="">Sélectionner</option>
-                  <option value="Seniors">Seniors</option>
-                  <option value="U18">U18</option>
-                  <option value="U17">U17</option>
-                  <option value="U16">U16</option>
-                  <option value="U15">U15</option>
-                  <option value="U14">U14</option>
-                  <option value="U13">U13</option>
-                  <option value="U12">U12</option>
-                  <option value="U11">U11</option>
-                  <option value="U10">U10</option>
-                  <option value="U9">U9</option>
-                  <option value="U8">U8</option>
-                  <option value="U7">U7</option>
-                  <option value="U6">U6</option>
-                </select>
+                  className="w-full rounded-xl border border-white/10 bg-slate-950 px-4 py-3 text-white placeholder:text-slate-600 outline-none focus:border-white/30"
+                />
+
+                <datalist id="team-categories">
+                  <option value="Seniors" />
+                  <option value="Féminines" />
+                  <option value="Vétérans" />
+                  <option value="U18" />
+                  <option value="U17" />
+                  <option value="U16" />
+                  <option value="U15" />
+                  <option value="U14" />
+                  <option value="U13" />
+                  <option value="U12" />
+                  <option value="U11" />
+                  <option value="U10" />
+                  <option value="U9" />
+                  <option value="U8" />
+                  <option value="U7" />
+                  <option value="U6" />
+                </datalist>
+
+                <p className="mt-2 text-xs text-slate-500">
+                  Choisissez une suggestion ou saisissez librement une catégorie.
+                </p>
               </div>
 
             </div>
@@ -609,11 +721,18 @@ export default function Teams() {
               )}
 
               {preview && (
-                <img
-                  src={preview}
-                  alt="Aperçu"
-                  className="mt-4 w-full max-h-72 object-cover rounded-xl border border-white/10"
-                />
+                <div className="mt-4">
+                  <img
+                    src={preview}
+                    alt="Aperçu de l'équipe"
+                    className="w-full max-h-72 object-cover rounded-xl border border-white/10"
+                  />
+                  {editingId && !image && (
+                    <p className="mt-2 text-xs text-slate-500">
+                      Photo actuelle. Choisissez un nouveau fichier pour la remplacer.
+                    </p>
+                  )}
+                </div>
               )}
             </div>
 
@@ -745,40 +864,61 @@ export default function Teams() {
               </div>
 
               {/* ACTIONS */}
-              {(canUpdate || canDelete) && (
               <div className="flex flex-wrap gap-2 shrink-0">
-  
-                  {canUpdate && (
+
+                {team.active && (
+                  <a
+                    href={`/equipes/${team.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm transition"
+                  >
+                    <ExternalLink size={15} />
+                    Voir
+                  </a>
+                )}
+
+                {canUpdate && team.image_url && (
                   <button
-                      onClick={() => toggleActive(team)}
-                      className="px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm transition"
-                    >
-                      {team.active ? 'Masquer' : 'Afficher'}
-                    </button>
-                  )}
-  
-                  {canUpdate && (
+                    type="button"
+                    onClick={() => void removeTeamImage(team)}
+                    className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm transition"
+                  >
+                    <ImageOff size={15} />
+                    Retirer photo
+                  </button>
+                )}
+
+                {canUpdate && (
                   <button
-                      onClick={() => editTeam(team)}
-                      className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm transition"
-                    >
-                      <Pencil size={16} />
-                      Modifier
-                    </button>
-                  )}
-  
-                  {canDelete && (
+                    onClick={() => void toggleActive(team)}
+                    className="px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm transition"
+                  >
+                    {team.active ? 'Masquer' : 'Afficher'}
+                  </button>
+                )}
+
+                {canUpdate && (
                   <button
-                      onClick={() => deleteTeam(team.id)}
-                      className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-sm transition"
-                    >
-                      <Trash2 size={16} />
-                      Supprimer
-                    </button>
-                  )}
-  
-                </div>
-              )}
+                    onClick={() => editTeam(team)}
+                    className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm transition"
+                  >
+                    <Pencil size={16} />
+                    Modifier
+                  </button>
+                )}
+
+                {canDelete && (
+                  <button
+                    onClick={() => void deleteTeam(team.id)}
+                    className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-sm transition"
+                  >
+                    <Trash2 size={16} />
+                    Supprimer
+                  </button>
+                )}
+
+              </div>
 
             </div>
 
