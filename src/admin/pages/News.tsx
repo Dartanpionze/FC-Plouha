@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { removeStorageFile } from '@/lib/storage'
 import {
@@ -12,6 +12,9 @@ import StarterKit from '@tiptap/starter-kit'
 import Link from '@tiptap/extension-link'
 import TextAlign from '@tiptap/extension-text-align'
 import Underline from '@tiptap/extension-underline'
+import TextStyle from '@tiptap/extension-text-style'
+import TipTapImage from '@tiptap/extension-image'
+import { Extension } from '@tiptap/core'
 import {
   Plus,
   Search,
@@ -217,6 +220,9 @@ function normalizePastedHtml(html: string) {
     const fontStyle = style.match(/font-style\s*:\s*([^;]+)/i)?.[1] || ''
     const decoration = style.match(/text-decoration(?:-line)?\s*:\s*([^;]+)/i)?.[1] || ''
     const textAlign = style.match(/text-align\s*:\s*(left|center|right|justify)/i)?.[1]
+    const sourceFontSize =
+      style.match(/font-size\s*:\s*([^;]+)/i)?.[1] || ''
+    const fontSize = normalizeFontSize(sourceFontSize)
 
     if (
       /bold|[6-9]00/i.test(fontWeight) &&
@@ -245,20 +251,59 @@ function normalizePastedHtml(html: string) {
       element.appendChild(strike)
     }
 
+    if (
+      fontSize &&
+      !['IMG', 'BR', 'HR'].includes(element.tagName)
+    ) {
+      if (element.tagName === 'SPAN') {
+        element.setAttribute(
+          'data-cms-font-size',
+          fontSize,
+        )
+      } else {
+        const span = document.createElement('span')
+        span.setAttribute(
+          'data-cms-font-size',
+          fontSize,
+        )
+
+        while (element.firstChild) {
+          span.appendChild(element.firstChild)
+        }
+
+        element.appendChild(span)
+      }
+    }
+
     const allowedStyle =
       textAlign && ['P', 'H2', 'H3'].includes(element.tagName)
         ? `text-align: ${textAlign}`
         : ''
 
+    const cmsFontSize =
+      element.getAttribute('data-cms-font-size') || ''
+
     Array.from(element.attributes).forEach((attribute) => {
       if (attribute.name === 'href' && element.tagName === 'A') return
       if (attribute.name === 'target' && element.tagName === 'A') return
       if (attribute.name === 'rel' && element.tagName === 'A') return
+      if (attribute.name === 'src' && element.tagName === 'IMG') return
+      if (attribute.name === 'alt' && element.tagName === 'IMG') return
       element.removeAttribute(attribute.name)
     })
 
-    if (allowedStyle) {
-      element.setAttribute('style', allowedStyle)
+    const allowedStyles = [
+      allowedStyle,
+      cmsFontSize
+        ? `font-size: ${cmsFontSize}`
+        : '',
+    ].filter(Boolean)
+
+    if (allowedStyles.length > 0) {
+      element.setAttribute(
+        'style',
+        allowedStyles.join('; '),
+      )
     }
   })
 
@@ -270,6 +315,99 @@ function normalizePastedHtml(html: string) {
   })
 
   return body.innerHTML
+}
+
+
+const FONT_SIZES = [
+  '12px',
+  '14px',
+  '16px',
+  '18px',
+  '20px',
+  '24px',
+  '28px',
+  '32px',
+  '36px',
+  '48px',
+] as const
+
+const FontSize = Extension.create({
+  name: 'fontSize',
+
+  addGlobalAttributes() {
+    return [
+      {
+        types: ['textStyle'],
+        attributes: {
+          fontSize: {
+            default: null,
+            parseHTML: (element) =>
+              element.style.fontSize || null,
+            renderHTML: (attributes) => {
+              if (!attributes.fontSize) {
+                return {}
+              }
+
+              return {
+                style: `font-size: ${attributes.fontSize}`,
+              }
+            },
+          },
+        },
+      },
+    ]
+  },
+})
+
+function normalizeFontSize(value: string) {
+  const match = value
+    .trim()
+    .match(/^([\d.]+)\s*(px|pt|rem|em)?$/i)
+
+  if (!match) return ''
+
+  const amount = Number(match[1])
+  const unit = (match[2] || 'px').toLowerCase()
+
+  if (!Number.isFinite(amount) || amount <= 0) {
+    return ''
+  }
+
+  let pixels = amount
+
+  if (unit === 'pt') {
+    pixels = amount * (4 / 3)
+  } else if (unit === 'rem' || unit === 'em') {
+    pixels = amount * 16
+  }
+
+  const allowed = FONT_SIZES.map((size) =>
+    Number.parseInt(size, 10),
+  )
+
+  const closest = allowed.reduce((best, current) =>
+    Math.abs(current - pixels) < Math.abs(best - pixels)
+      ? current
+      : best,
+  )
+
+  return `${closest}px`
+}
+
+function getArticleImageUrls(html: string) {
+  const urls = new Set<string>()
+  const expression =
+    /<img[^>]+src=["']([^"']+)["'][^>]*>/gi
+
+  for (const match of html.matchAll(expression)) {
+    const url = match[1]
+
+    if (url.includes('/news-images/')) {
+      urls.add(url)
+    }
+  }
+
+  return Array.from(urls)
 }
 
 type NewsItem = {
@@ -297,6 +435,9 @@ export default function News() {
   const [loading, setLoading] = useState(false)
   const [fetching, setFetching] = useState(true)
   const [showForm, setShowForm] = useState(false)
+  const [inlineImageLoading, setInlineImageLoading] = useState(false)
+  const [pendingInlineImages, setPendingInlineImages] = useState<string[]>([])
+  const inlineImageInputRef = useRef<HTMLInputElement>(null)
 
   const canCreate = can('news', 'create')
   const canUpdate = can('news', 'update')
@@ -310,6 +451,14 @@ export default function News() {
         },
       }),
       Underline,
+      TextStyle,
+      FontSize,
+      TipTapImage.configure({
+        allowBase64: false,
+        HTMLAttributes: {
+          class: 'cms-article-inline-image',
+        },
+      }),
       Link.configure({
         openOnClick: false,
         autolink: true,
@@ -369,6 +518,87 @@ export default function News() {
     }
   }
 
+  const removeInlineImages = async (urls: string[]) => {
+    await Promise.all(
+      urls.map((url) =>
+        removeStorageFile('news-images', url),
+      ),
+    )
+  }
+
+  const insertInlineImage = async (file: File) => {
+    const allowed =
+      editingId !== null ? canUpdate : canCreate
+
+    if (!allowed) {
+      setMessage(
+        "Vous n'avez pas l'autorisation d'ajouter une image dans cet article.",
+      )
+      return
+    }
+
+    const imageError = validateImageFile(file)
+
+    if (imageError) {
+      setMessage(imageError)
+      return
+    }
+
+    setInlineImageLoading(true)
+    setMessage('')
+
+    try {
+      const fileName = createImageFileName(file)
+
+      const { error: uploadError } = await supabase.storage
+        .from('news-images')
+        .upload(fileName, file)
+
+      if (uploadError) {
+        console.error(uploadError)
+        setMessage(
+          "Erreur lors de l'envoi de l'image dans l'article.",
+        )
+        return
+      }
+
+      const { data } = supabase.storage
+        .from('news-images')
+        .getPublicUrl(fileName)
+
+      const publicUrl = data.publicUrl
+
+      setPendingInlineImages((current) => [
+        ...current,
+        publicUrl,
+      ])
+
+      editor
+        ?.chain()
+        .focus()
+        .setImage({
+          src: publicUrl,
+          alt: file.name,
+        })
+        .run()
+    } finally {
+      setInlineImageLoading(false)
+
+      if (inlineImageInputRef.current) {
+        inlineImageInputRef.current.value = ''
+      }
+    }
+  }
+
+  const cancelForm = async () => {
+    if (pendingInlineImages.length > 0) {
+      await removeInlineImages(pendingInlineImages)
+    }
+
+    setPendingInlineImages([])
+    resetForm()
+  }
+
   const resetForm = () => {
     setTitle('')
     setExcerpt('')
@@ -378,6 +608,7 @@ export default function News() {
     setEditingId(null)
     setMessage('')
     setImageValidationError('')
+    setPendingInlineImages([])
 
     editor?.commands.setContent('')
     setShowForm(false)
@@ -409,6 +640,7 @@ export default function News() {
     setContent(item.content || '')
     setPreview(item.image_url || '')
     setImage(null)
+    setPendingInlineImages([])
 
     editor?.commands.setContent(item.content || '')
 
@@ -445,9 +677,14 @@ export default function News() {
     setLoading(true)
     setMessage('')
 
-    const previousImageUrl = editingId
-      ? news.find((item) => item.id === editingId)?.image_url || null
+    const previousItem = editingId
+      ? news.find((item) => item.id === editingId)
       : null
+
+    const previousImageUrl =
+      previousItem?.image_url || null
+    const previousContent =
+      previousItem?.content || ''
 
     let imageUrl = ''
 
@@ -532,8 +769,29 @@ export default function News() {
       )
     }
 
+    const savedInlineImages =
+      getArticleImageUrls(content)
+    const previousInlineImages =
+      getArticleImageUrls(previousContent)
+
+    const removedInlineImages =
+      previousInlineImages.filter(
+        (url) => !savedInlineImages.includes(url),
+      )
+
+    const unusedPendingImages =
+      pendingInlineImages.filter(
+        (url) => !savedInlineImages.includes(url),
+      )
+
+    await removeInlineImages([
+      ...removedInlineImages,
+      ...unusedPendingImages,
+    ])
+
     const wasEditing = Boolean(editingId)
 
+    setPendingInlineImages([])
     resetForm()
 
     const refreshed = await fetchNews()
@@ -582,6 +840,12 @@ export default function News() {
       await removeStorageFile(
         'news-images',
         item.image_url,
+      )
+    }
+
+    if (item?.content) {
+      await removeInlineImages(
+        getArticleImageUrls(item.content),
       )
     }
 
@@ -681,7 +945,7 @@ export default function News() {
             </div>
 
             <button
-              onClick={resetForm}
+              onClick={() => void cancelForm()}
               className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center transition"
             >
               <X size={19} />
@@ -837,6 +1101,45 @@ export default function News() {
                     <option value="h3">Titre 3</option>
                   </select>
 
+                  <select
+                    aria-label="Taille du texte"
+                    value={
+                      editor?.getAttributes('textStyle')
+                        .fontSize || ''
+                    }
+                    onChange={(event) => {
+                      const fontSize = event.target.value
+
+                      if (!fontSize) {
+                        editor
+                          ?.chain()
+                          .focus()
+                          .setMark('textStyle', {
+                            fontSize: null,
+                          })
+                          .removeEmptyTextStyle()
+                          .run()
+                        return
+                      }
+
+                      editor
+                        ?.chain()
+                        .focus()
+                        .setMark('textStyle', {
+                          fontSize,
+                        })
+                        .run()
+                    }}
+                    className="cms-editor-select"
+                  >
+                    <option value="">Taille</option>
+                    {FONT_SIZES.map((size) => (
+                      <option key={size} value={size}>
+                        {Number.parseInt(size, 10)}
+                      </option>
+                    ))}
+                  </select>
+
                   <span className="cms-editor-separator" />
 
                   <button
@@ -910,6 +1213,37 @@ export default function News() {
                   >
                     Droite
                   </button>
+
+                  <span className="cms-editor-separator" />
+
+                  <button
+                    type="button"
+                    title="Insérer une image dans l'article"
+                    disabled={inlineImageLoading}
+                    onClick={() =>
+                      inlineImageInputRef.current?.click()
+                    }
+                    className="cms-editor-button cms-editor-button-wide"
+                  >
+                    {inlineImageLoading
+                      ? 'Envoi...'
+                      : 'Image'}
+                  </button>
+
+                  <input
+                    ref={inlineImageInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="hidden"
+                    onChange={(event) => {
+                      const file =
+                        event.target.files?.[0]
+
+                      if (file) {
+                        void insertInlineImage(file)
+                      }
+                    }}
+                  />
 
                   <span className="cms-editor-separator" />
 
@@ -1037,7 +1371,7 @@ export default function News() {
               </button>
 
               <button
-                onClick={resetForm}
+                onClick={() => void cancelForm()}
                 className="px-6 rounded-xl bg-white/5 hover:bg-white/10 py-3.5 font-semibold transition"
               >
                 Annuler
