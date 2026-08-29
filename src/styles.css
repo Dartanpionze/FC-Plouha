@@ -310,21 +310,23 @@ code {
 }
 
 
-/* Barre d'outils de l'éditeur visible pendant le défilement */
+/* Barre d'outils de l'éditeur qui suit le scroll */
 .cms-editor-shell {
   overflow: visible;
 }
 
 .cms-editor-toolbar {
   position: sticky;
-  top: 0.75rem;
-  z-index: 30;
-  border-radius: 1rem 1rem 0 0;
-  box-shadow: 0 10px 30px rgba(2, 6, 23, 0.22);
+  top: 5.5rem;
+  z-index: 25;
+  border-radius: 1rem;
+  background: rgba(30, 41, 59, 0.98);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 12px 32px rgba(2, 6, 23, 0.35);
 }
 
 @media (max-width: 640px) {
   .cms-editor-toolbar {
-    top: 0.5rem;
+    top: 4.5rem;
   }
 }
