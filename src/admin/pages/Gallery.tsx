@@ -15,6 +15,9 @@ import {
   X,
   Image as ImageIcon,
   FolderOpen,
+  ExternalLink,
+  RefreshCw,
+  Images,
 } from 'lucide-react'
 
 type Album = {
@@ -424,6 +427,34 @@ export default function Gallery() {
     )
   }
 
+  const toggleAlbum = async (album: Album) => {
+    if (!canUpdate) {
+      setMessage("Vous n'avez pas l'autorisation de modifier un album.")
+      return
+    }
+
+    const { error } = await supabase
+      .from('gallery_albums')
+      .update({ active: !album.active })
+      .eq('id', album.id)
+
+    if (error) {
+      console.error(error)
+      setMessage("Impossible de modifier la visibilité de l'album.")
+      return
+    }
+
+    const refreshed = await fetchAlbums()
+
+    if (refreshed) {
+      setMessage(
+        album.active
+          ? 'Album masqué sur le site.'
+          : 'Album affiché sur le site.',
+      )
+    }
+  }
+
   const deleteAlbum = async (album: Album) => {
     if (!canDelete) {
       setMessage("Vous n'avez pas l'autorisation de supprimer un album.")
@@ -483,50 +514,100 @@ export default function Gallery() {
     (album) => album.id === selectedAlbum,
   )
 
+  const activeAlbumsCount = albums.filter((album) => album.active).length
+  const activePhotosCount = photos.filter((photo) => photo.active).length
+  const homePhotosCount = photos.filter(
+    (photo) => photo.home_slot !== null,
+  ).length
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
 
       {/* HEADER */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
-
+      <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-8">
         <div>
-          <p className="text-sm text-slate-400 mb-1">
-            Gestion du club
-          </p>
-
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-            Galerie
-          </h1>
-
+          <p className="text-sm text-slate-400 mb-1">Médias du club</p>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Galerie</h1>
           <p className="mt-2 text-slate-400">
-            Organisez les photos du FC Plouha.
+            Organisez les albums, les photos et la sélection affichée sur l'accueil.
           </p>
         </div>
 
-        {canCreate && (
-        <div className="flex gap-3">
-  
+        <div className="flex flex-col sm:flex-row gap-3">
+          <a
+            href="/galerie"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-white/10 bg-white/[0.04] text-sm font-semibold hover:bg-white/[0.08] transition"
+          >
+            <ExternalLink size={17} />
+            Voir la galerie publique
+          </a>
+
+          <button
+            type="button"
+            onClick={() => {
+              void fetchAlbums()
+              if (selectedAlbum) void fetchPhotos(selectedAlbum)
+            }}
+            className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-white/10 bg-white/[0.04] text-sm font-semibold hover:bg-white/[0.08] transition"
+          >
+            <RefreshCw size={17} />
+            Actualiser
+          </button>
+
+          {canCreate && (
             <button
               onClick={() => setShowAlbumForm(true)}
-              className="inline-flex items-center gap-2 px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 font-semibold transition"
+              className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 font-semibold transition"
             >
               <FolderOpen size={18} />
               Nouvel album
             </button>
-  
-            {selectedAlbum && (
-              <button
-                onClick={() => setShowPhotoForm(true)}
-                className="inline-flex items-center gap-2 px-4 py-3 rounded-xl bg-[var(--club-yellow)] text-slate-950 font-bold hover:opacity-90 transition"
-              >
-                <Plus size={18} />
-                Ajouter des photos
-              </button>
-            )}
-  
-          </div>
-        )}
+          )}
 
+          {canCreate && selectedAlbum && (
+            <button
+              onClick={() => setShowPhotoForm(true)}
+              className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[var(--club-yellow)] text-slate-950 font-bold hover:opacity-90 transition"
+            >
+              <Plus size={18} />
+              Ajouter des photos
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-5">
+          <div className="flex items-center gap-2 text-sm text-slate-400">
+            <FolderOpen size={18} className="text-[var(--club-yellow)]" /> Albums
+          </div>
+          <p className="mt-3 text-2xl sm:text-3xl font-bold">{albums.length}</p>
+        </div>
+
+        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-5">
+          <div className="flex items-center gap-2 text-sm text-slate-400">
+            <Eye size={18} className="text-green-400" /> Albums publiés
+          </div>
+          <p className="mt-3 text-2xl sm:text-3xl font-bold">{activeAlbumsCount}</p>
+        </div>
+
+        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-5">
+          <div className="flex items-center gap-2 text-sm text-slate-400">
+            <Images size={18} className="text-blue-400" /> Photos de l'album
+          </div>
+          <p className="mt-3 text-2xl sm:text-3xl font-bold">{photos.length}</p>
+          <p className="mt-1 text-xs text-slate-500">{activePhotosCount} visibles</p>
+        </div>
+
+        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-5">
+          <div className="flex items-center gap-2 text-sm text-slate-400">
+            <ImageIcon size={18} className="text-purple-400" /> Sélection accueil
+          </div>
+          <p className="mt-3 text-2xl sm:text-3xl font-bold">{homePhotosCount}/3</p>
+          <p className="mt-1 text-xs text-slate-500">dans l'album sélectionné</p>
+        </div>
       </div>
 
       {/* MESSAGE */}
@@ -787,23 +868,46 @@ export default function Gallery() {
                     }
                   />
 
-                  {canDelete && (
-                  <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        deleteAlbum(album)
-                      }}
-                      className="text-slate-600 hover:text-red-400 transition"
-                    >
-                      <Trash2 size={17} />
-                    </button>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {canUpdate && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          void toggleAlbum(album)
+                        }}
+                        title={album.active ? "Masquer l'album" : "Afficher l'album"}
+                        className="text-slate-500 hover:text-white transition"
+                      >
+                        {album.active ? <EyeOff size={17} /> : <Eye size={17} />}
+                      </button>
+                    )}
+
+                    {canDelete && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          void deleteAlbum(album)
+                        }}
+                        title="Supprimer l'album"
+                        className="text-slate-600 hover:text-red-400 transition"
+                      >
+                        <Trash2 size={17} />
+                      </button>
+                    )}
+                  </div>
 
                 </div>
 
-                <h3 className="font-bold mt-4">
-                  {album.name}
-                </h3>
+                <div className="flex flex-wrap items-center gap-2 mt-4">
+                  <h3 className="font-bold">{album.name}</h3>
+                  {!album.active && (
+                    <span className="text-[11px] px-2 py-1 rounded-full bg-red-500/10 text-red-400">
+                      Masqué
+                    </span>
+                  )}
+                </div>
 
                 {album.description && (
                   <p className="text-sm text-slate-500 mt-1 line-clamp-2">
