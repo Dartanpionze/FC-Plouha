@@ -14,6 +14,10 @@ import TextAlign from '@tiptap/extension-text-align'
 import Underline from '@tiptap/extension-underline'
 import TextStyle from '@tiptap/extension-text-style'
 import TipTapImage from '@tiptap/extension-image'
+import Table from '@tiptap/extension-table'
+import TableRow from '@tiptap/extension-table-row'
+import TableHeader from '@tiptap/extension-table-header'
+import TableCell from '@tiptap/extension-table-cell'
 import { Extension } from '@tiptap/core'
 import {
   Plus,
@@ -459,6 +463,15 @@ export default function News() {
           class: 'cms-article-inline-image',
         },
       }),
+      Table.configure({
+        resizable: false,
+        HTMLAttributes: {
+          class: 'cms-article-table',
+        },
+      }),
+      TableRow,
+      TableHeader,
+      TableCell,
       Link.configure({
         openOnClick: false,
         autolink: true,
@@ -652,6 +665,49 @@ export default function News() {
       top: 0,
       behavior: 'smooth',
     })
+  }
+
+  const editLink = () => {
+    if (!editor) return
+
+    const previousUrl =
+      editor.getAttributes('link').href || ''
+
+    const url = window.prompt(
+      'Adresse du lien :',
+      previousUrl,
+    )
+
+    if (url === null) return
+
+    const trimmedUrl = url.trim()
+
+    if (!trimmedUrl) {
+      editor
+        .chain()
+        .focus()
+        .extendMarkRange('link')
+        .unsetLink()
+        .run()
+      return
+    }
+
+    const normalizedUrl =
+      /^https?:\/\//i.test(trimmedUrl) ||
+      /^mailto:/i.test(trimmedUrl)
+        ? trimmedUrl
+        : `https://${trimmedUrl}`
+
+    editor
+      .chain()
+      .focus()
+      .extendMarkRange('link')
+      .setLink({
+        href: normalizedUrl,
+        target: '_blank',
+        rel: 'noopener noreferrer',
+      })
+      .run()
   }
 
   const saveNews = async () => {
@@ -1072,7 +1128,7 @@ export default function News() {
                 </span>
               </div>
 
-              <div className="cms-editor-shell rounded-2xl border border-white/10 bg-slate-900">
+              <div className="cms-editor-shell overflow-hidden rounded-2xl border border-white/10 bg-slate-900">
                 <div className="cms-editor-toolbar">
                   <select
                     aria-label="Style du paragraphe"
@@ -1244,6 +1300,116 @@ export default function News() {
                       }
                     }}
                   />
+
+                  <button
+                    type="button"
+                    title="Ajouter ou modifier un lien"
+                    aria-pressed={editor?.isActive('link') || false}
+                    onClick={editLink}
+                    className={`cms-editor-button ${editor?.isActive('link') ? 'is-active' : ''}`}
+                  >
+                    Lien
+                  </button>
+
+                  <span className="cms-editor-separator" />
+
+                  {!editor?.isActive('table') ? (
+                    <button
+                      type="button"
+                      title="Insérer un tableau 3 × 3"
+                      onClick={() =>
+                        editor
+                          ?.chain()
+                          .focus()
+                          .insertTable({
+                            rows: 3,
+                            cols: 3,
+                            withHeaderRow: true,
+                          })
+                          .run()
+                      }
+                      className="cms-editor-button cms-editor-button-wide"
+                    >
+                      Tableau
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        title="Ajouter une ligne"
+                        onClick={() =>
+                          editor
+                            ?.chain()
+                            .focus()
+                            .addRowAfter()
+                            .run()
+                        }
+                        className="cms-editor-button"
+                      >
+                        +Ligne
+                      </button>
+
+                      <button
+                        type="button"
+                        title="Supprimer la ligne"
+                        onClick={() =>
+                          editor
+                            ?.chain()
+                            .focus()
+                            .deleteRow()
+                            .run()
+                        }
+                        className="cms-editor-button"
+                      >
+                        −Ligne
+                      </button>
+
+                      <button
+                        type="button"
+                        title="Ajouter une colonne"
+                        onClick={() =>
+                          editor
+                            ?.chain()
+                            .focus()
+                            .addColumnAfter()
+                            .run()
+                        }
+                        className="cms-editor-button"
+                      >
+                        +Col.
+                      </button>
+
+                      <button
+                        type="button"
+                        title="Supprimer la colonne"
+                        onClick={() =>
+                          editor
+                            ?.chain()
+                            .focus()
+                            .deleteColumn()
+                            .run()
+                        }
+                        className="cms-editor-button"
+                      >
+                        −Col.
+                      </button>
+
+                      <button
+                        type="button"
+                        title="Supprimer le tableau"
+                        onClick={() =>
+                          editor
+                            ?.chain()
+                            .focus()
+                            .deleteTable()
+                            .run()
+                        }
+                        className="cms-editor-button cms-editor-button-wide"
+                      >
+                        Suppr. tableau
+                      </button>
+                    </>
+                  )}
 
                   <span className="cms-editor-separator" />
 
