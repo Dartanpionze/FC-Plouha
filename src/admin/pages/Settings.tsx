@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { useAdminAccess } from '@/admin/hooks/useAdminAccess'
 import {
   Save,
   Building2,
@@ -31,6 +32,9 @@ type ClubSettings = {
 }
 
 export default function Settings() {
+  const { can } = useAdminAccess()
+  const canUpdate = can('settings', 'update')
+
   const [settings, setSettings] = useState<ClubSettings | null>(null)
 
   const [clubName, setClubName] = useState('')
@@ -140,6 +144,11 @@ export default function Settings() {
 
   const saveSettings = async () => {
     if (!settings) return
+
+    if (!canUpdate) {
+      setMessage("Vous n'avez pas l'autorisation de modifier les paramètres.")
+      return
+    }
 
     if (!clubName.trim()) {
       setMessage('Le nom du club est obligatoire.')
@@ -292,6 +301,7 @@ export default function Settings() {
               </label>
 
               <input
+                disabled={!canUpdate}
                 type="text"
                 value={clubName}
                 onChange={(e) =>
@@ -307,6 +317,7 @@ export default function Settings() {
               </label>
 
               <input
+                disabled={!canUpdate}
                 type="text"
                 value={shortName}
                 onChange={(e) =>
@@ -322,6 +333,7 @@ export default function Settings() {
               </label>
 
               <input
+                disabled={!canUpdate}
                 type="text"
                 placeholder="2026/2027"
                 value={season}
@@ -338,6 +350,7 @@ export default function Settings() {
               </label>
 
               <input
+                disabled={!canUpdate}
                 type="number"
                 min="1800"
                 max="2100"
@@ -365,6 +378,7 @@ export default function Settings() {
                 </label>
 
                 <input
+                  disabled={!canUpdate}
                   type="number"
                   min="0"
                   value={membersCount}
@@ -381,6 +395,7 @@ export default function Settings() {
                 </label>
 
                 <input
+                  disabled={!canUpdate}
                   type="number"
                   min="0"
                   value={volunteersCount}
@@ -397,6 +412,7 @@ export default function Settings() {
                 </label>
 
                 <input
+                  disabled={!canUpdate}
                   type="number"
                   min="0"
                   value={districtTitles}
@@ -439,6 +455,7 @@ export default function Settings() {
               </label>
 
               <input
+                disabled={!canUpdate}
                 type="text"
                 placeholder="Adresse du stade ou du siège"
                 value={address}
@@ -457,6 +474,7 @@ export default function Settings() {
                 </label>
 
                 <input
+                  disabled={!canUpdate}
                   type="text"
                   value={postalCode}
                   onChange={(e) =>
@@ -472,6 +490,7 @@ export default function Settings() {
                 </label>
 
                 <input
+                  disabled={!canUpdate}
                   type="text"
                   value={city}
                   onChange={(e) =>
@@ -504,6 +523,7 @@ export default function Settings() {
               </label>
 
               <input
+                disabled={!canUpdate}
                 type="email"
                 placeholder="contact@fcplouha.fr"
                 value={email}
@@ -523,6 +543,7 @@ export default function Settings() {
               </label>
 
               <input
+                disabled={!canUpdate}
                 type="tel"
                 value={phone}
                 onChange={(e) =>
@@ -553,6 +574,7 @@ export default function Settings() {
               </label>
 
               <input
+                disabled={!canUpdate}
                 type="url"
                 placeholder="https://facebook.com/..."
                 value={facebookUrl}
@@ -572,6 +594,7 @@ export default function Settings() {
               </label>
 
               <input
+                disabled={!canUpdate}
                 type="url"
                 placeholder="https://instagram.com/..."
                 value={instagramUrl}
@@ -597,6 +620,7 @@ export default function Settings() {
           </p>
 
           <textarea
+            disabled={!canUpdate}
             rows={8}
             placeholder="Présentation du FC Plouha..."
             value={description}
@@ -609,21 +633,23 @@ export default function Settings() {
         </section>
 
         {/* ENREGISTRER */}
-        <div className="flex justify-end">
+        {canUpdate && (
+          <div className="flex justify-end">
 
-          <button
-            onClick={saveSettings}
-            disabled={saving}
-            className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-[var(--club-yellow)] text-slate-950 font-bold hover:opacity-90 transition disabled:opacity-50"
-          >
-            <Save size={18} />
+            <button
+              onClick={saveSettings}
+              disabled={saving}
+              className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-[var(--club-yellow)] text-slate-950 font-bold hover:opacity-90 transition disabled:opacity-50"
+            >
+              <Save size={18} />
 
-            {saving
-              ? 'Enregistrement...'
-              : 'Enregistrer les modifications'}
-          </button>
+              {saving
+                ? 'Enregistrement...'
+                : 'Enregistrer les modifications'}
+            </button>
 
-        </div>
+          </div>
+        )}
 
       </div>
 
