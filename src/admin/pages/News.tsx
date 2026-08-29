@@ -1072,7 +1072,7 @@ export default function News() {
                 </span>
               </div>
 
-              <div className="cms-editor-shell overflow-hidden rounded-2xl border border-white/10 bg-slate-900">
+              <div className="cms-editor-shell rounded-2xl border border-white/10 bg-slate-900">
                 <div className="cms-editor-toolbar">
                   <select
                     aria-label="Style du paragraphe"
