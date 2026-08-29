@@ -15,7 +15,11 @@ import {
   EyeOff,
   X,
   ExternalLink,
-  GripVertical,
+  RefreshCw,
+  ImageOff,
+  ArrowUp,
+  ArrowDown,
+  Handshake,
 } from 'lucide-react'
 
 type Partner = {
@@ -159,6 +163,26 @@ export default function Partners() {
       return
     }
 
+    if (
+      displayOrder !== '' &&
+      (!Number.isInteger(Number(displayOrder)) || Number(displayOrder) < 0)
+    ) {
+      setMessage("L'ordre d'affichage doit être un nombre entier positif.")
+      return
+    }
+
+    if (websiteUrl.trim()) {
+      try {
+        const parsedUrl = new URL(websiteUrl.trim())
+        if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+          throw new Error('unsupported protocol')
+        }
+      } catch {
+        setMessage("L'adresse du site internet doit être une URL complète valide.")
+        return
+      }
+    }
+
     setLoading(true)
     setMessage('')
 
@@ -198,9 +222,9 @@ export default function Partners() {
     }
 
     const payload = {
-      name,
-      description: description || null,
-      website_url: websiteUrl || null,
+      name: name.trim(),
+      description: description.trim() || null,
+      website_url: websiteUrl.trim() || null,
       type,
       display_order: Number(displayOrder) || 0,
       ...(logoUrl && {
@@ -269,6 +293,70 @@ export default function Partners() {
     }
 
     setLoading(false)
+  }
+
+  const removePartnerLogo = async (partner: Partner) => {
+    if (!canUpdate) {
+      setMessage("Vous n'avez pas l'autorisation de modifier un partenaire.")
+      return
+    }
+
+    if (!partner.logo_url) return
+
+    const confirmed = window.confirm(`Retirer le logo de "${partner.name}" ?`)
+    if (!confirmed) return
+
+    const { error } = await supabase
+      .from('partners')
+      .update({ logo_url: null })
+      .eq('id', partner.id)
+
+    if (error) {
+      console.error(error)
+      setMessage('Impossible de retirer le logo.')
+      return
+    }
+
+    await removeStorageFile('partner-logos', partner.logo_url)
+    const refreshed = await fetchPartners()
+    if (refreshed) setMessage('Logo retiré.')
+  }
+
+  const movePartner = async (partner: Partner, direction: -1 | 1) => {
+    if (!canUpdate) {
+      setMessage("Vous n'avez pas l'autorisation de modifier les partenaires.")
+      return
+    }
+
+    const currentIndex = partners.findIndex((item) => item.id === partner.id)
+    const targetIndex = currentIndex + direction
+
+    if (currentIndex < 0 || targetIndex < 0 || targetIndex >= partners.length) {
+      return
+    }
+
+    const reordered = [...partners]
+    const [moved] = reordered.splice(currentIndex, 1)
+    reordered.splice(targetIndex, 0, moved)
+
+    const results = await Promise.all(
+      reordered.map((item, index) =>
+        supabase
+          .from('partners')
+          .update({ display_order: index })
+          .eq('id', item.id),
+      ),
+    )
+
+    const failed = results.find((result) => result.error)
+    if (failed?.error) {
+      console.error(failed.error)
+      setMessage("Impossible de modifier l'ordre des partenaires.")
+      return
+    }
+
+    const refreshed = await fetchPartners()
+    if (refreshed) setMessage('Ordre des partenaires mis à jour.')
   }
 
   const togglePartner = async (partner: Partner) => {
@@ -353,36 +441,81 @@ export default function Partners() {
     }
   }
 
+  const activePartnersCount = partners.filter(
+    (partner) => partner.active,
+  ).length
+
+  const principalPartnersCount = partners.filter(
+    (partner) => partner.type === 'principal',
+  ).length
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
 
       {/* HEADER */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
-
+      <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-8">
         <div>
-          <p className="text-sm text-slate-400 mb-1">
-            Gestion du club
-          </p>
-
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-            Partenaires
-          </h1>
-
+          <p className="text-sm text-slate-400 mb-1">Relations du club</p>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Partenaires</h1>
           <p className="mt-2 text-slate-400">
-            Gérez les partenaires et sponsors du FC Plouha.
+            Gérez les partenaires, leurs logos et leur ordre d'affichage.
           </p>
         </div>
 
-        {canCreate && (
-        <button
-            onClick={openNewForm}
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[var(--club-yellow)] text-slate-950 font-bold hover:opacity-90 transition"
+        <div className="flex flex-col sm:flex-row gap-3">
+          <a
+            href="/partenaires"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-white/10 bg-white/[0.04] text-sm font-semibold hover:bg-white/[0.08] transition"
           >
-            <Plus size={19} />
-            Ajouter un partenaire
-          </button>
-        )}
+            <ExternalLink size={17} />
+            Voir la page publique
+          </a>
 
+          <button
+            type="button"
+            onClick={() => void fetchPartners()}
+            disabled={fetching}
+            className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-white/10 bg-white/[0.04] text-sm font-semibold hover:bg-white/[0.08] disabled:opacity-50 transition"
+          >
+            <RefreshCw size={17} className={fetching ? 'animate-spin' : ''} />
+            Actualiser
+          </button>
+
+          {canCreate && (
+            <button
+              onClick={openNewForm}
+              className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[var(--club-yellow)] text-slate-950 font-bold hover:opacity-90 transition"
+            >
+              <Plus size={19} />
+              Nouveau partenaire
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+          <div className="flex items-center gap-2 text-sm text-slate-400">
+            <Handshake size={19} className="text-[var(--club-yellow)]" /> Total
+          </div>
+          <p className="mt-3 text-3xl font-bold">{partners.length}</p>
+        </div>
+
+        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+          <div className="flex items-center gap-2 text-sm text-slate-400">
+            <Eye size={19} className="text-green-400" /> Publiés
+          </div>
+          <p className="mt-3 text-3xl font-bold">{activePartnersCount}</p>
+        </div>
+
+        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+          <div className="flex items-center gap-2 text-sm text-slate-400">
+            <ExternalLink size={19} className="text-blue-400" /> Principaux
+          </div>
+          <p className="mt-3 text-3xl font-bold">{principalPartnersCount}</p>
+        </div>
       </div>
 
       {/* MESSAGE */}
@@ -590,14 +723,19 @@ export default function Partners() {
               )}
 
               {preview && (
-                <div className="mt-4 w-full h-48 rounded-xl bg-white flex items-center justify-center p-6">
-
-                  <img
-                    src={preview}
-                    alt="Aperçu du logo"
-                    className="max-h-full max-w-full object-contain"
-                  />
-
+                <div className="mt-4">
+                  <div className="w-full h-48 rounded-xl bg-white flex items-center justify-center p-6">
+                    <img
+                      src={preview}
+                      alt="Aperçu du logo"
+                      className="max-h-full max-w-full object-contain"
+                    />
+                  </div>
+                  {editingId && !logo && (
+                    <p className="mt-2 text-xs text-slate-500">
+                      Logo actuel. Choisissez un nouveau fichier pour le remplacer.
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -667,9 +805,9 @@ export default function Partners() {
 
                 <div className="flex flex-col md:flex-row md:items-center gap-5">
 
-                  {/* DRAG / ORDRE */}
-                  <div className="hidden md:flex text-slate-600">
-                    <GripVertical size={20} />
+                  {/* ORDRE */}
+                  <div className="hidden md:flex w-9 h-9 shrink-0 rounded-lg bg-white/5 items-center justify-center text-xs font-bold text-slate-500">
+                    {partner.display_order}
                   </div>
 
                   {/* LOGO */}
@@ -744,61 +882,74 @@ export default function Partners() {
                   </div>
 
                   {/* ACTIONS */}
-                  {(canUpdate || canDelete) && (
-                  <div className="flex gap-2 shrink-0">
-  
-                      {canUpdate && (
-                      <button
-                          onClick={() =>
-                            togglePartner(
-                              partner,
-                            )
-                          }
-                          title={
-                            partner.active
-                              ? 'Masquer'
-                              : 'Afficher'
-                          }
-                          className="w-10 h-10 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center transition"
+                  <div className="flex flex-wrap gap-2 shrink-0">
+                    {canUpdate && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => void movePartner(partner, -1)}
+                          disabled={partners[0]?.id === partner.id}
+                          title="Monter"
+                          className="w-10 h-10 rounded-lg bg-white/5 hover:bg-white/10 disabled:opacity-30 flex items-center justify-center transition"
                         >
-                          {partner.active ? (
-                            <EyeOff size={17} />
-                          ) : (
-                            <Eye size={17} />
-                          )}
+                          <ArrowUp size={16} />
                         </button>
-                      )}
-  
-                      {canUpdate && (
-                      <button
-                          onClick={() =>
-                            editPartner(
-                              partner,
-                            )
-                          }
-                          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm transition"
+                        <button
+                          type="button"
+                          onClick={() => void movePartner(partner, 1)}
+                          disabled={partners[partners.length - 1]?.id === partner.id}
+                          title="Descendre"
+                          className="w-10 h-10 rounded-lg bg-white/5 hover:bg-white/10 disabled:opacity-30 flex items-center justify-center transition"
                         >
-                          <Pencil size={16} />
-                          Modifier
+                          <ArrowDown size={16} />
                         </button>
-                      )}
-  
-                      {canDelete && (
+                      </>
+                    )}
+
+                    {canUpdate && partner.logo_url && (
                       <button
-                          onClick={() =>
-                            deletePartner(
-                              partner,
-                            )
-                          }
-                          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-sm transition"
-                        >
-                          <Trash2 size={16} />
-                          Supprimer
-                        </button>
-                      )}
-  
-                    </div>
-                  )}
+                        type="button"
+                        onClick={() => void removePartnerLogo(partner)}
+                        title="Retirer le logo"
+                        className="w-10 h-10 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center transition"
+                      >
+                        <ImageOff size={16} />
+                      </button>
+                    )}
+
+                    {canUpdate && (
+                      <button
+                        type="button"
+                        onClick={() => void togglePartner(partner)}
+                        title={partner.active ? 'Masquer' : 'Afficher'}
+                        className="w-10 h-10 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center transition"
+                      >
+                        {partner.active ? <EyeOff size={17} /> : <Eye size={17} />}
+                      </button>
+                    )}
+
+                    {canUpdate && (
+                      <button
+                        type="button"
+                        onClick={() => editPartner(partner)}
+                        className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm transition"
+                      >
+                        <Pencil size={16} />
+                        Modifier
+                      </button>
+                    )}
+
+                    {canDelete && (
+                      <button
+                        type="button"
+                        onClick={() => void deletePartner(partner)}
+                        className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-sm transition"
+                      >
+                        <Trash2 size={16} />
+                        Supprimer
+                      </button>
+                    )}
+                  </div>
 
                 </div>
 
