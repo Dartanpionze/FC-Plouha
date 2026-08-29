@@ -330,3 +330,55 @@ code {
     top: 4.5rem;
   }
 }
+
+
+/* Tableaux dans l'éditeur et les articles */
+.cms-editor-content table,
+.article-richtext table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.75rem 0;
+  overflow-x: auto;
+}
+
+.cms-editor-content th,
+.cms-editor-content td,
+.article-richtext th,
+.article-richtext td {
+  border: 1px solid rgba(100, 116, 139, 0.35);
+  padding: 0.75rem 0.9rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.cms-editor-content th,
+.article-richtext th {
+  font-weight: 700;
+  background: rgba(148, 163, 184, 0.12);
+}
+
+.cms-editor-content .selectedCell {
+  background: rgba(250, 204, 21, 0.16);
+}
+
+.article-richtext a,
+.cms-editor-content a {
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+@media (max-width: 640px) {
+  .cms-editor-content table,
+  .article-richtext table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  .cms-editor-content th,
+  .cms-editor-content td,
+  .article-richtext th,
+  .article-richtext td {
+    min-width: 8rem;
+  }
+}
