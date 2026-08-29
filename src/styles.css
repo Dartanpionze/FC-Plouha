@@ -382,3 +382,17 @@ code {
     min-width: 8rem;
   }
 }
+
+
+/* Couleurs et surlignage dans l'éditeur */
+.cms-editor-color-select {
+  min-width: 7.2rem;
+}
+
+.cms-editor-content mark,
+.article-richtext mark {
+  padding: 0.05em 0.14em;
+  border-radius: 0.2em;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
