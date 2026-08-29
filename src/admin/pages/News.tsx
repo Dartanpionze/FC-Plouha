@@ -51,6 +51,11 @@ export default function News() {
   const editor = useEditor({
     extensions: [StarterKit],
     content: '',
+    editorProps: {
+      attributes: {
+        class: 'cms-editor-content',
+      },
+    },
     onUpdate({ editor }) {
       setContent(editor.getHTML())
     },
@@ -514,79 +519,165 @@ export default function News() {
 
             {/* EDITEUR */}
             <div>
-              <label className="block text-sm font-semibold mb-2">
-                Contenu
-              </label>
-
-              <div className="border border-white/10 rounded-xl overflow-hidden bg-slate-950">
-
-                <div className="flex flex-wrap gap-2 p-3 border-b border-white/10 bg-white/[0.03]">
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      editor
-                        ?.chain()
-                        .focus()
-                        .toggleBold()
-                        .run()
-                    }
-                    className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 font-bold"
-                  >
-                    B
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      editor
-                        ?.chain()
-                        .focus()
-                        .toggleItalic()
-                        .run()
-                    }
-                    className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 italic"
-                  >
-                    I
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      editor
-                        ?.chain()
-                        .focus()
-                        .toggleHeading({
-                          level: 2,
-                        })
-                        .run()
-                    }
-                    className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10"
-                  >
-                    Titre
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      editor
-                        ?.chain()
-                        .focus()
-                        .toggleBulletList()
-                        .run()
-                    }
-                    className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10"
-                  >
-                    Liste
-                  </button>
-
+              <div className="flex items-end justify-between gap-4 mb-2">
+                <div>
+                  <label className="block text-sm font-semibold">
+                    Contenu
+                  </label>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Rédigez l’article comme dans un traitement de texte.
+                  </p>
                 </div>
 
-                <EditorContent
-                  editor={editor}
-                  className="p-3 sm:p-5 min-h-[280px] prose prose-invert max-w-none"
-                />
+                <span className="hidden sm:inline text-xs text-slate-600">
+                  Aperçu proche du rendu public
+                </span>
+              </div>
 
+              <div className="cms-editor-shell overflow-hidden rounded-2xl border border-white/10 bg-slate-900">
+                <div className="cms-editor-toolbar">
+                  <select
+                    aria-label="Style du paragraphe"
+                    value={
+                      editor?.isActive('heading', { level: 2 })
+                        ? 'h2'
+                        : editor?.isActive('heading', { level: 3 })
+                          ? 'h3'
+                          : 'p'
+                    }
+                    onChange={(event) => {
+                      const value = event.target.value
+
+                      if (value === 'h2') {
+                        editor?.chain().focus().setHeading({ level: 2 }).run()
+                      } else if (value === 'h3') {
+                        editor?.chain().focus().setHeading({ level: 3 }).run()
+                      } else {
+                        editor?.chain().focus().setParagraph().run()
+                      }
+                    }}
+                    className="cms-editor-select"
+                  >
+                    <option value="p">Paragraphe</option>
+                    <option value="h2">Titre 2</option>
+                    <option value="h3">Titre 3</option>
+                  </select>
+
+                  <span className="cms-editor-separator" />
+
+                  <button
+                    type="button"
+                    title="Gras"
+                    aria-pressed={editor?.isActive('bold') || false}
+                    onClick={() => editor?.chain().focus().toggleBold().run()}
+                    className={`cms-editor-button ${editor?.isActive('bold') ? 'is-active' : ''}`}
+                  >
+                    <strong>B</strong>
+                  </button>
+
+                  <button
+                    type="button"
+                    title="Italique"
+                    aria-pressed={editor?.isActive('italic') || false}
+                    onClick={() => editor?.chain().focus().toggleItalic().run()}
+                    className={`cms-editor-button ${editor?.isActive('italic') ? 'is-active' : ''}`}
+                  >
+                    <em>I</em>
+                  </button>
+
+                  <button
+                    type="button"
+                    title="Barré"
+                    aria-pressed={editor?.isActive('strike') || false}
+                    onClick={() => editor?.chain().focus().toggleStrike().run()}
+                    className={`cms-editor-button ${editor?.isActive('strike') ? 'is-active' : ''}`}
+                  >
+                    <span className="line-through">S</span>
+                  </button>
+
+                  <span className="cms-editor-separator" />
+
+                  <button
+                    type="button"
+                    title="Liste à puces"
+                    aria-pressed={editor?.isActive('bulletList') || false}
+                    onClick={() => editor?.chain().focus().toggleBulletList().run()}
+                    className={`cms-editor-button ${editor?.isActive('bulletList') ? 'is-active' : ''}`}
+                  >
+                    • Liste
+                  </button>
+
+                  <button
+                    type="button"
+                    title="Liste numérotée"
+                    aria-pressed={editor?.isActive('orderedList') || false}
+                    onClick={() => editor?.chain().focus().toggleOrderedList().run()}
+                    className={`cms-editor-button ${editor?.isActive('orderedList') ? 'is-active' : ''}`}
+                  >
+                    1. Liste
+                  </button>
+
+                  <button
+                    type="button"
+                    title="Citation"
+                    aria-pressed={editor?.isActive('blockquote') || false}
+                    onClick={() => editor?.chain().focus().toggleBlockquote().run()}
+                    className={`cms-editor-button ${editor?.isActive('blockquote') ? 'is-active' : ''}`}
+                  >
+                    “ Citation
+                  </button>
+
+                  <button
+                    type="button"
+                    title="Séparateur horizontal"
+                    onClick={() => editor?.chain().focus().setHorizontalRule().run()}
+                    className="cms-editor-button"
+                  >
+                    —
+                  </button>
+
+                  <span className="cms-editor-separator" />
+
+                  <button
+                    type="button"
+                    title="Annuler"
+                    disabled={!editor?.can().chain().focus().undo().run()}
+                    onClick={() => editor?.chain().focus().undo().run()}
+                    className="cms-editor-button"
+                  >
+                    ↶
+                  </button>
+
+                  <button
+                    type="button"
+                    title="Rétablir"
+                    disabled={!editor?.can().chain().focus().redo().run()}
+                    onClick={() => editor?.chain().focus().redo().run()}
+                    className="cms-editor-button"
+                  >
+                    ↷
+                  </button>
+
+                  <button
+                    type="button"
+                    title="Effacer la mise en forme"
+                    onClick={() =>
+                      editor
+                        ?.chain()
+                        .focus()
+                        .clearNodes()
+                        .unsetAllMarks()
+                        .run()
+                    }
+                    className="cms-editor-button cms-editor-button-wide"
+                  >
+                    Effacer le format
+                  </button>
+                </div>
+
+                <div className="cms-editor-workspace">
+                  <EditorContent editor={editor} />
+                </div>
               </div>
             </div>
 
