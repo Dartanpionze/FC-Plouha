@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react'
-import { Check, RefreshCw, Save, ShieldCheck, UserPlus, UserRound, X } from 'lucide-react'
+import { Check, Power, RefreshCw, Save, ShieldCheck, Trash2, UserPlus, UserRound, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import type { AdminModule } from '@/lib/adminPermissions'
 
@@ -69,6 +69,7 @@ export default function Users() {
   const [permissions, setPermissions] = useState<PermissionRow[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [managingUser, setManagingUser] = useState(false)
   const [message, setMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
 
@@ -237,6 +238,101 @@ export default function Users() {
     await loadPermissions(selectedUser.user_id)
     setMessage('Permissions enregistrées.')
     setSaving(false)
+  }
+
+  const callManageUserApi = async (payload: Record<string, unknown>) => {
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+    const accessToken = sessionData.session?.access_token
+
+    if (sessionError || !accessToken) {
+      throw new Error('Votre session a expiré. Reconnectez-vous.')
+    }
+
+    const response = await fetch('/api/admin-manage-user', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify(payload),
+    })
+
+    const result = (await response.json()) as { error?: string }
+
+    if (!response.ok) {
+      throw new Error(result.error || 'Impossible de modifier ce compte.')
+    }
+  }
+
+  const toggleUserActive = async () => {
+    if (!selectedUser || selectedUser.role === 'superadmin') return
+
+    const nextActive = !selectedUser.active
+    const label = nextActive ? 'réactiver' : 'désactiver'
+
+    if (!window.confirm(`Voulez-vous vraiment ${label} le compte de ${selectedUser.display_name || selectedUser.email} ?`)) {
+      return
+    }
+
+    setManagingUser(true)
+    setMessage('')
+    setErrorMessage('')
+
+    try {
+      await callManageUserApi({
+        action: 'set-active',
+        user_id: selectedUser.user_id,
+        active: nextActive,
+      })
+
+      await loadUsers()
+      setMessage(nextActive ? 'Compte réactivé.' : 'Compte désactivé.')
+    } catch (error) {
+      console.error(error)
+      setErrorMessage(
+        error instanceof Error ? error.message : "Impossible de modifier l'état du compte.",
+      )
+    } finally {
+      setManagingUser(false)
+    }
+  }
+
+  const deleteUser = async () => {
+    if (!selectedUser || selectedUser.role === 'superadmin') return
+
+    const label = selectedUser.display_name || selectedUser.email
+    const confirmed = window.confirm(
+      `Supprimer définitivement le compte CMS de ${label} ?
+
+Cette action supprime aussi son compte de connexion Supabase Auth et ne peut pas être annulée.`,
+    )
+
+    if (!confirmed) return
+
+    setManagingUser(true)
+    setMessage('')
+    setErrorMessage('')
+
+    try {
+      const deletedUserId = selectedUser.user_id
+
+      await callManageUserApi({
+        action: 'delete',
+        user_id: deletedUserId,
+      })
+
+      setSelectedUserId('')
+      setPermissions([])
+      await loadUsers()
+      setMessage('Compte administrateur supprimé définitivement.')
+    } catch (error) {
+      console.error(error)
+      setErrorMessage(
+        error instanceof Error ? error.message : 'Impossible de supprimer ce compte.',
+      )
+    } finally {
+      setManagingUser(false)
+    }
   }
 
   const closeInvite = () => {
@@ -434,6 +530,33 @@ export default function Users() {
                       {selectedUser.role === 'superadmin' ? 'Superadmin' : 'Admin'}
                     </span>
                   </div>
+                  {selectedUser.role === 'admin' && (
+                    <div className="flex flex-wrap gap-2 sm:justify-end">
+                      <button
+                        type="button"
+                        onClick={toggleUserActive}
+                        disabled={managingUser}
+                        className={`inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-xs font-bold transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                          selectedUser.active
+                            ? 'border-amber-500/20 bg-amber-500/10 text-amber-200 hover:bg-amber-500/15'
+                            : 'border-emerald-500/20 bg-emerald-500/10 text-emerald-200 hover:bg-emerald-500/15'
+                        }`}
+                      >
+                        <Power size={15} />
+                        {selectedUser.active ? 'Désactiver' : 'Réactiver'}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={deleteUser}
+                        disabled={managingUser}
+                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs font-bold text-red-200 transition hover:bg-red-500/15 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <Trash2 size={15} />
+                        Supprimer
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
 
