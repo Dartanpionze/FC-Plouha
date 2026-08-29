@@ -170,7 +170,11 @@ function ArticlePage() {
 
   const seoDescription =
     article.excerpt ||
-    article.content?.replace(/\s+/g, ' ').trim().slice(0, 160) ||
+    article.content
+      ?.replace(/<[^>]*>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 160) ||
     'Actualité du Football Club Plouha.'
 
   return (
@@ -201,9 +205,10 @@ function ArticlePage() {
           {article.title}
         </h1>
 
-        <div className="mt-6 text-lg leading-relaxed whitespace-pre-line">
-          {article.content}
-        </div>
+        <div
+          className="article-richtext mt-8"
+          dangerouslySetInnerHTML={{ __html: article.content || '' }}
+        />
       </div>
       </article>
     </>
