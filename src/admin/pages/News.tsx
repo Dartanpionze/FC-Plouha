@@ -12,6 +12,8 @@ import StarterKit from '@tiptap/starter-kit'
 import Link from '@tiptap/extension-link'
 import TextAlign from '@tiptap/extension-text-align'
 import Underline from '@tiptap/extension-underline'
+import Color from '@tiptap/extension-color'
+import Highlight from '@tiptap/extension-highlight'
 import TextStyle from '@tiptap/extension-text-style'
 import TipTapImage from '@tiptap/extension-image'
 import Table from '@tiptap/extension-table'
@@ -227,6 +229,9 @@ function normalizePastedHtml(html: string) {
     const sourceFontSize =
       style.match(/font-size\s*:\s*([^;]+)/i)?.[1] || ''
     const fontSize = normalizeFontSize(sourceFontSize)
+    const textColor = element.style.color || ''
+    const backgroundColor =
+      element.style.backgroundColor || ''
 
     if (
       /bold|[6-9]00/i.test(fontWeight) &&
@@ -279,6 +284,47 @@ function normalizePastedHtml(html: string) {
       }
     }
 
+    if (
+      textColor &&
+      !['IMG', 'BR', 'HR'].includes(element.tagName)
+    ) {
+      if (element.tagName === 'SPAN') {
+        element.setAttribute(
+          'data-cms-text-color',
+          textColor,
+        )
+      } else {
+        const span = document.createElement('span')
+        span.setAttribute(
+          'data-cms-text-color',
+          textColor,
+        )
+
+        while (element.firstChild) {
+          span.appendChild(element.firstChild)
+        }
+
+        element.appendChild(span)
+      }
+    }
+
+    if (
+      backgroundColor &&
+      !['IMG', 'BR', 'HR'].includes(element.tagName)
+    ) {
+      const mark = document.createElement('mark')
+      mark.setAttribute(
+        'data-cms-highlight-color',
+        backgroundColor,
+      )
+
+      while (element.firstChild) {
+        mark.appendChild(element.firstChild)
+      }
+
+      element.appendChild(mark)
+    }
+
     const allowedStyle =
       textAlign && ['P', 'H2', 'H3'].includes(element.tagName)
         ? `text-align: ${textAlign}`
@@ -286,6 +332,10 @@ function normalizePastedHtml(html: string) {
 
     const cmsFontSize =
       element.getAttribute('data-cms-font-size') || ''
+    const cmsTextColor =
+      element.getAttribute('data-cms-text-color') || ''
+    const cmsHighlightColor =
+      element.getAttribute('data-cms-highlight-color') || ''
 
     Array.from(element.attributes).forEach((attribute) => {
       if (attribute.name === 'href' && element.tagName === 'A') return
@@ -300,6 +350,12 @@ function normalizePastedHtml(html: string) {
       allowedStyle,
       cmsFontSize
         ? `font-size: ${cmsFontSize}`
+        : '',
+      cmsTextColor
+        ? `color: ${cmsTextColor}`
+        : '',
+      cmsHighlightColor
+        ? `background-color: ${cmsHighlightColor}`
         : '',
     ].filter(Boolean)
 
@@ -321,6 +377,28 @@ function normalizePastedHtml(html: string) {
   return body.innerHTML
 }
 
+
+
+const TEXT_COLORS = [
+  { label: 'Couleur', value: '' },
+  { label: 'Noir', value: '#111827' },
+  { label: 'Bleu marine', value: '#071a33' },
+  { label: 'Bleu club', value: '#1d4f91' },
+  { label: 'Rouge club', value: '#c8202f' },
+  { label: 'Jaune club', value: '#d9a600' },
+  { label: 'Vert', value: '#15803d' },
+  { label: 'Gris', value: '#64748b' },
+] as const
+
+const HIGHLIGHT_COLORS = [
+  { label: 'Surlignage', value: '' },
+  { label: 'Jaune', value: '#fef08a' },
+  { label: 'Bleu', value: '#bfdbfe' },
+  { label: 'Rouge', value: '#fecaca' },
+  { label: 'Vert', value: '#bbf7d0' },
+  { label: 'Rose', value: '#fbcfe8' },
+  { label: 'Gris', value: '#e2e8f0' },
+] as const
 
 const FONT_SIZES = [
   '12px',
@@ -456,6 +534,12 @@ export default function News() {
       }),
       Underline,
       TextStyle,
+      Color.configure({
+        types: ['textStyle'],
+      }),
+      Highlight.configure({
+        multicolor: true,
+      }),
       FontSize,
       TipTapImage.configure({
         allowBase64: false,
@@ -1192,6 +1276,78 @@ export default function News() {
                     {FONT_SIZES.map((size) => (
                       <option key={size} value={size}>
                         {Number.parseInt(size, 10)}
+                      </option>
+                    ))}
+                  </select>
+
+                  <select
+                    aria-label="Couleur du texte"
+                    value={
+                      editor?.getAttributes('textStyle')
+                        .color || ''
+                    }
+                    onChange={(event) => {
+                      const color = event.target.value
+
+                      if (!color) {
+                        editor
+                          ?.chain()
+                          .focus()
+                          .unsetColor()
+                          .run()
+                        return
+                      }
+
+                      editor
+                        ?.chain()
+                        .focus()
+                        .setColor(color)
+                        .run()
+                    }}
+                    className="cms-editor-select cms-editor-color-select"
+                  >
+                    {TEXT_COLORS.map((color) => (
+                      <option
+                        key={color.label}
+                        value={color.value}
+                      >
+                        {color.label}
+                      </option>
+                    ))}
+                  </select>
+
+                  <select
+                    aria-label="Couleur de surlignage"
+                    value={
+                      editor?.getAttributes('highlight')
+                        .color || ''
+                    }
+                    onChange={(event) => {
+                      const color = event.target.value
+
+                      if (!color) {
+                        editor
+                          ?.chain()
+                          .focus()
+                          .unsetHighlight()
+                          .run()
+                        return
+                      }
+
+                      editor
+                        ?.chain()
+                        .focus()
+                        .setHighlight({ color })
+                        .run()
+                    }}
+                    className="cms-editor-select cms-editor-color-select"
+                  >
+                    {HIGHLIGHT_COLORS.map((color) => (
+                      <option
+                        key={color.label}
+                        value={color.value}
+                      >
+                        {color.label}
                       </option>
                     ))}
                   </select>
