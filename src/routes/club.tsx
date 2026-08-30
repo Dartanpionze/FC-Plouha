@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import {
   Award,
   HeartHandshake,
@@ -9,6 +10,8 @@ import {
   Phone,
   Loader2,
   RefreshCw,
+  ArrowRight,
+  UserPlus,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { SectionHeading } from '@/components/SectionHeading'
@@ -256,11 +259,9 @@ function ClubPage() {
             </p>
 
             <p className="mt-4 font-condensed text-[var(--club-navy-deep)]/65 leading-relaxed">
-              Pour la saison {settings?.season || '2026/2027'},
-              le club compte {membersCount} licencié
-              {membersCount > 1 ? 's' : ''} réparti
-              {membersCount > 1 ? 's' : ''} en {teams.length} équipe
-              {teams.length > 1 ? 's' : ''}.
+              {membersCount > 0 && teams.length > 0
+                ? `Pour la saison ${settings?.season || '2026/2027'}, le club compte ${membersCount} licencié${membersCount > 1 ? 's' : ''} réparti${membersCount > 1 ? 's' : ''} en ${teams.length} équipe${teams.length > 1 ? 's' : ''}.`
+                : `La saison ${settings?.season || '2026/2027'} marque une nouvelle étape dans le projet du ${shortName}. Les effectifs et les équipes sont mis à jour au fur et à mesure de leur constitution.`}
             </p>
 
           </div>
@@ -278,7 +279,7 @@ function ClubPage() {
 
             <div className="rounded-2xl bg-[var(--club-navy-deep)] text-white p-6 text-center">
               <div className="font-display text-4xl text-[var(--club-yellow)]">
-                {membersCount}
+                {membersCount > 0 ? membersCount : '—'}
               </div>
               <div className="mt-1 text-xs font-condensed tracking-widest text-white/55">
                 LICENCIÉS
@@ -287,7 +288,7 @@ function ClubPage() {
 
             <div className="rounded-2xl border border-black/5 bg-white p-6 text-center">
               <div className="font-display text-4xl text-[var(--club-red)]">
-                {teams.length}
+                {teams.length > 0 ? teams.length : '—'}
               </div>
               <div className="mt-1 text-xs font-condensed tracking-widest text-[var(--club-navy-deep)]/55">
                 ÉQUIPES
@@ -296,7 +297,7 @@ function ClubPage() {
 
             <div className="rounded-2xl border border-black/5 bg-white p-6 text-center">
               <div className="font-display text-4xl text-[var(--club-red)]">
-                {volunteersCount}
+                {volunteersCount > 0 ? volunteersCount : '—'}
               </div>
               <div className="mt-1 text-xs font-condensed tracking-widest text-[var(--club-navy-deep)]/55">
                 BÉNÉVOLES
@@ -384,7 +385,7 @@ function ClubPage() {
             {
               icon: Award,
               title: 'Exigence',
-              text: "Progresser à son rythme, de l'école de foot aux séniors.",
+              text: 'Faire progresser chaque équipe avec sérieux, ambition et plaisir.',
             },
             {
               icon: HeartHandshake,
@@ -516,11 +517,37 @@ function ClubPage() {
             </div>
           )}
 
-          <p className="mt-10 text-center text-white/50 font-condensed">
-            {shortName} · {membersCount} licencié
-            {membersCount > 1 ? 's' : ''} · {teams.length} équipe
-            {teams.length > 1 ? 's' : ''}
-          </p>
+          <div className="mt-10 flex flex-col items-center gap-5">
+            {(membersCount > 0 || teams.length > 0) && (
+              <p className="text-center text-white/50 font-condensed">
+                {shortName}
+                {membersCount > 0
+                  ? ` · ${membersCount} licencié${membersCount > 1 ? 's' : ''}`
+                  : ''}
+                {teams.length > 0
+                  ? ` · ${teams.length} équipe${teams.length > 1 ? 's' : ''}`
+                  : ''}
+              </p>
+            )}
+
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Link
+                to="/equipes"
+                className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/15 bg-white/[0.06] px-5 py-3 font-condensed font-bold text-white hover:bg-white/[0.1] transition-colors"
+              >
+                Découvrir les équipes
+                <ArrowRight size={17} />
+              </Link>
+
+              <Link
+                to="/contact?subject=Benevolat"
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-[var(--club-yellow)] px-5 py-3 font-condensed font-bold text-[var(--club-navy-deep)] hover:bg-white transition-colors"
+              >
+                <UserPlus size={17} />
+                Devenir bénévole
+              </Link>
+            </div>
+          </div>
 
         </div>
 
