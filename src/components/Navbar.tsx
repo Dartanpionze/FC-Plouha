@@ -66,13 +66,9 @@ export function Navbar() {
                   to={link.to}
                   aria-current={active ? 'page' : undefined}
                   className={`px-3 py-2 2xl:px-4 2xl:py-2.5 rounded-md transition-colors block ${
-                    link.to === '/contact'
-                      ? active
-                        ? 'text-[var(--club-navy)] bg-[var(--club-yellow)]'
-                        : 'text-[var(--club-navy-deep)] bg-[var(--club-yellow)] hover:brightness-105'
-                      : active
-                        ? 'text-[var(--club-navy)] bg-[var(--club-yellow)]'
-                        : 'text-white/85 hover:text-[var(--club-yellow)]'
+                    active
+                      ? 'text-[var(--club-navy)] bg-[var(--club-yellow)]'
+                      : 'text-white/85 hover:text-[var(--club-yellow)]'
                   }`}
                 >
                   {link.label}
@@ -112,11 +108,7 @@ export function Navbar() {
                     onClick={() => setOpen(false)}
                     aria-current={active ? 'page' : undefined}
                     className={`block py-3 border-b border-white/5 ${
-                      link.to === '/contact'
-                        ? 'mt-2 rounded-lg border-b-0 bg-[var(--club-yellow)] px-4 text-center font-bold text-[var(--club-navy-deep)]'
-                        : active
-                          ? 'text-[var(--club-yellow)]'
-                          : 'text-white/85'
+                      active ? 'text-[var(--club-yellow)]' : 'text-white/85'
                     }`}
                   >
                     {link.label}
