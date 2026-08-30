@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react'
-import { Check, Power, RefreshCw, Save, ShieldCheck, Trash2, UserPlus, UserRound, X } from 'lucide-react'
+import { Check, Power, RefreshCw, Save, ShieldCheck, Trash2, UserPlus, UserRound, X, Search, UsersRound } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import type { AdminModule } from '@/lib/adminPermissions'
 
@@ -72,6 +72,7 @@ export default function Users() {
   const [managingUser, setManagingUser] = useState(false)
   const [message, setMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
+  const [search, setSearch] = useState('')
 
   const [inviteOpen, setInviteOpen] = useState(false)
   const [inviteName, setInviteName] = useState('')
@@ -83,6 +84,26 @@ export default function Users() {
     () => users.find((user) => user.user_id === selectedUserId) ?? null,
     [users, selectedUserId],
   )
+
+  const filteredUsers = useMemo(() => {
+    const query = search.trim().toLowerCase()
+
+    if (!query) return users
+
+    return users.filter((user) =>
+      [
+        user.display_name,
+        user.email,
+        user.role === 'superadmin' ? 'superadmin' : 'administrateur',
+        user.active ? 'actif' : 'inactif',
+      ]
+        .filter(Boolean)
+        .some((value) => value!.toLowerCase().includes(query)),
+    )
+  }, [search, users])
+
+  const activeUsersCount = users.filter((user) => user.active).length
+  const adminUsersCount = users.filter((user) => user.role === 'admin').length
 
   const loadUsers = async () => {
     setLoading(true)
@@ -345,9 +366,26 @@ Cette action supprime aussi son compte de connexion Supabase Auth et ne peut pas
 
   const inviteUser = async (event: FormEvent) => {
     event.preventDefault()
-    setInviting(true)
     setMessage('')
     setErrorMessage('')
+
+    const normalizedName = inviteName.trim()
+    const normalizedEmail = inviteEmail.trim().toLowerCase()
+
+    if (!normalizedName) {
+      setErrorMessage('Le nom affiché est obligatoire.')
+      return
+    }
+
+    if (
+      !normalizedEmail ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)
+    ) {
+      setErrorMessage("L'adresse e-mail n'est pas valide.")
+      return
+    }
+
+    setInviting(true)
 
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
     const accessToken = sessionData.session?.access_token
@@ -366,8 +404,8 @@ Cette action supprime aussi son compte de connexion Supabase Auth et ne peut pas
           Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify({
-          display_name: inviteName,
-          email: inviteEmail,
+          display_name: normalizedName,
+          email: normalizedEmail,
           permissions: invitePermissions,
         }),
       })
@@ -439,6 +477,33 @@ Cette action supprime aussi son compte de connexion Supabase Auth et ne peut pas
         </div>
       </div>
 
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+          <div className="flex items-center gap-2 text-sm text-slate-400">
+            <UsersRound size={18} className="text-[var(--club-yellow)]" />
+            Comptes CMS
+          </div>
+          <p className="mt-3 text-3xl font-bold">{users.length}</p>
+        </div>
+
+        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+          <div className="flex items-center gap-2 text-sm text-slate-400">
+            <Power size={18} className="text-emerald-400" />
+            Comptes actifs
+          </div>
+          <p className="mt-3 text-3xl font-bold">{activeUsersCount}</p>
+        </div>
+
+        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+          <div className="flex items-center gap-2 text-sm text-slate-400">
+            <ShieldCheck size={18} className="text-blue-400" />
+            Administrateurs
+          </div>
+          <p className="mt-3 text-3xl font-bold">{adminUsersCount}</p>
+          <p className="mt-1 text-xs text-slate-500">hors Superadmin</p>
+        </div>
+      </div>
+
       {errorMessage && (
         <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">
           {errorMessage}
@@ -456,12 +521,27 @@ Cette action supprime aussi son compte de connexion Supabase Auth et ne peut pas
           <div className="border-b border-white/10 px-4 py-4 sm:px-5">
             <h3 className="font-bold">Comptes autorisés</h3>
             <p className="mt-1 text-xs text-slate-500">
-              {users.length} compte{users.length > 1 ? 's' : ''} CMS
+              {filteredUsers.length} compte{filteredUsers.length > 1 ? 's' : ''}
+              {search.trim() && ` sur ${users.length}`}
             </p>
+
+            <div className="relative mt-4">
+              <Search
+                size={16}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
+              />
+              <input
+                type="search"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Rechercher un compte..."
+                className="w-full rounded-xl border border-white/10 bg-slate-950/60 py-2.5 pl-9 pr-3 text-sm text-white outline-none placeholder:text-slate-600 focus:border-[var(--club-yellow)]/40"
+              />
+            </div>
           </div>
 
           <div className="p-2 space-y-1">
-            {users.map((user) => {
+            {filteredUsers.map((user) => {
               const selected = user.user_id === selectedUserId
               return (
                 <button
@@ -500,6 +580,12 @@ Cette action supprime aussi son compte de connexion Supabase Auth et ne peut pas
                 </button>
               )
             })}
+
+            {filteredUsers.length === 0 && (
+              <div className="px-4 py-8 text-center text-sm text-slate-500">
+                Aucun compte ne correspond à cette recherche.
+              </div>
+            )}
           </div>
         </section>
 
