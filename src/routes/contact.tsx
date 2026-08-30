@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   AlertTriangle,
   Clock,
@@ -8,6 +9,10 @@ import {
   Loader2,
   RefreshCw,
   UserPlus,
+  HandHeart,
+  Handshake,
+  MessageCircle,
+  ArrowRight,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import Seo from '@/components/Seo'
@@ -38,6 +43,9 @@ type FormFields = {
 }
 
 function ContactPage() {
+  const [searchParams] = useSearchParams()
+  const formRef = useRef<HTMLDivElement | null>(null)
+
   const [settings, setSettings] = useState<ClubSettings | null>(null)
   const [teamCategories, setTeamCategories] = useState<string[]>([])
   const [loadingSettings, setLoadingSettings] = useState(true)
@@ -119,6 +127,27 @@ function ContactPage() {
 
   useEffect(() => {
     fetchPageData()
+
+    const requestedSubject = searchParams.get('subject')
+    const requestedCategory = searchParams.get('category')
+
+    const allowedSubjects = [
+      'Inscription',
+      'Benevolat',
+      'Partenariat',
+      'Autre',
+    ]
+
+    if (requestedSubject && allowedSubjects.includes(requestedSubject)) {
+      setFields((current) => ({
+        ...current,
+        subject: requestedSubject,
+        category:
+          requestedSubject === 'Inscription' && requestedCategory
+            ? requestedCategory
+            : current.category,
+      }))
+    }
   }, [])
 
   const availableCategories = useMemo(() => {
@@ -156,6 +185,29 @@ function ContactPage() {
       setStatus('idle')
       setFormError('')
     }
+  }
+
+  const selectRequestType = (subject: FormFields['subject']) => {
+    setFields((current) => ({
+      ...current,
+      subject,
+      ...(subject !== 'Inscription'
+        ? {
+            birthYear: '',
+            category: '',
+          }
+        : {}),
+    }))
+
+    setStatus('idle')
+    setFormError('')
+
+    window.setTimeout(() => {
+      formRef.current?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      })
+    }, 50)
   }
 
   const submitRequest = async () => {
@@ -209,6 +261,16 @@ function ContactPage() {
       return
     }
 
+    const emailIsValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+      fields.email.trim(),
+    )
+
+    if (!emailIsValid) {
+      setFormError('Merci de saisir une adresse e-mail valide.')
+      setStatus('error')
+      return
+    }
+
     if (
       isRegistration &&
       (!fields.birthYear || !fields.category)
@@ -218,6 +280,21 @@ function ContactPage() {
       )
       setStatus('error')
       return
+    }
+
+    if (isRegistration) {
+      const birthYear = Number(fields.birthYear)
+      const currentYear = new Date().getFullYear()
+
+      if (
+        !Number.isInteger(birthYear) ||
+        birthYear < 1900 ||
+        birthYear > currentYear
+      ) {
+        setFormError("L'année de naissance indiquée n'est pas valide.")
+        setStatus('error')
+        return
+      }
     }
 
     setFormError('')
@@ -319,7 +396,92 @@ function ContactPage() {
         </div>
       )}
 
-      <section className="max-w-6xl 2xl:max-w-[1380px] mx-auto px-4 sm:px-6 2xl:px-8 py-20 2xl:py-24 grid lg:grid-cols-[1fr_1.2fr] gap-14 2xl:gap-20">
+      <section className="max-w-6xl 2xl:max-w-[1380px] mx-auto px-4 sm:px-6 2xl:px-8 pt-14 2xl:pt-16">
+        <div className="text-center">
+          <span className="font-condensed font-bold text-xs tracking-[0.25em] text-[var(--club-red)]">
+            COMMENT POUVONS-NOUS VOUS AIDER ?
+          </span>
+          <h2 className="mt-2 text-3xl 2xl:text-4xl text-[var(--club-navy-deep)]">
+            Choisissez votre demande
+          </h2>
+        </div>
+
+        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            {
+              value: 'Inscription',
+              title: 'Rejoindre une équipe',
+              description: "Joueur, joueuse ou inscription d'un enfant.",
+              icon: UserPlus,
+            },
+            {
+              value: 'Benevolat',
+              title: 'Devenir bénévole',
+              description: 'Donner un coup de main à la vie du club.',
+              icon: HandHeart,
+            },
+            {
+              value: 'Partenariat',
+              title: 'Devenir partenaire',
+              description: 'Soutenir le projet et la vie locale.',
+              icon: Handshake,
+            },
+            {
+              value: 'Autre',
+              title: 'Poser une question',
+              description: 'Pour toute autre demande ou information.',
+              icon: MessageCircle,
+            },
+          ].map((request) => {
+            const Icon = request.icon
+            const selected = fields.subject === request.value
+
+            return (
+              <button
+                key={request.value}
+                type="button"
+                onClick={() => selectRequestType(request.value)}
+                className={`group rounded-2xl border p-5 text-left transition-all ${
+                  selected
+                    ? 'border-[var(--club-yellow)] bg-[var(--club-yellow)]/15 shadow-md'
+                    : 'border-black/5 bg-white hover:-translate-y-1 hover:border-[var(--club-navy)]/15 hover:shadow-lg'
+                }`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div
+                    className={`flex h-11 w-11 items-center justify-center rounded-xl ${
+                      selected
+                        ? 'bg-[var(--club-yellow)] text-[var(--club-navy-deep)]'
+                        : 'bg-[var(--club-navy)]/[0.06] text-[var(--club-red)]'
+                    }`}
+                  >
+                    <Icon size={21} />
+                  </div>
+
+                  <ArrowRight
+                    size={18}
+                    className={`mt-2 transition-transform group-hover:translate-x-1 ${
+                      selected
+                        ? 'text-[var(--club-navy-deep)]'
+                        : 'text-[var(--club-navy-deep)]/25'
+                    }`}
+                  />
+                </div>
+
+                <h3 className="mt-5 font-condensed text-lg font-bold normal-case text-[var(--club-navy-deep)]">
+                  {request.title}
+                </h3>
+
+                <p className="mt-2 text-sm leading-relaxed text-[var(--club-navy-deep)]/55">
+                  {request.description}
+                </p>
+              </button>
+            )
+          })}
+        </div>
+      </section>
+
+      <section className="max-w-6xl 2xl:max-w-[1380px] mx-auto px-4 sm:px-6 2xl:px-8 py-14 2xl:py-20 grid lg:grid-cols-[1fr_1.2fr] gap-14 2xl:gap-20">
 
         {/* COORDONNEES */}
         <div>
@@ -434,7 +596,10 @@ function ContactPage() {
         </div>
 
         {/* FORMULAIRE */}
-        <div className="bg-white rounded-2xl border border-black/5 p-6 sm:p-8 shadow-sm">
+        <div
+          ref={formRef}
+          className="scroll-mt-28 bg-white rounded-2xl border border-black/5 p-6 sm:p-8 shadow-sm"
+        >
 
           <div className="flex items-start gap-3 mb-6">
 
