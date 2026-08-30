@@ -155,6 +155,10 @@ Le frontend applique également ces contrôles via `src/lib/uploads.ts`.
 ```text
 src/
 ├── admin/
+│   ├── components/
+│   │   ├── RequireAdminPermission.tsx
+│   │   └── RequireSuperadmin.tsx
+│   ├── hooks/useAdminAccess.ts
 │   ├── layouts/AdminLayout.tsx
 │   └── pages/
 ├── components/
@@ -165,6 +169,7 @@ src/
 │   ├── SectionHeading.tsx
 │   └── Seo.tsx
 ├── lib/
+│   ├── adminPermissions.ts
 │   ├── storage.ts
 │   ├── supabase.ts
 │   └── uploads.ts
@@ -215,6 +220,25 @@ Le formulaire `/contact` crée actuellement une ligne dans `registrations`.
 L'API `api/contact.ts` utilisant Resend est conservée pour une éventuelle utilisation future, mais le formulaire public ne dépend pas actuellement de l'envoi d'un email.
 
 Amélioration future recommandée si le spam apparaît : CAPTCHA/Turnstile et/ou limitation de débit côté serveur.
+
+
+## État du CMS
+
+Le back-office `/admin` couvre actuellement :
+
+- tableau de bord ;
+- actualités avec éditeur riche ;
+- club et historique ;
+- équipes et joueurs ;
+- inscriptions ;
+- matchs / résultats ;
+- galerie et sélection des photos d'accueil ;
+- partenaires ;
+- paramètres du club ;
+- gestion des utilisateurs et permissions par le Superadmin.
+
+Les actions visibles dans chaque module dépendent des permissions `Voir`, `Créer`, `Modifier` et `Supprimer`. Les contrôles d'interface ne remplacent pas les règles RLS Supabase : les deux couches doivent rester cohérentes.
+
 
 ## Maintenance
 
