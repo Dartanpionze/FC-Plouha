@@ -6,6 +6,8 @@ import {
   Loader2,
   Newspaper,
   RefreshCw,
+  Share2,
+  ArrowRight,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import Seo from '@/components/Seo'
@@ -18,6 +20,11 @@ type Article = {
   image_url: string | null
   created_at: string
 }
+
+type RelatedArticle = Pick<
+  Article,
+  'id' | 'title' | 'excerpt' | 'image_url' | 'created_at'
+>
 
 function escapeHtml(value: string) {
   return value
@@ -71,6 +78,8 @@ function ArticlePage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
   const [notFound, setNotFound] = useState(false)
+  const [relatedArticles, setRelatedArticles] = useState<RelatedArticle[]>([])
+  const [shareMessage, setShareMessage] = useState('')
 
   const fetchArticle = async () => {
     if (!id) {
@@ -106,6 +115,20 @@ function ArticlePage() {
       }
 
       setArticle(data)
+
+      const { data: relatedData, error: relatedError } = await supabase
+        .from('news')
+        .select('id, title, excerpt, image_url, created_at')
+        .neq('id', data.id)
+        .order('created_at', { ascending: false })
+        .limit(3)
+
+      if (relatedError) {
+        console.error(relatedError)
+        setRelatedArticles([])
+      } else {
+        setRelatedArticles(relatedData || [])
+      }
     } catch (fetchError) {
       console.error(fetchError)
       setArticle(null)
@@ -214,6 +237,38 @@ function ArticlePage() {
     )
   }
 
+  const shareArticle = async () => {
+    if (!article) return
+
+    const url = window.location.href
+
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: article.title,
+          text: article.excerpt || undefined,
+          url,
+        })
+        return
+      }
+
+      await navigator.clipboard.writeText(url)
+      setShareMessage('Lien copié !')
+      window.setTimeout(() => setShareMessage(''), 2200)
+    } catch (shareError) {
+      if (
+        shareError instanceof DOMException &&
+        shareError.name === 'AbortError'
+      ) {
+        return
+      }
+
+      console.error(shareError)
+      setShareMessage("Impossible de copier le lien.")
+      window.setTimeout(() => setShareMessage(''), 2200)
+    }
+  }
+
   const seoDescription =
     article.excerpt ||
     article.content
@@ -283,7 +338,88 @@ function ArticlePage() {
               <ArrowLeft size={17} />
               Toutes les actualités
             </Link>
+
+            <div className="flex items-center gap-3">
+              {shareMessage && (
+                <span className="font-condensed text-sm text-[var(--club-navy-deep)]/55">
+                  {shareMessage}
+                </span>
+              )}
+
+              <button
+                type="button"
+                onClick={shareArticle}
+                className="inline-flex items-center gap-2 rounded-lg border border-[var(--club-navy-deep)]/15 px-4 py-2.5 font-condensed font-bold text-[var(--club-navy-deep)] transition hover:bg-white"
+              >
+                <Share2 size={16} />
+                Partager
+              </button>
+            </div>
           </footer>
+
+          {relatedArticles.length > 0 && (
+            <section className="mt-16 border-t border-black/10 pt-10">
+              <div className="flex items-end justify-between gap-4">
+                <div>
+                  <span className="font-condensed text-xs font-bold tracking-[0.22em] text-[var(--club-red)]">
+                    À LIRE AUSSI
+                  </span>
+                  <h2 className="mt-2 text-3xl text-[var(--club-navy-deep)]">
+                    Les dernières actualités
+                  </h2>
+                </div>
+
+                <Link
+                  to="/actualites"
+                  className="hidden sm:inline-flex items-center gap-2 font-condensed font-bold text-[var(--club-navy)] hover:text-[var(--club-red)]"
+                >
+                  Tout voir <ArrowRight size={16} />
+                </Link>
+              </div>
+
+              <div className="mt-7 grid gap-5 md:grid-cols-3">
+                {relatedArticles.map((item) => (
+                  <Link
+                    key={item.id}
+                    to={`/actualites/${item.id}`}
+                    className="group overflow-hidden rounded-2xl border border-black/5 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+                  >
+                    <div className="h-40 overflow-hidden bg-[var(--club-navy-deep)]/5">
+                      {item.image_url ? (
+                        <img
+                          src={item.image_url}
+                          alt={item.title}
+                          loading="lazy"
+                          decoding="async"
+                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="flex h-full items-center justify-center">
+                          <Newspaper
+                            size={34}
+                            className="text-[var(--club-navy-deep)]/20"
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="p-5">
+                      <p className="text-xs font-condensed text-[var(--club-navy-deep)]/45">
+                        {new Date(item.created_at).toLocaleDateString('fr-FR', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                        })}
+                      </p>
+                      <h3 className="mt-2 font-condensed text-lg font-bold normal-case text-[var(--club-navy-deep)] group-hover:text-[var(--club-red)]">
+                        {item.title}
+                      </h3>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
         </div>
       </article>
     </>
