@@ -363,7 +363,7 @@ function Home() {
 
                 <div>
                   <div className="font-display text-3xl 2xl:text-4xl text-[var(--club-yellow)]">
-                    {teams.length}
+                    {teams.length > 0 ? teams.length : '—'}
                   </div>
                   <div className="font-condensed text-white/60 text-xs 2xl:text-sm tracking-widest">
                     ÉQUIPES
@@ -372,7 +372,7 @@ function Home() {
 
                 <div>
                   <div className="font-display text-3xl 2xl:text-4xl text-[var(--club-yellow)]">
-                    {membersCount}
+                    {membersCount > 0 ? membersCount : '—'}
                   </div>
                   <div className="font-condensed text-white/60 text-xs 2xl:text-sm tracking-widest">
                     LICENCIÉS
@@ -381,7 +381,7 @@ function Home() {
 
                 <div>
                   <div className="font-display text-3xl 2xl:text-4xl text-[var(--club-yellow)]">
-                    {districtTitles}
+                    {districtTitles > 0 ? districtTitles : '—'}
                   </div>
                   <div className="font-condensed text-white/60 text-xs 2xl:text-sm tracking-widest">
                     TITRES DISTRICT
@@ -441,10 +441,9 @@ function Home() {
           </p>
 
           <p className="mt-4 text-[var(--club-navy-deep)]/70 leading-relaxed font-condensed">
-            Aujourd'hui, {membersCount} licencié{membersCount > 1 ? 's' : ''} réparti
-            {membersCount > 1 ? 's' : ''} en {teams.length} équipe
-            {teams.length > 1 ? 's' : ''} porte{teams.length > 1 ? 'nt' : ''} les couleurs
-            du club pour la saison {season}.
+            {membersCount > 0 && teams.length > 0
+              ? `Aujourd'hui, ${membersCount} licencié${membersCount > 1 ? 's' : ''} réparti${membersCount > 1 ? 's' : ''} en ${teams.length} équipe${teams.length > 1 ? 's' : ''} porte${teams.length > 1 ? 'nt' : ''} les couleurs du club pour la saison ${season}.`
+              : `Le projet sportif de la saison ${season} est en construction. Les équipes et effectifs seront présentés ici au fur et à mesure de leur confirmation.`}
           </p>
 
           <div className="mt-8 grid sm:grid-cols-3 gap-6">
@@ -461,9 +460,13 @@ function Home() {
             <div className="flex items-start gap-3">
               <Trophy className="text-[var(--club-red)] shrink-0" size={26} />
               <div>
-                <div className="font-condensed font-bold">Palmarès</div>
+                <div className="font-condensed font-bold">
+                  {districtTitles > 0 ? 'Palmarès' : 'Projet sportif'}
+                </div>
                 <div className="text-sm text-[var(--club-navy-deep)]/70">
-                  {districtTitles} titre{districtTitles > 1 ? 's' : ''} de District
+                  {districtTitles > 0
+                    ? `${districtTitles} titre${districtTitles > 1 ? 's' : ''} de District`
+                    : `Saison ${season} en préparation`}
                 </div>
               </div>
             </div>
@@ -471,10 +474,13 @@ function Home() {
             <div className="flex items-start gap-3">
               <Users className="text-[var(--club-red)] shrink-0" size={26} />
               <div>
-                <div className="font-condensed font-bold">Bénévoles</div>
+                <div className="font-condensed font-bold">
+                  {volunteersCount > 0 ? 'Bénévoles' : 'Vie du club'}
+                </div>
                 <div className="text-sm text-[var(--club-navy-deep)]/70">
-                  {volunteersCount} bénévole{volunteersCount > 1 ? 's' : ''} actif
-                  {volunteersCount > 1 ? 's' : ''}
+                  {volunteersCount > 0
+                    ? `${volunteersCount} bénévole${volunteersCount > 1 ? 's' : ''} actif${volunteersCount > 1 ? 's' : ''}`
+                    : 'Une aventure collective à construire'}
                 </div>
               </div>
             </div>
@@ -536,6 +542,14 @@ function Home() {
                 </div>
               </Link>
             ))}
+
+            {news.length === 0 && (
+              <div className="md:col-span-2 xl:col-span-4 rounded-2xl border border-dashed border-[var(--club-navy)]/15 bg-white px-6 py-10 text-center">
+                <p className="font-condensed text-[var(--club-navy-deep)]/60">
+                  Les premières actualités du FC Plouha seront publiées prochainement.
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -554,9 +568,10 @@ function Home() {
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {teams.slice(0, 6).map((team) => (
-            <div
+            <Link
               key={team.id}
-              className="rounded-2xl overflow-hidden border border-[var(--club-navy)]/10 hover:border-[var(--club-yellow)] transition-all bg-white"
+              to={`/equipes/${team.id}`}
+              className="group rounded-2xl overflow-hidden border border-[var(--club-navy)]/10 hover:border-[var(--club-yellow)] hover:shadow-lg transition-all bg-white"
             >
               {team.image_url && (
                 <div className="h-36 overflow-hidden">
@@ -565,7 +580,7 @@ function Home() {
                     alt={team.name}
                     loading="lazy"
                     decoding="async"
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                 </div>
               )}
@@ -587,9 +602,31 @@ function Home() {
                     Entraîneur : {team.coach}
                   </p>
                 )}
+
+                <span className="mt-5 inline-flex items-center gap-2 text-sm font-condensed font-bold text-[var(--club-navy)] group-hover:text-[var(--club-red)] transition-colors">
+                  Voir l'équipe <ArrowRight size={15} />
+                </span>
               </div>
-            </div>
+            </Link>
           ))}
+
+          {teams.length === 0 && (
+            <div className="sm:col-span-2 lg:col-span-3 rounded-2xl border border-dashed border-[var(--club-navy)]/15 bg-[var(--club-navy)]/[0.03] px-6 py-10 text-center">
+              <ShieldHalf
+                size={34}
+                className="mx-auto text-[var(--club-navy)]/25"
+              />
+              <p className="mt-3 font-condensed text-[var(--club-navy-deep)]/60">
+                Les équipes de la saison {season} seront publiées ici dès qu'elles seront confirmées.
+              </p>
+              <Link
+                to="/contact"
+                className="mt-4 inline-flex items-center gap-2 font-condensed font-bold text-[var(--club-navy)] hover:text-[var(--club-red)]"
+              >
+                Rejoindre le projet <ArrowRight size={15} />
+              </Link>
+            </div>
+          )}
         </div>
       </section>
 
@@ -682,6 +719,14 @@ function Home() {
               )}
             </Link>
           ))}
+
+          {galleryPhotos.length === 0 && (
+            <div className="col-span-2 md:col-span-4 rounded-2xl border border-dashed border-[var(--club-navy)]/15 bg-[var(--club-navy)]/[0.03] px-6 py-10 text-center">
+              <p className="font-condensed text-[var(--club-navy-deep)]/60">
+                Les premières photos du club seront ajoutées prochainement.
+              </p>
+            </div>
+          )}
         </div>
       </section>
 
@@ -733,6 +778,14 @@ function Home() {
                 </div>
               )
             })}
+
+            {partners.length === 0 && (
+              <div className="w-full rounded-2xl border border-dashed border-[var(--club-navy)]/15 bg-white/60 px-6 py-8 text-center">
+                <p className="font-condensed text-[var(--club-navy-deep)]/60">
+                  L'espace partenaires est en cours de construction.
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="mt-8 text-center">
