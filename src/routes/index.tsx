@@ -749,7 +749,7 @@ function Home() {
                       alt={`Logo ${partner.name}`}
                       loading="lazy"
                       decoding="async"
-                      className="h-12 max-w-36 object-contain"
+                      className="max-h-16 max-w-40 w-auto object-contain"
                     />
                   ) : (
                     <span className="font-condensed font-bold text-[var(--club-navy)] text-sm">
@@ -765,14 +765,14 @@ function Home() {
                   href={partner.website_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="min-w-40 h-20 px-6 bg-white rounded-xl border border-black/5 flex items-center justify-center hover:shadow-md transition-shadow"
+                  className="min-w-40 h-20 px-3 flex items-center justify-center transition-transform hover:scale-[1.03]"
                 >
                   {content}
                 </a>
               ) : (
                 <div
                   key={partner.id}
-                  className="min-w-40 h-20 px-6 bg-white rounded-xl border border-black/5 flex items-center justify-center"
+                  className="min-w-40 h-20 px-3 flex items-center justify-center"
                 >
                   {content}
                 </div>
