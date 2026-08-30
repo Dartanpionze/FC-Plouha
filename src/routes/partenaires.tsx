@@ -99,8 +99,8 @@ function SponsorsPage() {
           </h1>
 
           <p className="mt-6 text-white/70 font-condensed text-lg 2xl:text-xl max-w-2xl 2xl:max-w-3xl mx-auto 2xl:leading-relaxed">
-            Le club vit grâce au soutien de ses partenaires locaux,
-            qui accompagnent nos équipes saison après saison.
+            Le club avance grâce au soutien de ses partenaires locaux,
+            engagés aux côtés du projet du FC Plouha.
           </p>
 
           {!loading && !error && partners.length > 0 && (
