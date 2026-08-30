@@ -458,7 +458,28 @@ Transmettez ces informations à l'administrateur technique.
 
 ---
 
-## 17. Résumé
+
+## 17. Repères rapides après la mise à jour du CMS
+
+Les principaux modules disposent maintenant d'outils de pilotage plus rapides :
+
+- **Tableau de bord** : compteurs et contenus récents selon vos permissions.
+- **Club** : réorganisation de l'histoire et des dirigeants, visibilité et photos.
+- **Équipes / Joueurs** : compteurs, visibilité publique, photos et accès aux pages publiques.
+- **Inscriptions** : compteurs par statut et filtres rapides.
+- **Matchs** : filtres par statut et contrôle des scores pour les matchs terminés.
+- **Galerie** : albums publiés/masqués, photos et sélection des trois images de l'accueil.
+- **Partenaires** : ordre d'affichage, visibilité, logos et liens.
+- **Paramètres** : contrôles de saisie renforcés avant enregistrement.
+- **Utilisateurs** : recherche de comptes, état actif/inactif et permissions détaillées.
+
+Les boutons **Actualiser** ou **Recharger** permettent de relire les données depuis le serveur sans devoir quitter le module.
+
+Pour les contenus disposant d'une page publique, utilisez le bouton de prévisualisation lorsqu'il est disponible afin de vérifier le résultat après modification.
+
+---
+
+## 18. Résumé
 
 Le CMS est l'outil de gestion quotidien du club :
 
