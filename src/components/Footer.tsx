@@ -219,7 +219,7 @@ export function Footer() {
 
             <li>
               <Link
-                to="/contact"
+                to="/contact?subject=Benevolat"
                 className="hover:text-[var(--club-yellow)]"
               >
                 Devenir bénévole
@@ -228,7 +228,7 @@ export function Footer() {
 
             <li>
               <Link
-                to="/contact"
+                to="/contact?subject=Inscription"
                 className="hover:text-[var(--club-yellow)]"
               >
                 Rejoindre le club
