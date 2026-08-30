@@ -5,6 +5,8 @@ import {
   Image as ImageIcon,
   Loader2,
   X,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import Seo from '@/components/Seo'
@@ -40,6 +42,9 @@ function GalleryPage() {
   useEffect(() => {
     if (!lightboxPhoto) return
 
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         setLightboxPhoto(null)
@@ -47,7 +52,11 @@ function GalleryPage() {
     }
 
     window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', handleKeyDown)
+    }
   }, [lightboxPhoto])
 
   const [loading, setLoading] = useState(true)
@@ -105,6 +114,43 @@ function GalleryPage() {
           photo.album_id === selectedAlbum,
       )
     : photos
+
+  const lightboxIndex = lightboxPhoto
+    ? visiblePhotos.findIndex((photo) => photo.id === lightboxPhoto.id)
+    : -1
+
+  const showPreviousPhoto = () => {
+    if (visiblePhotos.length < 2 || lightboxIndex < 0) return
+
+    const previousIndex =
+      (lightboxIndex - 1 + visiblePhotos.length) % visiblePhotos.length
+
+    setLightboxPhoto(visiblePhotos[previousIndex])
+  }
+
+  const showNextPhoto = () => {
+    if (visiblePhotos.length < 2 || lightboxIndex < 0) return
+
+    const nextIndex = (lightboxIndex + 1) % visiblePhotos.length
+    setLightboxPhoto(visiblePhotos[nextIndex])
+  }
+
+  useEffect(() => {
+    if (!lightboxPhoto) return
+
+    const handleNavigation = (event: KeyboardEvent) => {
+      if (event.key === 'ArrowLeft') {
+        showPreviousPhoto()
+      }
+
+      if (event.key === 'ArrowRight') {
+        showNextPhoto()
+      }
+    }
+
+    window.addEventListener('keydown', handleNavigation)
+    return () => window.removeEventListener('keydown', handleNavigation)
+  }, [lightboxPhoto, visiblePhotos])
 
   const getAlbumPhotoCount = (albumId: number) => {
     return photos.filter(
@@ -260,9 +306,10 @@ function GalleryPage() {
                     {/* TOUTES LES PHOTOS */}
                     <button
                       type="button"
-                      onClick={() =>
+                      onClick={() => {
                         setSelectedAlbum(null)
-                      }
+                        setLightboxPhoto(null)
+                      }}
                       className={`text-left rounded-2xl overflow-hidden border transition-all ${
                         selectedAlbum === null
                           ? 'border-[var(--club-red)] shadow-lg -translate-y-1'
@@ -328,11 +375,10 @@ function GalleryPage() {
                         <button
                           key={album.id}
                           type="button"
-                          onClick={() =>
-                            setSelectedAlbum(
-                              album.id,
-                            )
-                          }
+                          onClick={() => {
+                            setSelectedAlbum(album.id)
+                            setLightboxPhoto(null)
+                          }}
                           className={`text-left rounded-2xl overflow-hidden border transition-all ${
                             selectedAlbum ===
                             album.id
@@ -505,28 +551,62 @@ function GalleryPage() {
             <X size={24} />
           </button>
 
+          {visiblePhotos.length > 1 && (
+            <>
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation()
+                  showPreviousPhoto()
+                }}
+                className="absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition"
+                aria-label="Photo précédente"
+              >
+                <ChevronLeft size={28} />
+              </button>
+
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation()
+                  showNextPhoto()
+                }}
+                className="absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition"
+                aria-label="Photo suivante"
+              >
+                <ChevronRight size={28} />
+              </button>
+            </>
+          )}
+
           <div
-            className="max-w-6xl max-h-full"
+            className="max-w-6xl max-h-full px-8 sm:px-16"
             onClick={(e) =>
               e.stopPropagation()
             }
           >
-
             <img
               src={lightboxPhoto.image_url}
               alt={
                 lightboxPhoto.caption || 'Photo du Football Club Plouha'
               }
               decoding="async"
-              className="max-w-full max-h-[80vh] object-contain mx-auto"
+              className="max-w-full max-h-[78vh] object-contain mx-auto"
             />
 
-            {lightboxPhoto.caption && (
-              <p className="mt-5 text-center text-white/80 font-condensed text-lg">
-                {lightboxPhoto.caption}
-              </p>
-            )}
+            <div className="mt-5 text-center">
+              {lightboxPhoto.caption && (
+                <p className="text-white/85 font-condensed text-lg">
+                  {lightboxPhoto.caption}
+                </p>
+              )}
 
+              {lightboxIndex >= 0 && (
+                <p className="mt-2 text-sm font-condensed text-white/45">
+                  {lightboxIndex + 1} / {visiblePhotos.length}
+                </p>
+              )}
+            </div>
           </div>
 
         </div>
