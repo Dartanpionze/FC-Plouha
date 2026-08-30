@@ -6,7 +6,6 @@ import {
   Mail,
   MapPin,
   Phone,
-  ArrowRight,
 } from 'lucide-react'
 import { ClubCrest } from './ClubCrest'
 import { supabase } from '@/lib/supabase'
@@ -85,27 +84,6 @@ export function Footer() {
 
   return (
     <footer className="bg-[var(--club-navy-deep)] text-white/80">
-
-      <div className="border-b border-white/10 bg-white/[0.03]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-7 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
-          <div>
-            <p className="font-condensed text-xs font-bold tracking-[0.2em] text-[var(--club-yellow)]">
-              LE FC PLOUHA SE CONSTRUIT AVEC VOUS
-            </p>
-            <p className="mt-1 font-condensed text-lg font-bold text-white">
-              Joueur, bénévole ou partenaire : rejoignez le projet.
-            </p>
-          </div>
-
-          <Link
-            to="/contact"
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-[var(--club-yellow)] px-5 py-3 font-condensed font-bold text-[var(--club-navy-deep)] transition hover:brightness-105"
-          >
-            Nous rejoindre
-            <ArrowRight size={17} />
-          </Link>
-        </div>
-      </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-14 grid gap-10 md:grid-cols-4">
 
@@ -330,7 +308,7 @@ export function Footer() {
           </span>
 
           <span>
-            Site du {shortName}
+            Club affilié à la Ligue de Bretagne de Football
           </span>
 
         </div>
