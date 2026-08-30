@@ -9,6 +9,8 @@ import {
   Shirt,
   UserRound,
   Users,
+  ArrowRight,
+  UserPlus,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import Seo from '@/components/Seo'
@@ -417,7 +419,7 @@ function TeamDetailPage() {
         </div>
 
         {players.length === 0 ? (
-          <div className="rounded-2xl border border-black/5 bg-white py-16 text-center">
+          <div className="rounded-2xl border border-black/5 bg-white px-6 py-14 text-center">
 
             <Users
               size={42}
@@ -425,12 +427,25 @@ function TeamDetailPage() {
             />
 
             <h3 className="mt-4 text-xl text-[var(--club-navy-deep)]">
-              Effectif à venir
+              Effectif en construction
             </h3>
 
-            <p className="mt-2 text-[var(--club-navy-deep)]/55">
-              Les joueurs de cette équipe seront prochainement présentés.
+            <p className="mx-auto mt-2 max-w-xl text-[var(--club-navy-deep)]/55">
+              Les joueurs de cette équipe seront présentés ici au fur et à
+              mesure. Vous souhaitez faire partie de l'aventure ?
             </p>
+
+            <Link
+              to={`/contact?subject=Inscription${
+                team.category
+                  ? `&category=${encodeURIComponent(team.category)}`
+                  : ''
+              }`}
+              className="mt-6 inline-flex items-center gap-2 rounded-lg bg-[var(--club-yellow)] px-6 py-3 font-condensed font-bold text-[var(--club-navy-deep)] transition hover:brightness-105"
+            >
+              <UserPlus size={18} />
+              Rejoindre cette équipe
+            </Link>
 
           </div>
         ) : (
@@ -454,6 +469,38 @@ function TeamDetailPage() {
           </div>
         )}
 
+      </section>
+
+      <section className="bg-[var(--club-navy-deep)]">
+        <div className="max-w-7xl 2xl:max-w-[1540px] mx-auto px-4 sm:px-6 2xl:px-8 py-12 2xl:py-14">
+          <div className="flex flex-col gap-7 rounded-3xl border border-white/10 bg-white/[0.05] px-6 py-8 sm:px-9 lg:flex-row lg:items-center lg:justify-between">
+            <div className="max-w-2xl">
+              <span className="font-condensed text-xs font-bold tracking-[0.22em] text-[var(--club-yellow)]">
+                REJOINDRE L'ÉQUIPE
+              </span>
+              <h2 className="mt-2 text-3xl text-white">
+                Envie de porter les couleurs du FC Plouha ?
+              </h2>
+              <p className="mt-3 font-condensed leading-relaxed text-white/65">
+                Envoyez votre demande au club. La catégorie
+                {team.category ? ` « ${team.category} »` : ''} sera
+                automatiquement renseignée dans le formulaire.
+              </p>
+            </div>
+
+            <Link
+              to={`/contact?subject=Inscription${
+                team.category
+                  ? `&category=${encodeURIComponent(team.category)}`
+                  : ''
+              }`}
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-[var(--club-yellow)] px-7 py-3.5 font-condensed font-bold text-[var(--club-navy-deep)] transition hover:brightness-105"
+            >
+              Faire une demande
+              <ArrowRight size={18} />
+            </Link>
+          </div>
+        </div>
       </section>
 
     </div>
