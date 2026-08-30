@@ -56,16 +56,23 @@ export function Navbar() {
 
         <ul className="hidden lg:flex items-center gap-1 2xl:gap-2 font-condensed font-semibold text-sm 2xl:text-base tracking-wide">
           {links.map((link) => {
-            const active = pathname === link.to
+            const active =
+              link.to === '/'
+                ? pathname === '/'
+                : pathname === link.to || pathname.startsWith(`${link.to}/`)
             return (
               <li key={link.to}>
                 <Link
                   to={link.to}
                   aria-current={active ? 'page' : undefined}
                   className={`px-3 py-2 2xl:px-4 2xl:py-2.5 rounded-md transition-colors block ${
-                    active
-                      ? 'text-[var(--club-navy)] bg-[var(--club-yellow)]'
-                      : 'text-white/85 hover:text-[var(--club-yellow)]'
+                    link.to === '/contact'
+                      ? active
+                        ? 'text-[var(--club-navy)] bg-[var(--club-yellow)]'
+                        : 'text-[var(--club-navy-deep)] bg-[var(--club-yellow)] hover:brightness-105'
+                      : active
+                        ? 'text-[var(--club-navy)] bg-[var(--club-yellow)]'
+                        : 'text-white/85 hover:text-[var(--club-yellow)]'
                   }`}
                 >
                   {link.label}
@@ -94,7 +101,10 @@ export function Navbar() {
         >
           <ul className="px-4 py-3 flex flex-col font-condensed font-semibold text-base">
             {links.map((link) => {
-              const active = pathname === link.to
+              const active =
+                link.to === '/'
+                  ? pathname === '/'
+                  : pathname === link.to || pathname.startsWith(`${link.to}/`)
               return (
                 <li key={link.to}>
                   <Link
@@ -102,7 +112,11 @@ export function Navbar() {
                     onClick={() => setOpen(false)}
                     aria-current={active ? 'page' : undefined}
                     className={`block py-3 border-b border-white/5 ${
-                      active ? 'text-[var(--club-yellow)]' : 'text-white/85'
+                      link.to === '/contact'
+                        ? 'mt-2 rounded-lg border-b-0 bg-[var(--club-yellow)] px-4 text-center font-bold text-[var(--club-navy-deep)]'
+                        : active
+                          ? 'text-[var(--club-yellow)]'
+                          : 'text-white/85'
                     }`}
                   >
                     {link.label}
