@@ -314,9 +314,11 @@ function Home() {
               </span>
             </div>
 
-            <h1 className="text-5xl sm:text-6xl lg:text-7xl 2xl:text-[5.5rem] text-white leading-[0.95] text-balance">
-              {clubName}
-              <span className="block text-[var(--club-yellow)]">
+            <h1 className="text-white leading-[0.95] text-balance">
+              <span className="block text-5xl sm:text-6xl lg:text-7xl 2xl:text-[5.5rem]">
+                {clubName}
+              </span>
+              <span className="block mt-2 text-2xl sm:text-3xl lg:text-4xl 2xl:text-5xl text-[var(--club-yellow)]">
                 Les Falaises
               </span>
             </h1>
@@ -328,10 +330,10 @@ function Home() {
 
             <div className="mt-9 2xl:mt-10 flex flex-wrap gap-4 2xl:gap-5">
               <Link
-                to="/equipes"
+                to="/contact?subject=Inscription"
                 className="inline-flex items-center gap-2 2xl:gap-3 bg-[var(--club-yellow)] text-[var(--club-navy-deep)] font-condensed font-bold 2xl:text-lg px-6 py-3.5 2xl:px-8 2xl:py-4 rounded-lg hover:bg-white transition-colors"
               >
-                Découvrir nos équipes
+                Rejoindre le club
                 <ArrowRight size={18} />
               </Link>
 
