@@ -27,6 +27,7 @@ import Players from './admin/pages/Players'
 import Matches from './admin/pages/Matches'
 import Gallery from './admin/pages/Gallery'
 import Partners from './admin/pages/Partners'
+import Pricing from './admin/pages/Pricing'
 import Settings from './admin/pages/Settings'
 import AdminClub from './admin/pages/Club'
 import Registrations from './admin/pages/Registrations'
@@ -75,6 +76,7 @@ function App() {
           <Route path="matches" element={<RequireAdminPermission module="matches"><Matches /></RequireAdminPermission>} />
           <Route path="gallery" element={<RequireAdminPermission module="gallery"><Gallery /></RequireAdminPermission>} />
           <Route path="partners" element={<RequireAdminPermission module="partners"><Partners /></RequireAdminPermission>} />
+          <Route path="pricing" element={<RequireAdminPermission module="settings"><Pricing /></RequireAdminPermission>} />
           <Route path="settings" element={<RequireAdminPermission module="settings"><Settings /></RequireAdminPermission>} />
           <Route path="users" element={<RequireSuperadmin><Users /></RequireSuperadmin>} />
         </Route>
