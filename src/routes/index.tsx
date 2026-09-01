@@ -330,7 +330,7 @@ function Home() {
 
             <div className="mt-9 2xl:mt-10 flex flex-wrap gap-4 2xl:gap-5">
               <Link
-                to="/contact?subject=Inscription"
+                to="/rejoindre"
                 className="inline-flex items-center gap-2 2xl:gap-3 bg-[var(--club-yellow)] text-[var(--club-navy-deep)] font-condensed font-bold 2xl:text-lg px-6 py-3.5 2xl:px-8 2xl:py-4 rounded-lg hover:bg-white transition-colors"
               >
                 Rejoindre le club
