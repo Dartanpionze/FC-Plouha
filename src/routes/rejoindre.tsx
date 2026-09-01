@@ -140,12 +140,19 @@ function RejoindrePage() {
               const Icon = profile.icon
 
               return (
-                <article
+                <Link
                   key={profile.title}
-                  className="group rounded-2xl border border-black/5 bg-white p-6 sm:p-8 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+                  to={profile.to}
+                  className="group block rounded-2xl border border-black/5 bg-white p-6 sm:p-8 shadow-sm transition hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[var(--club-yellow)]"
                 >
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--club-yellow)]/20 text-[var(--club-navy-deep)]">
-                    <Icon size={24} />
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--club-yellow)]/20 text-[var(--club-navy-deep)]">
+                      <Icon size={24} />
+                    </div>
+                    <ArrowRight
+                      size={20}
+                      className="mt-2 text-[var(--club-navy-deep)]/25 transition-transform group-hover:translate-x-1 group-hover:text-[var(--club-red)]"
+                    />
                   </div>
 
                   <h3 className="mt-5 font-condensed text-2xl font-bold text-[var(--club-navy-deep)]">
@@ -156,14 +163,11 @@ function RejoindrePage() {
                     {profile.text}
                   </p>
 
-                  <Link
-                    to={profile.to}
-                    className="mt-6 inline-flex items-center gap-2 font-condensed font-bold text-[var(--club-red)] transition group-hover:gap-3"
-                  >
+                  <span className="mt-6 inline-flex items-center gap-2 font-condensed font-bold text-[var(--club-red)] transition group-hover:gap-3">
                     {profile.action}
                     <ArrowRight size={18} />
-                  </Link>
-                </article>
+                  </span>
+                </Link>
               )
             })}
           </div>
