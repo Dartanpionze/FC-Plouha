@@ -540,7 +540,7 @@ function ContactPage() {
                 </li>
               )}
 
-              {settings?.email && (
+              {(settings?.email || 'contact@fcplouha.fr') && (
                 <li className="flex gap-3">
                   <Mail
                     className="text-[var(--club-red)] shrink-0 mt-1"
@@ -549,10 +549,10 @@ function ContactPage() {
 
                   <div>
                     <a
-                      href={`mailto:${settings.email}`}
+                      href={`mailto:${settings?.email || 'contact@fcplouha.fr'}`}
                       className="font-condensed font-bold hover:text-[var(--club-red)] transition-colors"
                     >
-                      {settings.email}
+                      {settings?.email || 'contact@fcplouha.fr'}
                     </a>
 
                     <div className="text-sm text-[var(--club-navy-deep)]/70">
@@ -878,6 +878,26 @@ function ContactPage() {
                   {formError}
                 </p>
               )}
+
+              <p className="text-xs leading-relaxed text-[var(--club-navy-deep)]/50">
+                Les informations transmises sont utilisées par le PLOUHA Football Club
+                uniquement pour traiter et suivre votre demande. Elles sont conservées
+                pendant 2 mois maximum. Vous pouvez exercer vos droits en écrivant à{' '}
+                <a
+                  href="mailto:contact@fcplouha.fr"
+                  className="font-semibold text-[var(--club-navy-deep)] hover:text-[var(--club-red)]"
+                >
+                  contact@fcplouha.fr
+                </a>
+                .{' '}
+                <a
+                  href="/politique-confidentialite"
+                  className="font-semibold text-[var(--club-red)] hover:underline"
+                >
+                  En savoir plus
+                </a>
+                .
+              </p>
 
             </form>
           )}
