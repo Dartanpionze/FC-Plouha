@@ -13,9 +13,10 @@ import ArticlePage from './routes/article'
 import GalleryPage from './routes/galerie'
 import SponsorsPage from './routes/partenaires'
 import Contact from './routes/contact'
-import NotFoundPage from './routes/not-found'
+import RejoindrePage from './routes/rejoindre'
 import MentionsLegalesPage from './routes/mentions-legales'
 import PolitiqueConfidentialitePage from './routes/politique-confidentialite'
+import NotFoundPage from './routes/not-found'
 
 import AdminLayout from './admin/layouts/AdminLayout'
 import Dashboard from './admin/pages/Dashboard'
@@ -52,6 +53,7 @@ function App() {
           <Route path="/galerie" element={<PublicSectionRoute section="gallery"><GalleryPage /></PublicSectionRoute>} />
           <Route path="/partenaires" element={<PublicSectionRoute section="partners"><SponsorsPage /></PublicSectionRoute>} />
           <Route path="/contact" element={<PublicSectionRoute section="contact"><Contact /></PublicSectionRoute>} />
+          <Route path="/rejoindre" element={<RejoindrePage />} />
           <Route path="/mentions-legales" element={<MentionsLegalesPage />} />
           <Route path="/politique-confidentialite" element={<PolitiqueConfidentialitePage />} />
 
