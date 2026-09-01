@@ -9,6 +9,11 @@ import {
 } from 'lucide-react'
 import { ClubCrest } from './ClubCrest'
 import { supabase } from '@/lib/supabase'
+import {
+  DEFAULT_SITE_VISIBILITY,
+  normalizeSiteVisibility,
+  type SiteVisibility,
+} from '@/lib/siteVisibility'
 
 type ClubSettings = {
   club_name: string | null
@@ -22,6 +27,7 @@ type ClubSettings = {
   phone: string | null
   facebook_url: string | null
   instagram_url: string | null
+  site_visibility: Partial<SiteVisibility> | null
 }
 
 export function Footer() {
@@ -43,7 +49,8 @@ export function Footer() {
           email,
           phone,
           facebook_url,
-          instagram_url
+          instagram_url,
+          site_visibility
         `)
         .limit(1)
         .single()
@@ -58,6 +65,10 @@ export function Footer() {
 
     fetchSettings()
   }, [])
+
+  const visibility = normalizeSiteVisibility(
+    settings?.site_visibility || DEFAULT_SITE_VISIBILITY,
+  )
 
   const clubName =
     settings?.club_name || 'Football Club Plouha'
@@ -143,50 +154,45 @@ export function Footer() {
           </h3>
 
           <ul className="space-y-2 text-sm font-condensed">
-            <li>
-              <Link
-                to="/club"
-                className="hover:text-[var(--club-yellow)]"
-              >
-                Le club
-              </Link>
-            </li>
+            {visibility.club && (
+              <li>
+                <Link to="/club" className="hover:text-[var(--club-yellow)]">
+                  Le club
+                </Link>
+              </li>
+            )}
 
-            <li>
-              <Link
-                to="/equipes"
-                className="hover:text-[var(--club-yellow)]"
-              >
-                Nos équipes
-              </Link>
-            </li>
+            {visibility.teams && (
+              <li>
+                <Link to="/equipes" className="hover:text-[var(--club-yellow)]">
+                  Nos équipes
+                </Link>
+              </li>
+            )}
 
-            <li>
-              <Link
-                to="/calendrier"
-                className="hover:text-[var(--club-yellow)]"
-              >
-                Calendrier
-              </Link>
-            </li>
+            {visibility.calendar && (
+              <li>
+                <Link to="/calendrier" className="hover:text-[var(--club-yellow)]">
+                  Calendrier
+                </Link>
+              </li>
+            )}
 
-            <li>
-              <Link
-                to="/galerie"
-                className="hover:text-[var(--club-yellow)]"
-              >
-                Galerie photos
-              </Link>
-            </li>
+            {visibility.gallery && (
+              <li>
+                <Link to="/galerie" className="hover:text-[var(--club-yellow)]">
+                  Galerie photos
+                </Link>
+              </li>
+            )}
 
-            <li>
-              <Link
-                to="/partenaires"
-                className="hover:text-[var(--club-yellow)]"
-              >
-                Partenaires
-              </Link>
-            </li>
+            {visibility.partners && (
+              <li>
+                <Link to="/partenaires" className="hover:text-[var(--club-yellow)]">
+                  Partenaires
+                </Link>
+              </li>
+            )}
           </ul>
 
         </div>
@@ -199,41 +205,37 @@ export function Footer() {
           </h3>
 
           <ul className="space-y-2 text-sm font-condensed">
-            <li>
-              <Link
-                to="/actualites"
-                className="hover:text-[var(--club-yellow)]"
-              >
-                Actualités
-              </Link>
-            </li>
+            {visibility.news && (
+              <li>
+                <Link to="/actualites" className="hover:text-[var(--club-yellow)]">
+                  Actualités
+                </Link>
+              </li>
+            )}
 
-            <li>
-              <Link
-                to="/contact"
-                className="hover:text-[var(--club-yellow)]"
-              >
-                Nous contacter
-              </Link>
-            </li>
+            {visibility.contact && (
+              <li>
+                <Link to="/contact" className="hover:text-[var(--club-yellow)]">
+                  Nous contacter
+                </Link>
+              </li>
+            )}
 
-            <li>
-              <Link
-                to="/contact?subject=Benevolat"
-                className="hover:text-[var(--club-yellow)]"
-              >
-                Devenir bénévole
-              </Link>
-            </li>
+            {visibility.contact && (
+              <li>
+                <Link to="/contact?subject=Benevolat" className="hover:text-[var(--club-yellow)]">
+                  Devenir bénévole
+                </Link>
+              </li>
+            )}
 
-            <li>
-              <Link
-                to="/contact?subject=Inscription"
-                className="hover:text-[var(--club-yellow)]"
-              >
-                Rejoindre le club
-              </Link>
-            </li>
+            {visibility.contact && (
+              <li>
+                <Link to="/contact?subject=Inscription" className="hover:text-[var(--club-yellow)]">
+                  Rejoindre le club
+                </Link>
+              </li>
+            )}
           </ul>
 
         </div>
