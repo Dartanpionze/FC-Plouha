@@ -2,6 +2,12 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAdminAccess } from '@/admin/hooks/useAdminAccess'
 import {
+  DEFAULT_SITE_VISIBILITY,
+  normalizeSiteVisibility,
+  type PublicSectionKey,
+  type SiteVisibility,
+} from '@/lib/siteVisibility'
+import {
   Save,
   Building2,
   Mail,
@@ -12,6 +18,8 @@ import {
   RefreshCw,
   ExternalLink,
   ShieldCheck,
+  Eye,
+  EyeOff,
 } from 'lucide-react'
 
 type ClubSettings = {
@@ -32,6 +40,7 @@ type ClubSettings = {
   members_count: number | null
   volunteers_count: number | null
   district_titles: number | null
+  site_visibility: Partial<SiteVisibility> | null
 }
 
 export default function Settings() {
@@ -65,6 +74,9 @@ export default function Settings() {
   const [membersCount, setMembersCount] = useState('')
   const [volunteersCount, setVolunteersCount] = useState('')
   const [districtTitles, setDistrictTitles] = useState('')
+  const [siteVisibility, setSiteVisibility] = useState<SiteVisibility>(
+    DEFAULT_SITE_VISIBILITY,
+  )
 
   useEffect(() => {
     fetchSettings()
@@ -131,6 +143,7 @@ export default function Settings() {
       setInstagramUrl(data.instagram_url || '')
 
       setDescription(data.description || '')
+      setSiteVisibility(normalizeSiteVisibility(data.site_visibility))
 
       return true
     } catch (fetchError) {
@@ -251,6 +264,7 @@ export default function Settings() {
         facebook_url: facebookUrl || null,
         instagram_url: instagramUrl || null,
         description: description || null,
+        site_visibility: siteVisibility,
         updated_at: new Date().toISOString(),
       })
       .eq('id', settings.id)
@@ -705,6 +719,68 @@ export default function Settings() {
               />
             </div>
 
+          </div>
+        </section>
+
+        {/* VISIBILITE DU SITE PUBLIC */}
+        <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-6">
+          <div className="flex items-center gap-3 mb-2">
+            <Eye size={20} className="text-[var(--club-yellow)]" />
+            <h2 className="font-bold text-lg">
+              Visibilité du site public
+            </h2>
+          </div>
+
+          <p className="text-sm text-slate-500 mb-5">
+            Masquez temporairement une rubrique sans supprimer son contenu.
+            Une rubrique masquée disparaît du menu et du pied de page, et son
+            adresse publique redirige vers l'accueil.
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {([
+              ['club', 'Le club'],
+              ['news', 'Actualités'],
+              ['teams', 'Équipes'],
+              ['calendar', 'Calendrier'],
+              ['gallery', 'Galerie'],
+              ['partners', 'Partenaires'],
+              ['contact', 'Contact'],
+            ] as Array<[PublicSectionKey, string]>).map(([key, label]) => {
+              const visible = siteVisibility[key]
+
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  disabled={!canUpdate}
+                  onClick={() =>
+                    setSiteVisibility((current) => ({
+                      ...current,
+                      [key]: !current[key],
+                    }))
+                  }
+                  className={`flex items-center justify-between gap-4 rounded-xl border px-4 py-3 text-left transition ${
+                    visible
+                      ? 'border-emerald-500/20 bg-emerald-500/[0.08]'
+                      : 'border-white/10 bg-slate-950'
+                  } disabled:cursor-not-allowed disabled:opacity-60`}
+                >
+                  <span>
+                    <span className="block font-semibold">{label}</span>
+                    <span className="block mt-0.5 text-xs text-slate-500">
+                      {visible ? 'Visible sur le site' : 'Masqué au public'}
+                    </span>
+                  </span>
+
+                  {visible ? (
+                    <Eye size={19} className="shrink-0 text-emerald-400" />
+                  ) : (
+                    <EyeOff size={19} className="shrink-0 text-slate-500" />
+                  )}
+                </button>
+              )
+            })}
           </div>
         </section>
 
