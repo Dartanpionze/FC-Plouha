@@ -313,17 +313,27 @@ export function Footer() {
             <span>
               Club affilié à la Ligue de Bretagne de Football
             </span>
+
             <Link
               to="/mentions-legales"
               className="hover:text-[var(--club-yellow)] transition-colors"
             >
               Mentions légales
             </Link>
+
             <Link
               to="/politique-confidentialite"
               className="hover:text-[var(--club-yellow)] transition-colors"
             >
               Confidentialité
+            </Link>
+
+            <Link
+              to="/admin"
+              className="text-white/40 hover:text-[var(--club-yellow)] transition-colors"
+              title="Accéder à l'administration"
+            >
+              Administration
             </Link>
           </div>
 
