@@ -14,6 +14,8 @@ import GalleryPage from './routes/galerie'
 import SponsorsPage from './routes/partenaires'
 import Contact from './routes/contact'
 import NotFoundPage from './routes/not-found'
+import MentionsLegalesPage from './routes/mentions-legales'
+import PolitiqueConfidentialitePage from './routes/politique-confidentialite'
 
 import AdminLayout from './admin/layouts/AdminLayout'
 import Dashboard from './admin/pages/Dashboard'
@@ -50,6 +52,8 @@ function App() {
           <Route path="/galerie" element={<PublicSectionRoute section="gallery"><GalleryPage /></PublicSectionRoute>} />
           <Route path="/partenaires" element={<PublicSectionRoute section="partners"><SponsorsPage /></PublicSectionRoute>} />
           <Route path="/contact" element={<PublicSectionRoute section="contact"><Contact /></PublicSectionRoute>} />
+          <Route path="/mentions-legales" element={<MentionsLegalesPage />} />
+          <Route path="/politique-confidentialite" element={<PolitiqueConfidentialitePage />} />
 
           {/* Toute route publique inconnue affiche la page 404 */}
           <Route path="*" element={<NotFoundPage />} />
