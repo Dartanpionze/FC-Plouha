@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 
 const SITE_NAME = 'Football Club Plouha'
-const SITE_URL = 'https://fc-plouha.vercel.app'
+const SITE_URL = 'https://fcplouha.fr'
 const DEFAULT_IMAGE = `${SITE_URL}/logo.png`
 
 type SeoProps = {
