@@ -309,9 +309,23 @@ export function Footer() {
             Tous droits réservés.
           </span>
 
-          <span>
-            Club affilié à la Ligue de Bretagne de Football
-          </span>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <span>
+              Club affilié à la Ligue de Bretagne de Football
+            </span>
+            <Link
+              to="/mentions-legales"
+              className="hover:text-[var(--club-yellow)] transition-colors"
+            >
+              Mentions légales
+            </Link>
+            <Link
+              to="/politique-confidentialite"
+              className="hover:text-[var(--club-yellow)] transition-colors"
+            >
+              Confidentialité
+            </Link>
+          </div>
 
         </div>
 
