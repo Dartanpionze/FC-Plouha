@@ -2,21 +2,58 @@ import { Link, useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { Menu, X } from 'lucide-react'
 import { ClubCrest } from './ClubCrest'
+import { supabase } from '@/lib/supabase'
+import {
+  DEFAULT_SITE_VISIBILITY,
+  normalizeSiteVisibility,
+  type PublicSectionKey,
+  type SiteVisibility,
+} from '@/lib/siteVisibility'
 
-const links = [
+const links: Array<{
+  to: string
+  label: string
+  section?: PublicSectionKey
+}> = [
   { to: '/', label: 'Accueil' },
-  { to: '/club', label: 'Le club' },
-  { to: '/actualites', label: 'Actualités' },
-  { to: '/equipes', label: 'Équipes' },
-  { to: '/calendrier', label: 'Calendrier' },
-  { to: '/galerie', label: 'Galerie' },
-  { to: '/partenaires', label: 'Partenaires' },
-  { to: '/contact', label: 'Contact' },
+  { to: '/club', label: 'Le club', section: 'club' },
+  { to: '/actualites', label: 'Actualités', section: 'news' },
+  { to: '/equipes', label: 'Équipes', section: 'teams' },
+  { to: '/calendrier', label: 'Calendrier', section: 'calendar' },
+  { to: '/galerie', label: 'Galerie', section: 'gallery' },
+  { to: '/partenaires', label: 'Partenaires', section: 'partners' },
+  { to: '/contact', label: 'Contact', section: 'contact' },
 ]
 
 export function Navbar() {
   const [open, setOpen] = useState(false)
+  const [visibility, setVisibility] = useState<SiteVisibility>(
+    DEFAULT_SITE_VISIBILITY,
+  )
   const { pathname } = useLocation()
+
+  useEffect(() => {
+    const fetchVisibility = async () => {
+      const { data, error } = await supabase
+        .from('club_settings')
+        .select('site_visibility')
+        .limit(1)
+        .single()
+
+      if (error) {
+        console.error(error)
+        return
+      }
+
+      setVisibility(normalizeSiteVisibility(data?.site_visibility))
+    }
+
+    void fetchVisibility()
+  }, [])
+
+  const visibleLinks = links.filter(
+    (link) => !link.section || visibility[link.section],
+  )
 
   useEffect(() => {
     if (!open) return
@@ -55,7 +92,7 @@ export function Navbar() {
         </Link>
 
         <ul className="hidden lg:flex items-center gap-1 2xl:gap-2 font-condensed font-semibold text-sm 2xl:text-base tracking-wide">
-          {links.map((link) => {
+          {visibleLinks.map((link) => {
             const active =
               link.to === '/'
                 ? pathname === '/'
@@ -96,7 +133,7 @@ export function Navbar() {
           className="lg:hidden bg-[var(--club-navy-deep)] border-t border-white/10"
         >
           <ul className="px-4 py-3 flex flex-col font-condensed font-semibold text-base">
-            {links.map((link) => {
+            {visibleLinks.map((link) => {
               const active =
                 link.to === '/'
                   ? pathname === '/'
