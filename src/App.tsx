@@ -1,6 +1,7 @@
 import { Routes, Route } from 'react-router-dom'
 import Layout from './Layout'
 import ScrollToTop from './components/ScrollToTop'
+import PublicSectionRoute from './components/PublicSectionRoute'
 
 import Home from './routes/index'
 import Club from './routes/club'
@@ -40,15 +41,15 @@ function App() {
         {/* SITE PUBLIC */}
         <Route element={<Layout />}>
           <Route path="/" element={<Home />} />
-          <Route path="/club" element={<Club />} />
-          <Route path="/equipes" element={<TeamsPage />} />
-          <Route path="/equipes/:id" element={<TeamDetailPage />} />
-          <Route path="/calendrier" element={<CalendarPage />} />
-          <Route path="/actualites" element={<NewsPage />} />
-          <Route path="/actualites/:id" element={<ArticlePage />} />
-          <Route path="/galerie" element={<GalleryPage />} />
-          <Route path="/partenaires" element={<SponsorsPage />} />
-          <Route path="/contact" element={<Contact />} />
+          <Route path="/club" element={<PublicSectionRoute section="club"><Club /></PublicSectionRoute>} />
+          <Route path="/equipes" element={<PublicSectionRoute section="teams"><TeamsPage /></PublicSectionRoute>} />
+          <Route path="/equipes/:id" element={<PublicSectionRoute section="teams"><TeamDetailPage /></PublicSectionRoute>} />
+          <Route path="/calendrier" element={<PublicSectionRoute section="calendar"><CalendarPage /></PublicSectionRoute>} />
+          <Route path="/actualites" element={<PublicSectionRoute section="news"><NewsPage /></PublicSectionRoute>} />
+          <Route path="/actualites/:id" element={<PublicSectionRoute section="news"><ArticlePage /></PublicSectionRoute>} />
+          <Route path="/galerie" element={<PublicSectionRoute section="gallery"><GalleryPage /></PublicSectionRoute>} />
+          <Route path="/partenaires" element={<PublicSectionRoute section="partners"><SponsorsPage /></PublicSectionRoute>} />
+          <Route path="/contact" element={<PublicSectionRoute section="contact"><Contact /></PublicSectionRoute>} />
 
           {/* Toute route publique inconnue affiche la page 404 */}
           <Route path="*" element={<NotFoundPage />} />
