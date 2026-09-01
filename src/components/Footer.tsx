@@ -330,7 +330,7 @@ export function Footer() {
 
             <Link
               to="/admin"
-              className="text-white/40 hover:text-[var(--club-yellow)] transition-colors"
+              className="text-[var(--club-yellow)] hover:text-white transition-colors"
               title="Accéder à l'administration"
             >
               Administration
