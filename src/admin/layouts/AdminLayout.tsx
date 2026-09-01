@@ -14,6 +14,7 @@ import {
   LogOut,
   Landmark,
   ClipboardList,
+  Euro,
   Menu,
   X,
 } from 'lucide-react'
@@ -57,6 +58,11 @@ const navigation = [
     label: 'Inscriptions',
     path: '/admin/registrations',
     icon: ClipboardList,
+  },
+  {
+    label: 'Tarifs licences',
+    path: '/admin/pricing',
+    icon: Euro,
   },
   {
     label: 'Matchs',
@@ -312,6 +318,7 @@ export default function AdminLayout() {
             '/admin/teams': 'teams',
             '/admin/players': 'players',
             '/admin/registrations': 'registrations',
+            '/admin/pricing': 'settings',
             '/admin/matches': 'matches',
             '/admin/gallery': 'gallery',
             '/admin/partners': 'partners',
