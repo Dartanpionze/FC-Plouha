@@ -145,7 +145,7 @@ export default async function handler(req: any, res: any) {
     const { data: inviteData, error: inviteError } =
       await adminClient.auth.admin.inviteUserByEmail(email, {
         data: { display_name: displayName },
-        redirectTo: 'https://fc-plouha.vercel.app/admin/accept-invite',
+        redirectTo: 'https://fcplouha.fr/admin/accept-invite',
       })
 
     if (inviteError || !inviteData.user) {
