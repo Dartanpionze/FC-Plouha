@@ -231,7 +231,7 @@ export function Footer() {
 
             {visibility.contact && (
               <li>
-                <Link to="/contact?subject=Inscription" className="hover:text-[var(--club-yellow)]">
+                <Link to="/rejoindre" className="hover:text-[var(--club-yellow)]">
                   Rejoindre le club
                 </Link>
               </li>
