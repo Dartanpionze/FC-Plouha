@@ -6,6 +6,7 @@ import {
   Shield,
   Users,
   CalendarDays,
+  CalendarClock,
   Images,
   Handshake,
   Settings,
@@ -68,6 +69,11 @@ const navigation = [
     label: 'Matchs',
     path: '/admin/matches',
     icon: CalendarDays,
+  },
+  {
+    label: 'Entraînements',
+    path: '/admin/trainings',
+    icon: CalendarClock,
   },
   {
     label: 'Galerie',
@@ -320,6 +326,7 @@ export default function AdminLayout() {
             '/admin/registrations': 'registrations',
             '/admin/pricing': 'settings',
             '/admin/matches': 'matches',
+            '/admin/trainings': 'teams',
             '/admin/gallery': 'gallery',
             '/admin/partners': 'partners',
           }
