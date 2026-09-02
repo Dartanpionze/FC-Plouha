@@ -558,7 +558,7 @@ export default function Matches() {
         .toLowerCase()
 
       const link = document.createElement('a')
-      link.download = `${isResult ? 'resultat' : 'match'}-fc-plouha-${safeOpponent || match.id}.png`
+      link.download = `${isResult ? 'resultat' : 'match'}-${match.match_date}-fc-plouha-${safeOpponent || match.id}.png`
       link.href = canvas.toDataURL('image/png')
       document.body.appendChild(link)
       link.click()
