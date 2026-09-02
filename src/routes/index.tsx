@@ -856,7 +856,7 @@ function Home() {
               <div className="flex flex-col gap-4 w-full lg:w-auto shrink-0">
                 
                 <Link
-                  to="/contact"
+                  to="/rejoindre"
                   className="inline-flex items-center justify-center gap-2 bg-[var(--club-yellow)] text-[var(--club-navy-deep)] px-8 py-4 rounded-xl font-condensed font-bold shadow-lg hover:bg-white hover:scale-105 transition-all duration-300"
                   >
                   Nous rejoindre
