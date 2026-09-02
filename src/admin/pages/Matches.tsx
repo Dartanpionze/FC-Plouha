@@ -15,6 +15,7 @@ import {
   Trophy,
   Ban,
   CircleDot,
+  ImageDown,
 } from 'lucide-react'
 
 type Team = {
@@ -400,6 +401,173 @@ export default function Matches() {
         return 'bg-red-500/10 text-red-400'
       default:
         return 'bg-green-500/10 text-green-400'
+    }
+  }
+
+
+  const loadPosterImage = (src: string) =>
+    new Promise<HTMLImageElement>((resolve, reject) => {
+      const image = new Image()
+      image.onload = () => resolve(image)
+      image.onerror = reject
+      image.src = src
+    })
+
+  const setPosterFont = (
+    ctx: CanvasRenderingContext2D,
+    text: string,
+    maxWidth: number,
+    startSize: number,
+    minSize: number,
+    weight = 800,
+  ) => {
+    let size = startSize
+    while (size > minSize) {
+      ctx.font = `${weight} ${size}px Arial, sans-serif`
+      if (ctx.measureText(text).width <= maxWidth) break
+      size -= 2
+    }
+    ctx.font = `${weight} ${size}px Arial, sans-serif`
+  }
+
+  const generateMatchPoster = async (match: Match) => {
+    try {
+      const canvas = document.createElement('canvas')
+      canvas.width = 1080
+      canvas.height = 1350
+      const ctx = canvas.getContext('2d')
+
+      if (!ctx) {
+        setMessage("Impossible de générer l'affiche sur cet appareil.")
+        return
+      }
+
+      const gradient = ctx.createLinearGradient(0, 0, 1080, 1350)
+      gradient.addColorStop(0, '#123d6b')
+      gradient.addColorStop(0.45, '#071b33')
+      gradient.addColorStop(1, '#04111f')
+      ctx.fillStyle = gradient
+      ctx.fillRect(0, 0, 1080, 1350)
+
+      ctx.fillStyle = '#ffc72c'
+      ctx.fillRect(0, 0, 1080, 18)
+      ctx.fillStyle = '#c8202f'
+      ctx.fillRect(0, 18, 1080, 8)
+
+      ctx.globalAlpha = 0.08
+      ctx.strokeStyle = '#ffffff'
+      ctx.lineWidth = 3
+      ctx.beginPath()
+      ctx.arc(920, 260, 300, 0, Math.PI * 2)
+      ctx.stroke()
+      ctx.beginPath()
+      ctx.arc(920, 260, 135, 0, Math.PI * 2)
+      ctx.stroke()
+      ctx.beginPath()
+      ctx.moveTo(920, -40)
+      ctx.lineTo(920, 560)
+      ctx.stroke()
+      ctx.globalAlpha = 1
+
+      try {
+        const logo = await loadPosterImage('/logo.png')
+        const ratio = Math.min(220 / logo.naturalWidth, 220 / logo.naturalHeight)
+        const width = logo.naturalWidth * ratio
+        const height = logo.naturalHeight * ratio
+        ctx.drawImage(logo, (1080 - width) / 2, 75, width, height)
+      } catch (logoError) {
+        console.error('Logo non chargé pour affiche :', logoError)
+      }
+
+      const isResult = match.status === 'finished'
+      const clubTeam = match.teams?.name || 'FC Plouha'
+      const homeTeam = match.is_home ? clubTeam : match.opponent
+      const awayTeam = match.is_home ? match.opponent : clubTeam
+
+      ctx.textAlign = 'center'
+      ctx.fillStyle = '#ffc72c'
+      ctx.font = '800 42px Arial, sans-serif'
+      ctx.fillText(isResult ? 'RÉSULTAT' : 'PROCHAIN MATCH', 540, 365)
+
+      if (match.competition) {
+        ctx.fillStyle = 'rgba(255,255,255,0.72)'
+        setPosterFont(ctx, match.competition.toUpperCase(), 820, 28, 20, 700)
+        ctx.fillText(match.competition.toUpperCase(), 540, 415)
+      }
+
+      ctx.fillStyle = '#ffffff'
+      setPosterFont(ctx, homeTeam.toUpperCase(), 850, 66, 38, 900)
+      ctx.fillText(homeTeam.toUpperCase(), 540, 555)
+
+      if (isResult && match.home_score !== null && match.away_score !== null) {
+        ctx.fillStyle = '#ffc72c'
+        ctx.font = '900 126px Arial, sans-serif'
+        ctx.fillText(`${match.home_score}  -  ${match.away_score}`, 540, 735)
+      } else {
+        ctx.fillStyle = 'rgba(255,255,255,0.45)'
+        ctx.font = '800 42px Arial, sans-serif'
+        ctx.fillText('VS', 540, 690)
+      }
+
+      ctx.fillStyle = '#ffffff'
+      setPosterFont(ctx, awayTeam.toUpperCase(), 850, 66, 38, 900)
+      ctx.fillText(awayTeam.toUpperCase(), 540, isResult ? 855 : 825)
+
+      ctx.strokeStyle = 'rgba(255,255,255,0.18)'
+      ctx.lineWidth = 2
+      ctx.beginPath()
+      ctx.moveTo(170, 930)
+      ctx.lineTo(910, 930)
+      ctx.stroke()
+
+      const dateLabel = new Date(`${match.match_date}T12:00:00`).toLocaleDateString(
+        'fr-FR',
+        { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' },
+      )
+
+      ctx.fillStyle = '#ffc72c'
+      ctx.font = '800 35px Arial, sans-serif'
+      ctx.fillText(dateLabel.toUpperCase(), 540, 1005)
+
+      if (!isResult && match.match_time) {
+        ctx.fillStyle = '#ffffff'
+        ctx.font = '900 50px Arial, sans-serif'
+        ctx.fillText(match.match_time.slice(0, 5), 540, 1070)
+      }
+
+      if (match.location) {
+        ctx.fillStyle = 'rgba(255,255,255,0.75)'
+        setPosterFont(ctx, match.location, 800, 30, 22, 600)
+        ctx.fillText(match.location, 540, isResult ? 1075 : 1130)
+      }
+
+      ctx.fillStyle = '#c8202f'
+      ctx.fillRect(150, 1205, 780, 4)
+      ctx.fillStyle = 'rgba(255,255,255,0.65)'
+      ctx.font = '700 24px Arial, sans-serif'
+      ctx.fillText('FC PLOUHA · LES FALAISES', 540, 1265)
+      ctx.fillStyle = '#ffc72c'
+      ctx.font = '700 22px Arial, sans-serif'
+      ctx.fillText('fcplouha.fr', 540, 1305)
+
+      const safeOpponent = match.opponent
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9]+/g, '-')
+        .replace(/^-|-$/g, '')
+        .toLowerCase()
+
+      const link = document.createElement('a')
+      link.download = `${isResult ? 'resultat' : 'match'}-fc-plouha-${safeOpponent || match.id}.png`
+      link.href = canvas.toDataURL('image/png')
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+
+      setMessage(isResult ? 'Visuel du résultat généré en PNG.' : 'Affiche du match générée en PNG.')
+    } catch (posterError) {
+      console.error(posterError)
+      setMessage("Impossible de générer l'affiche du match.")
     }
   }
 
@@ -996,33 +1164,40 @@ export default function Matches() {
                 </div>
 
                 {/* ACTIONS */}
-                {(canUpdate || canDelete) && (
-                <div className="flex gap-2 shrink-0">
-  
-                    {canUpdate && (
+                <div className="flex flex-wrap gap-2 shrink-0">
+                  {match.status !== 'cancelled' && (
                     <button
-                        onClick={() => editMatch(match)}
-                        className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm transition"
-                      >
-                        <Pencil size={16} />
-                        Modifier
-                      </button>
-                    )}
-  
-                    {canDelete && (
+                      type="button"
+                      onClick={() => void generateMatchPoster(match)}
+                      className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--club-yellow)]/10 hover:bg-[var(--club-yellow)]/20 text-[var(--club-yellow)] text-sm font-semibold transition"
+                    >
+                      <ImageDown size={16} />
+                      {match.status === 'finished'
+                        ? 'Générer le résultat'
+                        : "Générer l'affiche"}
+                    </button>
+                  )}
+
+                  {canUpdate && (
                     <button
-                        onClick={() =>
-                          deleteMatch(match.id)
-                        }
-                        className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-sm transition"
-                      >
-                        <Trash2 size={16} />
-                        Supprimer
-                      </button>
-                    )}
-  
-                  </div>
-                )}
+                      onClick={() => editMatch(match)}
+                      className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm transition"
+                    >
+                      <Pencil size={16} />
+                      Modifier
+                    </button>
+                  )}
+
+                  {canDelete && (
+                    <button
+                      onClick={() => deleteMatch(match.id)}
+                      className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-sm transition"
+                    >
+                      <Trash2 size={16} />
+                      Supprimer
+                    </button>
+                  )}
+                </div>
 
               </div>
 
