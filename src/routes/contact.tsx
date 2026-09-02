@@ -518,7 +518,7 @@ function ContactPage() {
         </div>
       </section>
 
-      {registrationFees.length > 0 && (
+      {isRegistration && registrationFees.length > 0 && (
         <section className="max-w-6xl 2xl:max-w-[1380px] mx-auto px-4 sm:px-6 2xl:px-8 pt-10 2xl:pt-12">
           <div className="rounded-2xl border border-[var(--club-yellow)]/60 bg-[var(--club-yellow)]/10 p-6 sm:p-7">
             <div className="flex items-start gap-3">
@@ -531,7 +531,7 @@ function ContactPage() {
                   Tarifs d'inscription
                 </h2>
                 <p className="mt-1 text-sm leading-relaxed text-[var(--club-navy-deep)]/60">
-                  Les tarifs actifs du club sont affichés ici avant toute prise de contact.
+                  Retrouvez ci-dessous les tarifs actuellement proposés pour rejoindre une équipe du club.
                 </p>
               </div>
             </div>
