@@ -11,9 +11,18 @@ import {
   Users,
   ArrowRight,
   UserPlus,
+  CalendarClock,
+  Clock3,
+  MapPin,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import Seo from '@/components/Seo'
+import {
+  getNextTraining,
+  weekdayLabels,
+  type TrainingException,
+  type TrainingSlot,
+} from '@/lib/trainings'
 
 type Team = {
   id: number
@@ -50,6 +59,8 @@ function TeamDetailPage() {
 
   const [team, setTeam] = useState<Team | null>(null)
   const [players, setPlayers] = useState<Player[]>([])
+  const [trainingSlots, setTrainingSlots] = useState<TrainingSlot[]>([])
+  const [trainingExceptions, setTrainingExceptions] = useState<TrainingException[]>([])
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
   const [error, setError] = useState(false)
@@ -71,7 +82,7 @@ function TeamDetailPage() {
     setPlayersError(false)
 
     try {
-      const [teamResult, playersResult] = await Promise.all([
+      const [teamResult, playersResult, trainingSlotsResult, trainingExceptionsResult] = await Promise.all([
         supabase
           .from('teams')
           .select(`
@@ -105,6 +116,32 @@ function TeamDetailPage() {
           .eq('active', true)
           .order('display_order', { ascending: true })
           .order('last_name', { ascending: true }),
+
+        supabase
+          .from('training_slots')
+          .select(`
+            id,
+            team_id,
+            weekday,
+            start_time,
+            end_time,
+            location,
+            coach,
+            start_date,
+            end_date,
+            active,
+            teams (id, name, category)
+          `)
+          .eq('team_id', teamId)
+          .eq('active', true)
+          .order('weekday', { ascending: true })
+          .order('start_time', { ascending: true }),
+
+        supabase
+          .from('training_exceptions')
+          .select('*')
+          .gte('original_date', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10))
+          .order('original_date', { ascending: true }),
       ])
 
       if (teamResult.error) {
@@ -128,6 +165,25 @@ function TeamDetailPage() {
         setPlayersError(true)
       } else {
         setPlayers(playersResult.data || [])
+      }
+
+      if (trainingSlotsResult.error) {
+        console.error(trainingSlotsResult.error)
+        setTrainingSlots([])
+      } else {
+        setTrainingSlots(
+          ((trainingSlotsResult.data || []) as any[]).map((slot) => ({
+            ...slot,
+            teams: Array.isArray(slot.teams) ? slot.teams[0] ?? null : slot.teams,
+          })) as TrainingSlot[],
+        )
+      }
+
+      if (trainingExceptionsResult.error) {
+        console.error(trainingExceptionsResult.error)
+        setTrainingExceptions([])
+      } else {
+        setTrainingExceptions((trainingExceptionsResult.data || []) as TrainingException[])
       }
     } catch (fetchError) {
       console.error(fetchError)
@@ -240,6 +296,15 @@ function TeamDetailPage() {
     (player) =>
       !positions.includes(player.position || ''),
   )
+
+  const nextTraining = getNextTraining(trainingSlots, trainingExceptions)
+
+  const formatTrainingDate = (value: string) =>
+    new Date(`${value}T12:00:00`).toLocaleDateString('fr-FR', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+    })
 
   const seoDescription =
     team.description ||
@@ -393,6 +458,75 @@ function TeamDetailPage() {
 
           </div>
 
+        </section>
+      )}
+
+      {/* ENTRAÎNEMENTS */}
+      {trainingSlots.length > 0 && (
+        <section className="max-w-7xl 2xl:max-w-[1540px] mx-auto px-4 sm:px-6 2xl:px-8 pt-14 2xl:pt-16">
+          <div className="rounded-3xl border border-black/5 bg-[var(--club-navy)]/[0.04] p-6 sm:p-8">
+            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-7">
+              <div>
+                <span className="font-condensed font-bold text-xs tracking-[0.25em] text-[var(--club-red)]">
+                  ENTRAÎNEMENTS
+                </span>
+                <h2 className="mt-2 text-3xl text-[var(--club-navy-deep)]">
+                  Les créneaux de l'équipe
+                </h2>
+
+                <div className="mt-6 grid sm:grid-cols-2 gap-4">
+                  {trainingSlots.map((slot) => (
+                    <div key={slot.id} className="rounded-2xl border border-black/5 bg-white p-5">
+                      <div className="flex items-center gap-3">
+                        <div className="w-11 h-11 rounded-xl bg-[var(--club-yellow)]/25 flex items-center justify-center">
+                          <CalendarClock size={21} className="text-[var(--club-navy-deep)]" />
+                        </div>
+                        <div>
+                          <p className="font-condensed font-bold text-lg text-[var(--club-navy-deep)]">
+                            {weekdayLabels[slot.weekday]}
+                          </p>
+                          <p className="text-sm text-[var(--club-navy-deep)]/55">
+                            {slot.start_time.slice(0, 5)}{slot.end_time ? ` – ${slot.end_time.slice(0, 5)}` : ''}
+                          </p>
+                        </div>
+                      </div>
+                      {slot.location && (
+                        <p className="mt-4 flex items-center gap-2 text-sm text-[var(--club-navy-deep)]/60">
+                          <MapPin size={15} /> {slot.location}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {nextTraining && (
+                <div className="lg:w-[360px] shrink-0 rounded-2xl bg-[var(--club-navy-deep)] p-6 text-white">
+                  <p className="text-xs font-condensed font-bold tracking-[0.2em] text-[var(--club-yellow)]">
+                    PROCHAIN ENTRAÎNEMENT
+                  </p>
+                  <p className="mt-3 font-condensed text-2xl font-bold normal-case capitalize">
+                    {formatTrainingDate(nextTraining.date)}
+                  </p>
+                  <p className="mt-4 flex items-center gap-2 text-white/75">
+                    <Clock3 size={17} />
+                    {nextTraining.startTime.slice(0, 5)}{nextTraining.endTime ? ` – ${nextTraining.endTime.slice(0, 5)}` : ''}
+                  </p>
+                  {nextTraining.location && (
+                    <p className="mt-2 flex items-center gap-2 text-white/75">
+                      <MapPin size={17} /> {nextTraining.location}
+                    </p>
+                  )}
+                  {nextTraining.modified && (
+                    <div className="mt-4 rounded-xl bg-[var(--club-yellow)]/15 px-4 py-3 text-sm text-[var(--club-yellow)]">
+                      Cette séance a été exceptionnellement modifiée.
+                      {nextTraining.note ? ` ${nextTraining.note}` : ''}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
         </section>
       )}
 
