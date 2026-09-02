@@ -3,6 +3,8 @@ import {
   AlertTriangle,
   ArrowRight,
   CalendarDays,
+  CalendarClock,
+  Clock3,
   Loader2,
   MapPin,
   RefreshCw,
@@ -15,6 +17,11 @@ import { supabase } from '@/lib/supabase'
 import { SectionHeading } from '@/components/SectionHeading'
 import { ClubCrest } from '@/components/ClubCrest'
 import Seo from '@/components/Seo'
+import {
+  getNextTraining,
+  type TrainingException,
+  type TrainingSlot,
+} from '@/lib/trainings'
 
 type ClubSettings = {
   club_name: string | null
@@ -91,6 +98,8 @@ function Home() {
   const [news, setNews] = useState<any[]>([])
   const [teams, setTeams] = useState<Team[]>([])
   const [matches, setMatches] = useState<Match[]>([])
+  const [trainingSlots, setTrainingSlots] = useState<TrainingSlot[]>([])
+  const [trainingExceptions, setTrainingExceptions] = useState<TrainingException[]>([])
   const [homeStoryPhotos, setHomeStoryPhotos] = useState<GalleryPhoto[]>([])
   const [galleryPhotos, setGalleryPhotos] = useState<GalleryPhoto[]>([])
   const [partners, setPartners] = useState<Partner[]>([])
@@ -107,6 +116,8 @@ function Home() {
         newsResult,
         teamsResult,
         matchesResult,
+        trainingSlotsResult,
+        trainingExceptionsResult,
         homeStoryResult,
         galleryResult,
         partnersResult,
@@ -151,6 +162,31 @@ function Home() {
           .limit(3),
 
         supabase
+          .from('training_slots')
+          .select(`
+            id,
+            team_id,
+            weekday,
+            start_time,
+            end_time,
+            location,
+            coach,
+            start_date,
+            end_date,
+            active,
+            teams (id, name, category)
+          `)
+          .eq('active', true)
+          .order('weekday', { ascending: true })
+          .order('start_time', { ascending: true }),
+
+        supabase
+          .from('training_exceptions')
+          .select('*')
+          .gte('original_date', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10))
+          .order('original_date', { ascending: true }),
+
+        supabase
           .from('gallery_photos')
           .select('*')
           .eq('active', true)
@@ -178,6 +214,8 @@ function Home() {
         newsResult,
         teamsResult,
         matchesResult,
+        trainingSlotsResult,
+        trainingExceptionsResult,
         homeStoryResult,
         galleryResult,
         partnersResult,
@@ -201,6 +239,13 @@ function Home() {
           teams: singleRelation(match.teams),
         })),
       )
+      setTrainingSlots(
+        ((trainingSlotsResult.data || []) as any[]).map((slot) => ({
+          ...slot,
+          teams: singleRelation(slot.teams),
+        })) as TrainingSlot[],
+      )
+      setTrainingExceptions((trainingExceptionsResult.data || []) as TrainingException[])
       setHomeStoryPhotos(homeStoryResult.data || [])
       setGalleryPhotos(galleryResult.data || [])
       setPartners(partnersResult.data || [])
@@ -232,6 +277,15 @@ function Home() {
 
   const getAwayTeam = (match: Match) =>
     match.is_home ? match.opponent : getTeamName(match)
+
+  const nextTraining = getNextTraining(trainingSlots, trainingExceptions)
+
+  const formatLongDate = (value: string) =>
+    new Date(`${value}T12:00:00`).toLocaleDateString('fr-FR', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+    })
 
   if (loading) {
     return (
@@ -631,6 +685,42 @@ function Home() {
           )}
         </div>
       </section>
+
+      {/* NEXT TRAINING */}
+      {nextTraining && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 pt-4 pb-20">
+          <div className="overflow-hidden rounded-3xl border border-black/5 bg-white shadow-sm">
+            <div className="grid lg:grid-cols-[0.75fr_1.25fr]">
+              <div className="bg-[var(--club-yellow)] p-7 sm:p-9 text-[var(--club-navy-deep)]">
+                <div className="flex items-center gap-3">
+                  <CalendarClock size={28} />
+                  <span className="font-condensed text-xs font-black tracking-[0.22em]">PROCHAIN ENTRAÎNEMENT</span>
+                </div>
+                <p className="mt-6 font-condensed text-3xl font-black normal-case capitalize">
+                  {formatLongDate(nextTraining.date)}
+                </p>
+              </div>
+
+              <div className="p-7 sm:p-9 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+                <div>
+                  <p className="font-condensed text-2xl font-bold text-[var(--club-navy-deep)] normal-case">
+                    {nextTraining.teamName}
+                  </p>
+                  {nextTraining.category && <p className="mt-1 text-sm text-[var(--club-navy-deep)]/50">{nextTraining.category}</p>}
+                  <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm text-[var(--club-navy-deep)]/65">
+                    <span className="inline-flex items-center gap-2"><Clock3 size={16} />{nextTraining.startTime.slice(0, 5)}{nextTraining.endTime ? ` – ${nextTraining.endTime.slice(0, 5)}` : ''}</span>
+                    {nextTraining.location && <span className="inline-flex items-center gap-2"><MapPin size={16} />{nextTraining.location}</span>}
+                  </div>
+                  {nextTraining.modified && <p className="mt-3 text-sm font-semibold text-[var(--club-red)]">Séance exceptionnellement modifiée{nextTraining.note ? ` · ${nextTraining.note}` : ''}</p>}
+                </div>
+                <Link to={`/equipes/${nextTraining.teamId}`} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-[var(--club-navy-deep)] px-5 py-3 font-condensed font-bold text-white hover:bg-[var(--club-navy)] transition-colors">
+                  Voir l'équipe <ArrowRight size={17} />
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* CALENDAR PREVIEW */}
       <section className="bg-[var(--club-navy-deep)] py-20 grain-overlay">
