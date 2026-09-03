@@ -18,6 +18,7 @@ import {
   Euro,
   Menu,
   X,
+  DatabaseBackup,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import {
@@ -411,6 +412,37 @@ export default function AdminLayout() {
                   }
                 />
                 <span>Utilisateurs</span>
+              </>
+            )}
+          </NavLink>
+        )}
+
+        {superadmin && (
+          <NavLink
+            to="/admin/backups"
+            className={({ isActive }) =>
+              `
+              group flex items-center gap-3 px-3 py-2.5 rounded-xl
+              text-sm font-medium transition-all
+              ${
+                isActive
+                  ? 'bg-white/10 text-white'
+                  : 'text-slate-400 hover:bg-white/5 hover:text-white'
+              }
+              `
+            }
+          >
+            {({ isActive }) => (
+              <>
+                <DatabaseBackup
+                  size={19}
+                  className={
+                    isActive
+                      ? 'text-[var(--club-yellow)]'
+                      : 'text-slate-500 group-hover:text-slate-300'
+                  }
+                />
+                <span>Sauvegardes</span>
               </>
             )}
           </NavLink>
