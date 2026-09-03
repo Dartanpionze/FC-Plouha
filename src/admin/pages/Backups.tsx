@@ -688,6 +688,34 @@ export default function Backups() {
 
       <div className="border-t border-white/10 pt-2" />
 
+      <section className="rounded-3xl border border-[var(--club-yellow)]/20 bg-[var(--club-yellow)]/[0.05] p-5 sm:p-6">
+        <div className="flex items-start gap-4">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--club-yellow)]/10 text-[var(--club-yellow)]">
+            <ShieldCheck size={24} />
+          </div>
+          <div className="min-w-0">
+            <h2 className="text-lg font-black text-white">Comment restaurer une sauvegarde ?</h2>
+            <div className="mt-4 space-y-4 text-sm leading-6 text-slate-300">
+              <div>
+                <span className="font-black text-[var(--club-yellow)]">1. Données JSON :</span>{' '}
+                sélectionne le fichier JSON, coche uniquement les tables que tu souhaites restaurer, puis clique dans le champ de confirmation et <strong className="text-white">écris toi-même RESTAURER</strong>. Le mot affiché en gris dans le champ est seulement un exemple : tant que tu ne l’as pas saisi, le bouton reste désactivé.
+              </div>
+              <div>
+                <span className="font-black text-[var(--club-yellow)]">2. Médias ZIP :</span>{' '}
+                sélectionne le ZIP des médias, vérifie son contenu, puis <strong className="text-white">écris toi-même RESTAURER</strong> dans le champ de confirmation avant de lancer la restauration.
+              </div>
+              <div>
+                <span className="font-black text-[var(--club-yellow)]">3. Image ou logo supprimé :</span>{' '}
+                restaure <strong className="text-white">d’abord le ZIP des médias</strong>, puis restaure avec le <strong className="text-white">JSON la table concernée</strong> (par exemple partners, players ou news). Le ZIP remet le fichier dans Supabase Storage ; le JSON remet la référence qui relie ce fichier au contenu du CMS.
+              </div>
+              <div className="rounded-2xl border border-amber-400/20 bg-amber-400/[0.06] px-4 py-3 text-amber-100/80">
+                <strong className="text-amber-200">Sécurité :</strong> avant une restauration importante, télécharge toujours une nouvelle sauvegarde JSON et médias de l’état actuel du site.
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section className="rounded-3xl border border-sky-400/20 bg-slate-900 p-5 sm:p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="flex items-start gap-4">
