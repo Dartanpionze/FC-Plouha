@@ -34,6 +34,7 @@ import AdminClub from './admin/pages/Club'
 import Registrations from './admin/pages/Registrations'
 import Users from './admin/pages/Users'
 import AcceptInvite from './admin/pages/AcceptInvite'
+import Backups from './admin/pages/Backups'
 import RequireAdminPermission from './admin/components/RequireAdminPermission'
 import RequireSuperadmin from './admin/components/RequireSuperadmin'
 
@@ -81,6 +82,7 @@ function App() {
           <Route path="pricing" element={<RequireAdminPermission module="settings"><Pricing /></RequireAdminPermission>} />
           <Route path="settings" element={<RequireAdminPermission module="settings"><Settings /></RequireAdminPermission>} />
           <Route path="users" element={<RequireSuperadmin><Users /></RequireSuperadmin>} />
+          <Route path="backups" element={<RequireSuperadmin><Backups /></RequireSuperadmin>} />
         </Route>
       </Routes>
     </>
