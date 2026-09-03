@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   AlertTriangle,
   Clock,
@@ -62,6 +62,7 @@ const formatPrice = (amount: number) =>
 
 function ContactPage() {
   const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
   const formRef = useRef<HTMLDivElement | null>(null)
 
   const [settings, setSettings] = useState<ClubSettings | null>(null)
@@ -448,7 +449,7 @@ function ContactPage() {
             {
               value: 'Inscription',
               title: 'Rejoindre une équipe',
-              description: "Joueur, joueuse ou inscription d'un enfant.",
+              description: "Joueur, joueuse ou inscription d'un enfant. Accédez à la pré-inscription en ligne.",
               icon: UserPlus,
             },
             {
@@ -477,7 +478,14 @@ function ContactPage() {
               <button
                 key={request.value}
                 type="button"
-                onClick={() => selectRequestType(request.value)}
+                onClick={() => {
+                  if (request.value === 'Inscription') {
+                    navigate('/rejoindre#preinscription')
+                    return
+                  }
+
+                  selectRequestType(request.value)
+                }}
                 className={`group rounded-2xl border p-5 text-left transition-all ${
                   selected
                     ? 'border-[var(--club-yellow)] bg-[var(--club-yellow)]/15 shadow-md'
