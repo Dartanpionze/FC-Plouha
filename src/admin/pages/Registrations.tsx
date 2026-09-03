@@ -6,7 +6,6 @@ import {
   UserPlus,
   Mail,
   Phone,
-  CalendarDays,
   MessageSquare,
   Trash2,
   Save,
