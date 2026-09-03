@@ -22,6 +22,7 @@ type Registration = {
   first_name: string
   last_name: string
   birth_year: number | null
+  birth_date: string | null
   category: string | null
   email: string | null
   phone: string | null
@@ -29,6 +30,13 @@ type Registration = {
   message: string | null
   status: string
   admin_notes: string | null
+  previous_club: string | null
+  first_licence: boolean | null
+  legal_guardian_first_name: string | null
+  legal_guardian_last_name: string | null
+  legal_guardian_email: string | null
+  legal_guardian_phone: string | null
+  contact_consent: boolean | null
 }
 
 const statuses = [
@@ -652,7 +660,7 @@ export default function Registrations() {
                 {/* INFOS */}
                 <div className="space-y-3">
 
-                  {selected.birth_year && (
+                  {(selected.birth_date || selected.birth_year) && (
                     <div className="flex gap-3 text-sm">
                       <CalendarDays
                         size={17}
@@ -660,8 +668,10 @@ export default function Registrations() {
                       />
 
                       <span className="text-slate-300">
-                        Né(e) en{' '}
-                        {selected.birth_year}
+                        Date de naissance :{' '}
+                        {selected.birth_date
+                          ? new Date(`${selected.birth_date}T00:00:00`).toLocaleDateString('fr-FR')
+                          : selected.birth_year}
                       </span>
                     </div>
                   )}
@@ -704,6 +714,70 @@ export default function Registrations() {
                       />
                       {selected.phone}
                     </a>
+                  )}
+
+                  <div className="pt-3 mt-3 border-t border-white/10 space-y-2 text-sm">
+                    <div>
+                      <span className="text-slate-500">Club précédent :</span>{' '}
+                      <span className="text-slate-300">
+                        {selected.first_licence
+                          ? 'Aucun / première licence'
+                          : selected.previous_club || 'Non renseigné'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {(selected.legal_guardian_first_name ||
+                    selected.legal_guardian_last_name ||
+                    selected.legal_guardian_email ||
+                    selected.legal_guardian_phone) && (
+                    <div className="pt-3 mt-3 border-t border-white/10">
+                      <p className="text-xs uppercase tracking-wider text-slate-500 mb-3">
+                        Responsable légal
+                      </p>
+
+                      <div className="space-y-2 text-sm text-slate-300">
+                        {(selected.legal_guardian_first_name ||
+                          selected.legal_guardian_last_name) && (
+                          <p>
+                            {selected.legal_guardian_first_name}{' '}
+                            {selected.legal_guardian_last_name}
+                          </p>
+                        )}
+
+                        {selected.legal_guardian_email && (
+                          <a
+                            href={`mailto:${selected.legal_guardian_email}`}
+                            className="flex gap-3 hover:text-white"
+                          >
+                            <Mail
+                              size={17}
+                              className="text-[var(--club-yellow)] shrink-0"
+                            />
+                            {selected.legal_guardian_email}
+                          </a>
+                        )}
+
+                        {selected.legal_guardian_phone && (
+                          <a
+                            href={`tel:${selected.legal_guardian_phone.replace(/\s/g, '')}`}
+                            className="flex gap-3 hover:text-white"
+                          >
+                            <Phone
+                              size={17}
+                              className="text-[var(--club-yellow)] shrink-0"
+                            />
+                            {selected.legal_guardian_phone}
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {selected.contact_consent && (
+                    <p className="pt-3 mt-3 border-t border-white/10 text-xs text-green-400">
+                      Autorisation de contact acceptée lors de la pré-inscription.
+                    </p>
                   )}
 
                 </div>
