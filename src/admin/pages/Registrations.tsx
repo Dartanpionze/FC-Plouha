@@ -657,73 +657,86 @@ export default function Registrations() {
                   </select>
                 </div>
 
-                {/* INFOS */}
-                <div className="space-y-3">
+                {/* INFORMATIONS DE PRÉ-INSCRIPTION */}
+                <div className="space-y-5">
 
-                  {(selected.birth_date || selected.birth_year) && (
-                    <div className="flex gap-3 text-sm">
-                      <CalendarDays
-                        size={17}
-                        className="text-[var(--club-yellow)] shrink-0"
-                      />
+                  <div>
+                    <p className="text-xs uppercase tracking-wider text-slate-500 mb-3">
+                      Licencié
+                    </p>
 
-                      <span className="text-slate-300">
-                        Date de naissance :{' '}
-                        {selected.birth_date
-                          ? new Date(`${selected.birth_date}T00:00:00`).toLocaleDateString('fr-FR')
-                          : selected.birth_year}
-                      </span>
+                    <div className="rounded-xl border border-white/10 bg-slate-950 p-4 space-y-3 text-sm">
+                      <div>
+                        <span className="text-slate-500">Nom complet :</span>{' '}
+                        <span className="text-slate-200">
+                          {selected.first_name} {selected.last_name}
+                        </span>
+                      </div>
+
+                      <div>
+                        <span className="text-slate-500">Date de naissance :</span>{' '}
+                        <span className="text-slate-200">
+                          {selected.birth_date
+                            ? new Date(`${selected.birth_date}T00:00:00`).toLocaleDateString('fr-FR')
+                            : selected.birth_year
+                              ? `Année ${selected.birth_year}`
+                              : 'Non renseignée'}
+                        </span>
+                      </div>
+
+                      <div>
+                        <span className="text-slate-500">Catégorie souhaitée :</span>{' '}
+                        <span className="text-slate-200">
+                          {selected.category || 'Non renseignée'}
+                        </span>
+                      </div>
+
+                      <div>
+                        <span className="text-slate-500">Club précédent :</span>{' '}
+                        <span className="text-slate-200">
+                          {selected.first_licence
+                            ? 'Aucun / première licence'
+                            : selected.previous_club || 'Non renseigné'}
+                        </span>
+                      </div>
                     </div>
-                  )}
+                  </div>
 
-                  {selected.category && (
-                    <div className="text-sm">
-                      <span className="text-slate-500">
-                        Catégorie :
-                      </span>{' '}
-                      <span className="text-slate-300">
-                        {selected.category}
-                      </span>
-                    </div>
-                  )}
+                  <div>
+                    <p className="text-xs uppercase tracking-wider text-slate-500 mb-3">
+                      Coordonnées de contact
+                    </p>
 
-                  {selected.email && (
-                    <a
-                      href={`mailto:${selected.email}`}
-                      className="flex gap-3 text-sm text-slate-300 hover:text-white"
-                    >
-                      <Mail
-                        size={17}
-                        className="text-[var(--club-yellow)] shrink-0"
-                      />
-                      {selected.email}
-                    </a>
-                  )}
+                    <div className="rounded-xl border border-white/10 bg-slate-950 p-4 space-y-3 text-sm">
+                      {selected.email ? (
+                        <a
+                          href={`mailto:${selected.email}`}
+                          className="flex gap-3 text-slate-300 hover:text-white"
+                        >
+                          <Mail
+                            size={17}
+                            className="text-[var(--club-yellow)] shrink-0"
+                          />
+                          {selected.email}
+                        </a>
+                      ) : (
+                        <p className="text-slate-500">E-mail non renseigné.</p>
+                      )}
 
-                  {selected.phone && (
-                    <a
-                      href={`tel:${selected.phone.replace(
-                        /\s/g,
-                        '',
-                      )}`}
-                      className="flex gap-3 text-sm text-slate-300 hover:text-white"
-                    >
-                      <Phone
-                        size={17}
-                        className="text-[var(--club-yellow)] shrink-0"
-                      />
-                      {selected.phone}
-                    </a>
-                  )}
-
-                  <div className="pt-3 mt-3 border-t border-white/10 space-y-2 text-sm">
-                    <div>
-                      <span className="text-slate-500">Club précédent :</span>{' '}
-                      <span className="text-slate-300">
-                        {selected.first_licence
-                          ? 'Aucun / première licence'
-                          : selected.previous_club || 'Non renseigné'}
-                      </span>
+                      {selected.phone ? (
+                        <a
+                          href={`tel:${selected.phone.replace(/\s/g, '')}`}
+                          className="flex gap-3 text-slate-300 hover:text-white"
+                        >
+                          <Phone
+                            size={17}
+                            className="text-[var(--club-yellow)] shrink-0"
+                          />
+                          {selected.phone}
+                        </a>
+                      ) : (
+                        <p className="text-slate-500">Téléphone non renseigné.</p>
+                      )}
                     </div>
                   </div>
 
@@ -731,24 +744,25 @@ export default function Registrations() {
                     selected.legal_guardian_last_name ||
                     selected.legal_guardian_email ||
                     selected.legal_guardian_phone) && (
-                    <div className="pt-3 mt-3 border-t border-white/10">
+                    <div>
                       <p className="text-xs uppercase tracking-wider text-slate-500 mb-3">
                         Responsable légal
                       </p>
 
-                      <div className="space-y-2 text-sm text-slate-300">
-                        {(selected.legal_guardian_first_name ||
-                          selected.legal_guardian_last_name) && (
-                          <p>
-                            {selected.legal_guardian_first_name}{' '}
-                            {selected.legal_guardian_last_name}
-                          </p>
-                        )}
+                      <div className="rounded-xl border border-white/10 bg-slate-950 p-4 space-y-3 text-sm">
+                        <div>
+                          <span className="text-slate-500">Nom complet :</span>{' '}
+                          <span className="text-slate-200">
+                            {[selected.legal_guardian_first_name, selected.legal_guardian_last_name]
+                              .filter(Boolean)
+                              .join(' ') || 'Non renseigné'}
+                          </span>
+                        </div>
 
                         {selected.legal_guardian_email && (
                           <a
                             href={`mailto:${selected.legal_guardian_email}`}
-                            className="flex gap-3 hover:text-white"
+                            className="flex gap-3 text-slate-300 hover:text-white"
                           >
                             <Mail
                               size={17}
@@ -761,7 +775,7 @@ export default function Registrations() {
                         {selected.legal_guardian_phone && (
                           <a
                             href={`tel:${selected.legal_guardian_phone.replace(/\s/g, '')}`}
-                            className="flex gap-3 hover:text-white"
+                            className="flex gap-3 text-slate-300 hover:text-white"
                           >
                             <Phone
                               size={17}
@@ -774,11 +788,23 @@ export default function Registrations() {
                     </div>
                   )}
 
-                  {selected.contact_consent && (
-                    <p className="pt-3 mt-3 border-t border-white/10 text-xs text-green-400">
-                      Autorisation de contact acceptée lors de la pré-inscription.
+                  <div>
+                    <p className="text-xs uppercase tracking-wider text-slate-500 mb-3">
+                      Autorisation de contact
                     </p>
-                  )}
+
+                    <div
+                      className={`rounded-xl border p-4 text-sm ${
+                        selected.contact_consent
+                          ? 'border-green-500/20 bg-green-500/10 text-green-300'
+                          : 'border-white/10 bg-slate-950 text-slate-500'
+                      }`}
+                    >
+                      {selected.contact_consent
+                        ? 'Acceptée lors de la pré-inscription en ligne.'
+                        : 'Non renseignée pour cette demande.'}
+                    </div>
+                  </div>
 
                 </div>
 
