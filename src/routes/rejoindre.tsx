@@ -16,6 +16,9 @@ import {
 } from 'lucide-react'
 import Seo from '@/components/Seo'
 import { supabase } from '@/lib/supabase'
+import preinscriptionRectoPdf from '@/assets/documents/preinscription-recto.pdf'
+import preinscriptionVersoPdf from '@/assets/documents/preinscription-verso.pdf'
+import preinscriptionCompletPdf from '@/assets/documents/preinscription-complet.pdf'
 
 type RegistrationFee = {
   id: string
@@ -694,7 +697,7 @@ function RejoindrePage() {
                   Le recto à compléter avec les informations du licencié et le règlement.
                 </p>
                 <a
-                  href="/documents/fiche-preinscription-2026-2027-recto.pdf"
+                  href={preinscriptionRectoPdf}
                   target="_blank"
                   rel="noreferrer"
                   className="mt-5 inline-flex items-center gap-2 font-condensed font-bold text-[var(--club-red)] hover:underline"
@@ -715,7 +718,7 @@ function RejoindrePage() {
                   Le verso avec les catégories, entraînements, terrains, tarifs et informations du club.
                 </p>
                 <a
-                  href="/documents/fiche-preinscription-2026-2027-verso.pdf"
+                  href={preinscriptionVersoPdf}
                   target="_blank"
                   rel="noreferrer"
                   className="mt-5 inline-flex items-center gap-2 font-condensed font-bold text-[var(--club-red)] hover:underline"
@@ -736,7 +739,7 @@ function RejoindrePage() {
                   Recto + verso réunis dans un seul PDF de 2 pages, prêt à être conservé ou imprimé.
                 </p>
                 <a
-                  href="/documents/fiche-preinscription-fc-plouha-2026-2027.pdf"
+                  href={preinscriptionCompletPdf}
                   download
                   className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[var(--club-yellow)] px-4 py-2.5 font-condensed font-bold text-[var(--club-navy-deep)] hover:opacity-90 transition"
                 >
