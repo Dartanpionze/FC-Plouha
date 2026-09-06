@@ -96,6 +96,25 @@ async function requireEmailAdmin(req: any) {
   return { ok: true as const }
 }
 
+function normalizeFolder(value: unknown) {
+  const folder =
+    typeof value === 'string' && value.trim() ? value.trim() : 'INBOX'
+  if (folder.length > 250 || /[\r\n\0]/.test(folder)) {
+    throw new Error('INVALID_FOLDER')
+  }
+  return folder
+}
+
+function folderLabel(path: string, specialUse?: string | null) {
+  if (path.toUpperCase() === 'INBOX') return 'Boîte de réception'
+  if (specialUse === '\\Trash') return 'Corbeille'
+  if (specialUse === '\\Junk') return 'Indésirables'
+  if (specialUse === '\\Sent') return 'Envoyés OVH'
+  if (specialUse === '\\Drafts') return 'Brouillons'
+  if (specialUse === '\\Archive') return 'Archives OVH'
+  return path
+}
+
 function createImapClient() {
   const host = process.env.OVH_IMAP_HOST
   const user = process.env.OVH_IMAP_USER
@@ -214,7 +233,29 @@ export default async function handler(req: any, res: any) {
     const uidParam =
       typeof req.query?.uid === 'string' ? Number(req.query.uid) : null
 
-    const lock = await client.getMailboxLock('INBOX', { readOnly: true })
+    const requestedFolder = normalizeFolder(req.query?.folder)
+    const mailboxes = await client.list()
+    const selectedMailbox = mailboxes.find(
+      (mailbox) => mailbox.path === requestedFolder,
+    )
+
+    if (!selectedMailbox) {
+      return res.status(404).json({
+        success: false,
+        error: 'Dossier OVH introuvable.',
+      })
+    }
+
+    const folders = mailboxes
+      .filter((mailbox) => mailbox.selectable !== false)
+      .map((mailbox) => ({
+        path: mailbox.path,
+        name: mailbox.name,
+        label: folderLabel(mailbox.path, mailbox.specialUse),
+        specialUse: mailbox.specialUse ?? null,
+      }))
+
+    const lock = await client.getMailboxLock(requestedFolder, { readOnly: true })
 
     try {
       if (uidParam && Number.isInteger(uidParam) && uidParam > 0) {
@@ -249,6 +290,8 @@ export default async function handler(req: any, res: any) {
 
         return res.status(200).json({
           success: true,
+          folder: requestedFolder,
+          folders,
           message: {
             uid: message.uid,
             subject: parsed.subject || message.envelope?.subject || '(Sans objet)',
@@ -281,6 +324,8 @@ export default async function handler(req: any, res: any) {
         return res.status(200).json({
           success: true,
           account: user,
+          folder: requestedFolder,
+          folders,
           messages: [],
           total: 0,
           unread: 0,
@@ -300,7 +345,7 @@ export default async function handler(req: any, res: any) {
         },
       )
 
-      const status = await client.status('INBOX', {
+      const status = await client.status(requestedFolder, {
         messages: true,
         unseen: true,
       })
@@ -329,6 +374,8 @@ export default async function handler(req: any, res: any) {
       return res.status(200).json({
         success: true,
         account: user,
+        folder: requestedFolder,
+        folders,
         messages,
         total: status.messages ?? messages.length,
         unread: status.unseen ?? messages.filter((message) => !message.seen).length,
