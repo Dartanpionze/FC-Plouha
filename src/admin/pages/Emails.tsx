@@ -98,6 +98,7 @@ export default function Emails() {
   const [successMessage, setSuccessMessage] = useState('')
   const [composer, setComposer] = useState<ComposerState>(emptyComposer)
   const [sending, setSending] = useState(false)
+  const [imapTesting, setImapTesting] = useState(false)
 
   const loadThreads = async (preferredThreadId?: string) => {
     setLoading(true)
@@ -374,6 +375,59 @@ export default function Emails() {
     setComposer(emptyComposer)
   }
 
+  const testImapConnection = async () => {
+    if (imapTesting) return
+
+    setImapTesting(true)
+    setErrorMessage('')
+    setSuccessMessage('')
+
+    try {
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession()
+
+      if (sessionError || !session?.access_token) {
+        setErrorMessage('Ta session administrateur a expiré. Reconnecte-toi.')
+        return
+      }
+
+      const response = await fetch('/api/admin-imap-test', {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      })
+
+      const result = await response.json().catch(() => null)
+
+      if (!response.ok || !result?.success) {
+        setErrorMessage(
+          result?.error || 'Impossible de tester la connexion IMAP OVH.',
+        )
+        return
+      }
+
+      const messageCount = Number(result?.inbox?.messages ?? 0)
+      const unreadCount = Number(result?.inbox?.unread ?? 0)
+      const folderCount = Array.isArray(result?.folders)
+        ? result.folders.length
+        : 0
+
+      setSuccessMessage(
+        `Connexion IMAP OVH réussie ✅ Boîte de réception : ${messageCount} message${messageCount > 1 ? 's' : ''}, ${unreadCount} non lu${unreadCount > 1 ? 's' : ''}, ${folderCount} dossier${folderCount > 1 ? 's' : ''} détecté${folderCount > 1 ? 's' : ''}. Aucun e-mail n'a été modifié.`,
+      )
+    } catch (error) {
+      console.error(error)
+      setErrorMessage(
+        "Une erreur est survenue pendant le test de connexion IMAP OVH.",
+      )
+    } finally {
+      setImapTesting(false)
+    }
+  }
+
   const sendEmail = async () => {
     if (!canCreate || sending) return
 
@@ -474,7 +528,21 @@ export default function Emails() {
           </p>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => void testImapConnection()}
+            disabled={imapTesting}
+            className="inline-flex items-center gap-2 rounded-xl border border-sky-400/20 bg-sky-400/10 px-4 py-2.5 text-sm font-semibold text-sky-100 hover:bg-sky-400/15 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {imapTesting ? (
+              <Loader2 size={17} className="animate-spin" />
+            ) : (
+              <Mail size={17} />
+            )}
+            {imapTesting ? 'Test IMAP…' : 'Tester IMAP OVH'}
+          </button>
+
           <button
             type="button"
             onClick={() => void loadThreads()}
@@ -506,8 +574,10 @@ export default function Emails() {
           Envoi depuis le CMS activé
         </p>
         <p className="mt-1 text-sm text-slate-400">
-          Les messages partent avec FC Plouha &lt;contact@fcplouha.fr&gt;. La
-          réception OVH n'est pas modifiée à cette étape.
+          Les messages partent avec FC Plouha &lt;contact@fcplouha.fr&gt;.
+          Le bouton « Tester IMAP OVH » vérifie uniquement l'accès à la boîte
+          contact@fcplouha.fr en lecture seule : aucun message n'est déplacé,
+          supprimé ou marqué comme lu.
         </p>
       </div>
 
