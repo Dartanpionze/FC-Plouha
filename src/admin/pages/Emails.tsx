@@ -76,7 +76,14 @@ type ImapMessageDetail = ImapMessageSummary & {
   attachments: ImapAttachment[]
 }
 
-type MailboxFilter = 'inbox' | 'sent' | 'archived'
+type ImapFolder = {
+  path: string
+  name: string
+  label: string
+  specialUse: string | null
+}
+
+type MailboxFilter = 'imap' | 'sent' | 'archived'
 
 type ComposerState = {
   open: boolean
@@ -142,8 +149,11 @@ export default function Emails() {
     useState<ImapMessageDetail | null>(null)
   const [imapTotal, setImapTotal] = useState(0)
   const [imapUnread, setImapUnread] = useState(0)
+  const [inboxUnread, setInboxUnread] = useState(0)
+  const [imapFolders, setImapFolders] = useState<ImapFolder[]>([])
+  const [selectedImapFolder, setSelectedImapFolder] = useState('INBOX')
 
-  const [filter, setFilter] = useState<MailboxFilter>('inbox')
+  const [filter, setFilter] = useState<MailboxFilter>('imap')
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
   const [loadingInbox, setLoadingInbox] = useState(true)
@@ -246,13 +256,13 @@ export default function Emails() {
     setLoadingMessages(false)
   }
 
-  const loadImapInbox = async (preferredUid?: number) => {
+  const loadImapInbox = async (preferredUid?: number, folder = selectedImapFolder) => {
     setLoadingInbox(true)
     setErrorMessage('')
 
     try {
       const token = await getAccessToken()
-      const response = await fetch('/api/admin-imap-inbox', {
+      const response = await fetch(`/api/admin-imap-inbox?folder=${encodeURIComponent(folder)}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -268,9 +278,15 @@ export default function Emails() {
       }
 
       const loaded = (result.messages ?? []) as ImapMessageSummary[]
+      setImapFolders((result.folders ?? []) as ImapFolder[])
+      setSelectedImapFolder(String(result.folder || folder))
       setImapMessages(loaded)
       setImapTotal(Number(result.total ?? loaded.length))
-      setImapUnread(Number(result.unread ?? 0))
+      const unreadCount = Number(result.unread ?? 0)
+      setImapUnread(unreadCount)
+      if (String(result.folder || folder).toUpperCase() === 'INBOX') {
+        setInboxUnread(unreadCount)
+      }
 
       const nextUid =
         preferredUid && loaded.some((message) => message.uid === preferredUid)
@@ -303,7 +319,7 @@ export default function Emails() {
 
     try {
       const token = await getAccessToken()
-      const response = await fetch(`/api/admin-imap-inbox?uid=${uid}`, {
+      const response = await fetch(`/api/admin-imap-inbox?uid=${uid}&folder=${encodeURIComponent(selectedImapFolder)}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -344,10 +360,10 @@ export default function Emails() {
   }, [filter, selectedThreadId])
 
   useEffect(() => {
-    if (filter === 'inbox' && selectedImapUid) {
+    if (filter === 'imap' && selectedImapUid) {
       void loadImapMessage(selectedImapUid)
     }
-  }, [filter, selectedImapUid])
+  }, [filter, selectedImapUid, selectedImapFolder])
 
   useEffect(() => {
     if (searchParams.get('compose') !== '1' || !canCreate) return
@@ -416,12 +432,39 @@ export default function Emails() {
     label: string
     icon: typeof Inbox
   }> = [
-    { key: 'inbox', label: 'Boîte de réception', icon: Inbox },
-    { key: 'sent', label: 'Envoyés', icon: Send },
+    { key: 'sent', label: 'Envoyés CMS', icon: Send },
     { key: 'archived', label: 'Archivés CMS', icon: Archive },
   ]
 
-  const usingImap = filter === 'inbox'
+  const usingImap = filter === 'imap'
+
+  const folderIcon = (folder: ImapFolder) => {
+    if (folder.path.toUpperCase() === 'INBOX') return Inbox
+    if (folder.specialUse === '\\Trash') return Trash2
+    if (folder.specialUse === '\\Junk') return ShieldCheck
+    if (folder.specialUse === '\\Sent') return Send
+    if (folder.specialUse === '\\Archive') return Archive
+    return Mail
+  }
+
+  const selectedFolder = imapFolders.find(
+    (folder) => folder.path === selectedImapFolder,
+  )
+
+  const isTrashFolder =
+    selectedFolder?.specialUse === '\\Trash' ||
+    /trash|corbeille|deleted/i.test(
+      `${selectedFolder?.path ?? ''} ${selectedFolder?.name ?? ''}`,
+    )
+
+  const selectImapFolder = (folder: string) => {
+    setFilter('imap')
+    setSelectedImapFolder(folder)
+    setSelectedImapUid(null)
+    setSelectedImapMessage(null)
+    setSearch('')
+    void loadImapInbox(undefined, folder)
+  }
 
   const toggleArchive = async () => {
     if (!canUpdate || !selectedThread) return
@@ -496,17 +539,26 @@ export default function Emails() {
   }
 
   const runImapAction = async (
-    action: 'mark_read' | 'mark_unread' | 'trash',
+    action: 'mark_read' | 'mark_unread' | 'trash' | 'delete_forever',
   ) => {
     if (!selectedImapMessage || imapActionLoading) return
 
-    if (action === 'trash' && !canDelete) return
-    if (action !== 'trash' && !canUpdate) return
+    if ((action === 'trash' || action === 'delete_forever') && !canDelete) return
+    if (action !== 'trash' && action !== 'delete_forever' && !canUpdate) return
 
     if (
       action === 'trash' &&
       !window.confirm(
         `Déplacer « ${selectedImapMessage.subject} » dans la corbeille OVH ?`,
+      )
+    ) {
+      return
+    }
+
+    if (
+      action === 'delete_forever' &&
+      !window.confirm(
+        `Supprimer définitivement « ${selectedImapMessage.subject} » ? Cette action est irréversible.`,
       )
     ) {
       return
@@ -527,6 +579,7 @@ export default function Emails() {
         body: JSON.stringify({
           action,
           uid: selectedImapMessage.uid,
+          folder: selectedImapFolder,
         }),
       })
 
@@ -541,10 +594,10 @@ export default function Emails() {
 
       setSuccessMessage(result.message || 'Action effectuée.')
 
-      if (action === 'trash') {
+      if (action === 'trash' || action === 'delete_forever') {
         setSelectedImapMessage(null)
         setSelectedImapUid(null)
-        await loadImapInbox()
+        await loadImapInbox(undefined, selectedImapFolder)
         return
       }
 
@@ -562,11 +615,17 @@ export default function Emails() {
         ),
       )
 
-      setImapUnread((current) =>
+      const unreadDelta =
         action === 'mark_read'
-          ? Math.max(0, current - (selectedImapMessage.seen ? 0 : 1))
-          : current + (selectedImapMessage.seen ? 1 : 0),
-      )
+          ? -(selectedImapMessage.seen ? 0 : 1)
+          : selectedImapMessage.seen
+            ? 1
+            : 0
+
+      setImapUnread((current) => Math.max(0, current + unreadDelta))
+      if (selectedImapFolder.toUpperCase() === 'INBOX') {
+        setInboxUnread((current) => Math.max(0, current + unreadDelta))
+      }
     } catch (error: any) {
       console.error(error)
       setErrorMessage(
@@ -588,7 +647,7 @@ export default function Emails() {
     try {
       const token = await getAccessToken()
       const response = await fetch(
-        `/api/admin-imap-attachment?uid=${selectedImapMessage.uid}&index=${index}`,
+        `/api/admin-imap-attachment?uid=${selectedImapMessage.uid}&index=${index}&folder=${encodeURIComponent(selectedImapFolder)}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -718,7 +777,7 @@ export default function Emails() {
     setErrorMessage('')
 
     if (usingImap) {
-      await loadImapInbox(selectedImapUid ?? undefined)
+      await loadImapInbox(selectedImapUid ?? undefined, selectedImapFolder)
       return
     }
 
@@ -863,12 +922,12 @@ export default function Emails() {
 
       <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/5 p-4">
         <p className="text-sm font-bold text-emerald-200">
-          Réception OVH connectée en lecture seule
+          Boîte OVH/Zimbra connectée
         </p>
         <p className="mt-1 text-sm text-slate-400">
-          Les e-mails de la boîte de réception OVH sont affichés directement
-          dans le CMS. Tu peux maintenant gérer le statut lu/non lu, déplacer
-          un message dans la corbeille OVH et télécharger ses pièces jointes.
+          Les dossiers réels de contact@fcplouha.fr sont accessibles directement
+          dans le CMS. Les actions lu/non lu, Corbeille et pièces jointes sont
+          synchronisées avec la boîte OVH/Zimbra.
         </p>
       </div>
 
@@ -907,15 +966,6 @@ export default function Emails() {
                     className={active ? 'text-[var(--club-yellow)]' : ''}
                   />
                   <span className="flex-1">{item.label}</span>
-
-                  {item.key === 'inbox' && (
-                    <span className="flex items-center gap-2">
-                      {imapUnread > 0 && (
-                        <span
-                          className="h-2.5 w-2.5 rounded-full bg-red-500"
-                          title={`${imapUnread} e-mail${imapUnread > 1 ? 's' : ''} non lu${imapUnread > 1 ? 's' : ''}`}
-                        />
-                      )}
                       {imapTotal > 0 && (
                         <span className="text-xs font-bold text-slate-500">
                           {imapTotal}
@@ -926,6 +976,45 @@ export default function Emails() {
                 </button>
               )
             })}
+
+            {imapFolders.length > 0 && (
+              <div className="space-y-1">
+                <p className="px-3 pb-1 pt-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-600">
+                  Boîte OVH
+                </p>
+                {imapFolders.map((folder) => {
+                  const FolderIcon = folderIcon(folder)
+                  const active =
+                    filter === 'imap' &&
+                    selectedImapFolder === folder.path
+                  const isInbox = folder.path.toUpperCase() === 'INBOX'
+
+                  return (
+                    <button
+                      key={folder.path}
+                      type="button"
+                      onClick={() => selectImapFolder(folder.path)}
+                      className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold transition ${
+                        active
+                          ? 'bg-white/10 text-white'
+                          : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                      }`}
+                    >
+                      <FolderIcon size={17} />
+                      <span className="min-w-0 flex-1 truncate">
+                        {folder.label}
+                      </span>
+                      {isInbox && inboxUnread > 0 && (
+                        <span
+                            className="h-2.5 w-2.5 rounded-full bg-red-500"
+                            title={`${inboxUnread} e-mail${inboxUnread > 1 ? 's' : ''} non lu${inboxUnread > 1 ? 's' : ''}`}
+                          />
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
           </div>
         </aside>
 
@@ -984,6 +1073,9 @@ export default function Emails() {
                             : current,
                         )
                         setImapUnread((current) => Math.max(0, current - 1))
+                        if (selectedImapFolder.toUpperCase() === 'INBOX') {
+                          setInboxUnread((current) => Math.max(0, current - 1))
+                        }
 
                         void (async () => {
                           setErrorMessage('')
@@ -999,6 +1091,7 @@ export default function Emails() {
                               body: JSON.stringify({
                                 action: 'mark_read',
                                 uid: message.uid,
+                                folder: selectedImapFolder,
                               }),
                             })
 
@@ -1020,6 +1113,9 @@ export default function Emails() {
                                   : current,
                               )
                               setImapUnread((current) => current + 1)
+                              if (selectedImapFolder.toUpperCase() === 'INBOX') {
+                                setInboxUnread((current) => current + 1)
+                              }
                               setErrorMessage(
                                 result?.error ||
                                   "Impossible de marquer automatiquement cet e-mail comme lu.",
@@ -1040,6 +1136,9 @@ export default function Emails() {
                                 : current,
                             )
                             setImapUnread((current) => current + 1)
+                            if (selectedImapFolder.toUpperCase() === 'INBOX') {
+                              setInboxUnread((current) => current + 1)
+                            }
                             setErrorMessage(
                               error?.message === 'SESSION_EXPIRED'
                                 ? 'Ta session administrateur a expiré. Reconnecte-toi.'
@@ -1205,12 +1304,18 @@ export default function Emails() {
 
                       <button
                         type="button"
-                        onClick={() => void runImapAction('trash')}
+                        onClick={() =>
+                          void runImapAction(
+                            isTrashFolder ? 'delete_forever' : 'trash',
+                          )
+                        }
                         disabled={!canDelete || imapActionLoading}
                         className="inline-flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs font-bold text-red-200 hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         <Trash2 size={15} />
-                        Corbeille
+                        {isTrashFolder
+                          ? 'Supprimer définitivement'
+                          : 'Corbeille'}
                       </button>
                     </div>
                   </div>
