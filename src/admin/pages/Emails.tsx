@@ -76,7 +76,7 @@ type ImapMessageDetail = ImapMessageSummary & {
   attachments: ImapAttachment[]
 }
 
-type MailboxFilter = 'inbox' | 'unread' | 'sent' | 'archived'
+type MailboxFilter = 'inbox' | 'sent' | 'archived'
 
 type ComposerState = {
   open: boolean
@@ -344,7 +344,7 @@ export default function Emails() {
   }, [filter, selectedThreadId])
 
   useEffect(() => {
-    if ((filter === 'inbox' || filter === 'unread') && selectedImapUid) {
+    if (filter === 'inbox' && selectedImapUid) {
       void loadImapMessage(selectedImapUid)
     }
   }, [filter, selectedImapUid])
@@ -374,18 +374,6 @@ export default function Emails() {
     const query = search.trim().toLowerCase()
 
     return imapMessages.filter((message) => {
-      // Dans l'onglet « Non lus », le message que l'on vient d'ouvrir reste
-      // affiché et sélectionné même après son passage en lu. Il disparaîtra
-      // naturellement lorsqu'on ouvrira un autre message, changera de dossier
-      // ou actualisera la boîte.
-      if (
-        filter === 'unread' &&
-        message.seen &&
-        message.uid !== selectedImapUid
-      ) {
-        return false
-      }
-
       if (!query) return true
 
       return [
@@ -396,7 +384,7 @@ export default function Emails() {
         .filter(Boolean)
         .some((value) => value.toLowerCase().includes(query))
     })
-  }, [filter, imapMessages, search, selectedImapUid])
+  }, [filter, imapMessages, search])
 
   const filteredThreads = useMemo(() => {
     const query = search.trim().toLowerCase()
@@ -429,12 +417,11 @@ export default function Emails() {
     icon: typeof Inbox
   }> = [
     { key: 'inbox', label: 'Boîte de réception', icon: Inbox },
-    { key: 'unread', label: 'Non lus', icon: MailOpen },
     { key: 'sent', label: 'Envoyés', icon: Send },
     { key: 'archived', label: 'Archivés CMS', icon: Archive },
   ]
 
-  const usingImap = filter === 'inbox' || filter === 'unread'
+  const usingImap = filter === 'inbox'
 
   const toggleArchive = async () => {
     if (!canUpdate || !selectedThread) return
@@ -921,15 +908,19 @@ export default function Emails() {
                   />
                   <span className="flex-1">{item.label}</span>
 
-                  {item.key === 'inbox' && imapTotal > 0 && (
-                    <span className="text-xs font-bold text-slate-500">
-                      {imapTotal}
-                    </span>
-                  )}
-
-                  {item.key === 'unread' && imapUnread > 0 && (
-                    <span className="rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-black text-white">
-                      {imapUnread > 99 ? '99+' : imapUnread}
+                  {item.key === 'inbox' && (
+                    <span className="flex items-center gap-2">
+                      {imapUnread > 0 && (
+                        <span
+                          className="h-2.5 w-2.5 rounded-full bg-red-500"
+                          title={`${imapUnread} e-mail${imapUnread > 1 ? 's' : ''} non lu${imapUnread > 1 ? 's' : ''}`}
+                        />
+                      )}
+                      {imapTotal > 0 && (
+                        <span className="text-xs font-bold text-slate-500">
+                          {imapTotal}
+                        </span>
+                      )}
                     </span>
                   )}
                 </button>
@@ -1069,7 +1060,7 @@ export default function Emails() {
                         className={`mt-1 h-2.5 w-2.5 rounded-full ${
                           message.seen
                             ? 'bg-slate-700'
-                            : 'bg-[var(--club-yellow)]'
+                            : 'bg-red-500'
                         }`}
                       />
                       <div className="min-w-0 flex-1">
