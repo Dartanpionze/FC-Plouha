@@ -32,6 +32,7 @@ import Trainings from './admin/pages/Trainings'
 import Settings from './admin/pages/Settings'
 import AdminClub from './admin/pages/Club'
 import Registrations from './admin/pages/Registrations'
+import Emails from './admin/pages/Emails'
 import Users from './admin/pages/Users'
 import AcceptInvite from './admin/pages/AcceptInvite'
 import Backups from './admin/pages/Backups'
@@ -75,6 +76,7 @@ function App() {
           <Route path="teams" element={<RequireAdminPermission module="teams"><Teams /></RequireAdminPermission>} />
           <Route path="players" element={<RequireAdminPermission module="players"><Players /></RequireAdminPermission>} />
           <Route path="registrations" element={<RequireAdminPermission module="registrations"><Registrations /></RequireAdminPermission>} />
+          <Route path="emails" element={<RequireAdminPermission module="emails"><Emails /></RequireAdminPermission>} />
           <Route path="matches" element={<RequireAdminPermission module="matches"><Matches /></RequireAdminPermission>} />
           <Route path="trainings" element={<RequireAdminPermission module="teams"><Trainings /></RequireAdminPermission>} />
           <Route path="gallery" element={<RequireAdminPermission module="gallery"><Gallery /></RequireAdminPermission>} />
