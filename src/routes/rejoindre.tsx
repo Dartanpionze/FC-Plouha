@@ -16,9 +16,9 @@ import {
 } from 'lucide-react'
 import Seo from '@/components/Seo'
 import { supabase } from '@/lib/supabase'
-import preinscriptionRectoPdf from '@/assets/documents/preinscription-recto.pdf'
-import preinscriptionVersoPdf from '@/assets/documents/preinscription-verso.pdf'
-import preinscriptionCompletPdf from '@/assets/documents/preinscription-complet.pdf'
+import preinscriptionRectoPdf from '@/assets/documents/fiche-preinscription-2026-2027-recto.pdf'
+import preinscriptionVersoPdf from '@/assets/documents/fiche-preinscription-2026-2027-verso.pdf'
+import preinscriptionCompletPdf from '@/assets/documents/fiche-preinscription-fc-plouha-2026-2027.pdf'
 
 type RegistrationFee = {
   id: string
