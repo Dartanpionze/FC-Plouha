@@ -83,6 +83,27 @@ type ImapFolder = {
   specialUse: string | null
 }
 
+type ImapConversationItem = {
+  key: string
+  direction: 'inbound' | 'outbound'
+  date: string
+  subject: string
+  fromName: string
+  fromEmail: string
+  toEmail: string
+  text: string
+  uid: number | null
+  seen: boolean
+  attachments: ImapAttachment[]
+}
+
+type ImapConversationGroup = {
+  key: string
+  latest: ImapMessageSummary
+  messages: ImapMessageSummary[]
+  unreadCount: number
+}
+
 type MailboxFilter = 'imap' | 'sent' | 'archived'
 
 type ComposerState = {
@@ -126,6 +147,22 @@ function normalizeReplySubject(subject: string) {
   return /^re\s*:/i.test(subject) ? subject : `Re: ${subject}`
 }
 
+function normalizeConversationSubject(subject: string) {
+  let value = subject.trim()
+
+  while (/^(re|fw|fwd)\s*:/i.test(value)) {
+    value = value.replace(/^(re|fw|fwd)\s*:\s*/i, '').trim()
+  }
+
+  return value.toLocaleLowerCase('fr-FR')
+}
+
+function conversationKey(message: ImapMessageSummary) {
+  return `${message.from.email.trim().toLocaleLowerCase('fr-FR')}::${normalizeConversationSubject(
+    message.subject,
+  )}`
+}
+
 function displayAddress(address: ImapAddress) {
   return address.name || address.email || 'Expéditeur inconnu'
 }
@@ -147,6 +184,10 @@ export default function Emails() {
   const [selectedImapUid, setSelectedImapUid] = useState<number | null>(null)
   const [selectedImapMessage, setSelectedImapMessage] =
     useState<ImapMessageDetail | null>(null)
+  const [imapConversation, setImapConversation] = useState<
+    ImapConversationItem[]
+  >([])
+  const [loadingConversation, setLoadingConversation] = useState(false)
   const [, setImapTotal] = useState(0)
   const [, setImapUnread] = useState(0)
   const [inboxUnread, setInboxUnread] = useState(0)
@@ -300,6 +341,7 @@ export default function Emails() {
 
       if (!nextUid) {
         setSelectedImapMessage(null)
+        setImapConversation([])
       }
     } catch (error: any) {
       console.error(error)
@@ -313,32 +355,194 @@ export default function Emails() {
     }
   }
 
+  const loadImapConversation = async (anchorMessage: ImapMessageDetail) => {
+    setLoadingConversation(true)
+
+    try {
+      const normalizedSubject = normalizeConversationSubject(
+        anchorMessage.subject,
+      )
+      const contactEmail = anchorMessage.from.email.trim().toLowerCase()
+
+      const relatedSummaries = imapMessages.filter(
+        (message) =>
+          message.from.email.trim().toLowerCase() === contactEmail &&
+          normalizeConversationSubject(message.subject) === normalizedSubject,
+      )
+
+      const token = await getAccessToken()
+
+      const inboundItems = await Promise.all(
+        relatedSummaries.map(async (summary) => {
+          if (summary.uid === anchorMessage.uid) {
+            return {
+              key: `imap-${summary.uid}`,
+              direction: 'inbound' as const,
+              date: anchorMessage.date,
+              subject: anchorMessage.subject,
+              fromName: anchorMessage.from.name,
+              fromEmail: anchorMessage.from.email,
+              toEmail: anchorMessage.to[0]?.email || 'contact@fcplouha.fr',
+              text: anchorMessage.text,
+              uid: anchorMessage.uid,
+              seen: anchorMessage.seen,
+              attachments: anchorMessage.attachments,
+            }
+          }
+
+          try {
+            const response = await fetch(
+              `/api/admin-imap-inbox?uid=${summary.uid}&folder=${encodeURIComponent(
+                selectedImapFolder,
+              )}`,
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              },
+            )
+
+            const result = await response.json().catch(() => null)
+
+            if (!response.ok || !result?.success || !result.message) {
+              return null
+            }
+
+            const detail = result.message as ImapMessageDetail
+
+            return {
+              key: `imap-${detail.uid}`,
+              direction: 'inbound' as const,
+              date: detail.date,
+              subject: detail.subject,
+              fromName: detail.from.name,
+              fromEmail: detail.from.email,
+              toEmail: detail.to[0]?.email || 'contact@fcplouha.fr',
+              text: detail.text,
+              uid: detail.uid,
+              seen: detail.seen,
+              attachments: detail.attachments,
+            }
+          } catch (error) {
+            console.error('THREAD IMAP MESSAGE ERROR:', error)
+            return null
+          }
+        }),
+      )
+
+      const { data: sentData, error: sentError } = await supabase
+        .from('email_messages')
+        .select(
+          'id, from_email, to_email, subject, body_text, sent_at, created_at',
+        )
+        .eq('direction', 'outbound')
+        .ilike('to_email', contactEmail)
+        .order('created_at', { ascending: true })
+
+      if (sentError) {
+        console.error('THREAD SENT HISTORY ERROR:', sentError)
+      }
+
+      const outboundItems: ImapConversationItem[] = (sentData ?? [])
+        .filter(
+          (message: {
+            subject: string
+          }) =>
+            normalizeConversationSubject(message.subject) === normalizedSubject,
+        )
+        .map(
+          (message: {
+            id: string
+            from_email: string
+            to_email: string
+            subject: string
+            body_text: string | null
+            sent_at: string | null
+            created_at: string
+          }) => ({
+            key: `cms-${message.id}`,
+            direction: 'outbound',
+            date: message.sent_at || message.created_at,
+            subject: message.subject,
+            fromName: 'FC Plouha',
+            fromEmail: message.from_email,
+            toEmail: message.to_email,
+            text: message.body_text || '',
+            uid: null,
+            seen: true,
+            attachments: [],
+          }),
+        )
+
+      const merged = [
+        ...inboundItems.filter(
+          (item): item is ImapConversationItem => item !== null,
+        ),
+        ...outboundItems,
+      ].sort(
+        (a, b) =>
+          new Date(a.date).getTime() - new Date(b.date).getTime(),
+      )
+
+      setImapConversation(merged)
+    } catch (error) {
+      console.error('THREAD LOAD ERROR:', error)
+      setImapConversation([
+        {
+          key: `imap-${anchorMessage.uid}`,
+          direction: 'inbound',
+          date: anchorMessage.date,
+          subject: anchorMessage.subject,
+          fromName: anchorMessage.from.name,
+          fromEmail: anchorMessage.from.email,
+          toEmail: anchorMessage.to[0]?.email || 'contact@fcplouha.fr',
+          text: anchorMessage.text,
+          uid: anchorMessage.uid,
+          seen: anchorMessage.seen,
+          attachments: anchorMessage.attachments,
+        },
+      ])
+    } finally {
+      setLoadingConversation(false)
+    }
+  }
+
   const loadImapMessage = async (uid: number) => {
     setLoadingImapMessage(true)
+    setLoadingConversation(true)
     setErrorMessage('')
 
     try {
       const token = await getAccessToken()
-      const response = await fetch(`/api/admin-imap-inbox?uid=${uid}&folder=${encodeURIComponent(selectedImapFolder)}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
+      const response = await fetch(
+        `/api/admin-imap-inbox?uid=${uid}&folder=${encodeURIComponent(
+          selectedImapFolder,
+        )}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         },
-      })
+      )
 
       const result = await response.json().catch(() => null)
 
       if (!response.ok || !result?.success) {
         setSelectedImapMessage(null)
+        setImapConversation([])
         setErrorMessage(
           result?.error || "Impossible d'ouvrir cet e-mail OVH.",
         )
         return
       }
 
-      setSelectedImapMessage(result.message as ImapMessageDetail)
+      const detail = result.message as ImapMessageDetail
+      setSelectedImapMessage(detail)
+      await loadImapConversation(detail)
     } catch (error: any) {
       console.error(error)
       setSelectedImapMessage(null)
+      setImapConversation([])
       setErrorMessage(
         error?.message === 'SESSION_EXPIRED'
           ? 'Ta session administrateur a expiré. Reconnecte-toi.'
@@ -346,8 +550,10 @@ export default function Emails() {
       )
     } finally {
       setLoadingImapMessage(false)
+      setLoadingConversation(false)
     }
   }
+
 
   useEffect(() => {
     void Promise.all([loadThreads(), loadImapInbox()])
@@ -386,21 +592,53 @@ export default function Emails() {
     setSearchParams({}, { replace: true })
   }, [canCreate, searchParams, setSearchParams])
 
-  const filteredImapMessages = useMemo(() => {
+  const imapConversationGroups = useMemo(() => {
+    const groups = new Map<string, ImapMessageSummary[]>()
+
+    for (const message of imapMessages) {
+      const key = conversationKey(message)
+      const current = groups.get(key) ?? []
+      current.push(message)
+      groups.set(key, current)
+    }
+
+    return Array.from(groups.entries())
+      .map(([key, groupMessages]): ImapConversationGroup => {
+        const sorted = [...groupMessages].sort(
+          (a, b) =>
+            new Date(b.date).getTime() - new Date(a.date).getTime(),
+        )
+
+        return {
+          key,
+          latest: sorted[0],
+          messages: sorted,
+          unreadCount: sorted.filter((message) => !message.seen).length,
+        }
+      })
+      .sort(
+        (a, b) =>
+          new Date(b.latest.date).getTime() -
+          new Date(a.latest.date).getTime(),
+      )
+  }, [imapMessages])
+
+  const filteredImapConversationGroups = useMemo(() => {
     const query = search.trim().toLowerCase()
 
-    return imapMessages.filter((message) => {
-      if (!query) return true
+    if (!query) return imapConversationGroups
 
-      return [
-        message.subject,
-        message.from.name,
-        message.from.email,
+    return imapConversationGroups.filter((group) =>
+      [
+        group.latest.subject,
+        group.latest.from.name,
+        group.latest.from.email,
       ]
         .filter(Boolean)
-        .some((value) => value.toLowerCase().includes(query))
-    })
-  }, [filter, imapMessages, search])
+        .some((value) => value.toLowerCase().includes(query)),
+    )
+  }, [imapConversationGroups, search])
+
 
   const filteredThreads = useMemo(() => {
     const query = search.trim().toLowerCase()
@@ -438,6 +676,79 @@ export default function Emails() {
 
   const usingImap = filter === 'imap'
 
+  const openImapConversation = (group: ImapConversationGroup) => {
+    setSelectedImapUid(group.latest.uid)
+
+    const unreadMessages = group.messages.filter((message) => !message.seen)
+
+    if (unreadMessages.length === 0) return
+
+    const unreadUids = new Set(unreadMessages.map((message) => message.uid))
+
+    setImapMessages((current) =>
+      current.map((message) =>
+        unreadUids.has(message.uid) ? { ...message, seen: true } : message,
+      ),
+    )
+
+    setSelectedImapMessage((current) =>
+      current && unreadUids.has(current.uid)
+        ? { ...current, seen: true }
+        : current,
+    )
+
+    setImapUnread((current) =>
+      Math.max(0, current - unreadMessages.length),
+    )
+
+    if (selectedImapFolder.toUpperCase() === 'INBOX') {
+      setInboxUnread((current) =>
+        Math.max(0, current - unreadMessages.length),
+      )
+    }
+
+    void (async () => {
+      try {
+        const token = await getAccessToken()
+
+        const results = await Promise.all(
+          unreadMessages.map(async (message) => {
+            const response = await fetch('/api/admin-imap-action', {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                action: 'mark_read',
+                uid: message.uid,
+                folder: selectedImapFolder,
+              }),
+            })
+
+            const result = await response.json().catch(() => null)
+            return response.ok && result?.success === true
+          }),
+        )
+
+        if (results.some((success) => !success)) {
+          setErrorMessage(
+            "Au moins un e-mail de la conversation n'a pas pu être marqué comme lu. La boîte va être resynchronisée.",
+          )
+          await loadImapInbox(group.latest.uid, selectedImapFolder)
+        }
+      } catch (error: any) {
+        console.error(error)
+        setErrorMessage(
+          error?.message === 'SESSION_EXPIRED'
+            ? 'Ta session administrateur a expiré. Reconnecte-toi.'
+            : "Impossible de marquer toute la conversation comme lue. La boîte va être resynchronisée.",
+        )
+        await loadImapInbox(group.latest.uid, selectedImapFolder)
+      }
+    })()
+  }
+
   const folderIcon = (folder: ImapFolder) => {
     if (folder.path.toUpperCase() === 'INBOX') return Inbox
     if (folder.specialUse === '\\Trash') return Trash2
@@ -462,6 +773,7 @@ export default function Emails() {
     setSelectedImapFolder(folder)
     setSelectedImapUid(null)
     setSelectedImapMessage(null)
+    setImapConversation([])
     setSearch('')
     void loadImapInbox(undefined, folder)
   }
@@ -638,8 +950,12 @@ export default function Emails() {
     }
   }
 
-  const downloadAttachment = async (index: number, filename: string) => {
-    if (!selectedImapMessage || attachmentLoadingIndex !== null) return
+  const downloadAttachment = async (
+    uid: number,
+    index: number,
+    filename: string,
+  ) => {
+    if (attachmentLoadingIndex !== null) return
 
     setAttachmentLoadingIndex(index)
     setErrorMessage('')
@@ -647,7 +963,7 @@ export default function Emails() {
     try {
       const token = await getAccessToken()
       const response = await fetch(
-        `/api/admin-imap-attachment?uid=${selectedImapMessage.uid}&index=${index}&folder=${encodeURIComponent(selectedImapFolder)}`,
+        `/api/admin-imap-attachment?uid=${uid}&index=${index}&folder=${encodeURIComponent(selectedImapFolder)}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -1033,7 +1349,7 @@ export default function Emails() {
                   <Loader2 size={18} className="animate-spin" />
                   Lecture de la boîte OVH...
                 </div>
-              ) : filteredImapMessages.length === 0 ? (
+              ) : filteredImapConversationGroups.length === 0 ? (
                 <div className="p-8 text-center">
                   <Inbox size={32} className="mx-auto text-slate-700" />
                   <p className="mt-3 font-bold text-slate-300">
@@ -1044,144 +1360,69 @@ export default function Emails() {
                   </p>
                 </div>
               ) : (
-                filteredImapMessages.map((message) => (
-                  <button
-                    key={message.uid}
-                    type="button"
-                    onClick={() => {
-                      setSelectedImapUid(message.uid)
+                filteredImapConversationGroups.map((group) => {
+                  const message = group.latest
+                  const selected = group.messages.some(
+                    (item) => item.uid === selectedImapUid,
+                  )
 
-                      if (!message.seen) {
-                        // Mise à jour immédiate de l'interface au clic.
-                        // Le serveur IMAP reste la source de vérité et confirme ensuite
-                        // le drapeau \\Seen dans la vraie boîte OVH.
-                        setImapMessages((current) =>
-                          current.map((item) =>
-                            item.uid === message.uid
-                              ? { ...item, seen: true }
-                              : item,
-                          ),
-                        )
-                        setSelectedImapMessage((current) =>
-                          current?.uid === message.uid
-                            ? { ...current, seen: true }
-                            : current,
-                        )
-                        setImapUnread((current) => Math.max(0, current - 1))
-                        if (selectedImapFolder.toUpperCase() === 'INBOX') {
-                          setInboxUnread((current) => Math.max(0, current - 1))
-                        }
-
-                        void (async () => {
-                          setErrorMessage('')
-
-                          try {
-                            const token = await getAccessToken()
-                            const response = await fetch('/api/admin-imap-action', {
-                              method: 'POST',
-                              headers: {
-                                Authorization: `Bearer ${token}`,
-                                'Content-Type': 'application/json',
-                              },
-                              body: JSON.stringify({
-                                action: 'mark_read',
-                                uid: message.uid,
-                                folder: selectedImapFolder,
-                              }),
-                            })
-
-                            const result = await response.json().catch(() => null)
-
-                            if (!response.ok || !result?.success) {
-                              // Si OVH refuse l'action, on remet l'état non lu
-                              // pour que le CMS ne mente jamais sur l'état réel.
-                              setImapMessages((current) =>
-                                current.map((item) =>
-                                  item.uid === message.uid
-                                    ? { ...item, seen: false }
-                                    : item,
-                                ),
-                              )
-                              setSelectedImapMessage((current) =>
-                                current?.uid === message.uid
-                                  ? { ...current, seen: false }
-                                  : current,
-                              )
-                              setImapUnread((current) => current + 1)
-                              if (selectedImapFolder.toUpperCase() === 'INBOX') {
-                                setInboxUnread((current) => current + 1)
-                              }
-                              setErrorMessage(
-                                result?.error ||
-                                  "Impossible de marquer automatiquement cet e-mail comme lu.",
-                              )
-                            }
-                          } catch (error: any) {
-                            console.error(error)
-                            setImapMessages((current) =>
-                              current.map((item) =>
-                                item.uid === message.uid
-                                  ? { ...item, seen: false }
-                                  : item,
-                              ),
-                            )
-                            setSelectedImapMessage((current) =>
-                              current?.uid === message.uid
-                                ? { ...current, seen: false }
-                                : current,
-                            )
-                            setImapUnread((current) => current + 1)
-                            if (selectedImapFolder.toUpperCase() === 'INBOX') {
-                              setInboxUnread((current) => current + 1)
-                            }
-                            setErrorMessage(
-                              error?.message === 'SESSION_EXPIRED'
-                                ? 'Ta session administrateur a expiré. Reconnecte-toi.'
-                                : "Impossible de marquer automatiquement cet e-mail comme lu.",
-                            )
-                          }
-                        })()
-                      }
-                    }}
-                    className={`w-full border-b border-white/5 p-4 text-left transition ${
-                      selectedImapUid === message.uid
-                        ? 'bg-white/10'
-                        : 'hover:bg-white/5'
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div
-                        className={`mt-1 h-2.5 w-2.5 rounded-full ${
-                          message.seen
-                            ? 'bg-slate-700'
-                            : 'bg-red-500'
-                        }`}
-                      />
-                      <div className="min-w-0 flex-1">
-                        <p
-                          className={`truncate text-sm ${
-                            message.seen
-                              ? 'font-semibold text-slate-300'
-                              : 'font-black text-white'
+                  return (
+                    <button
+                      key={group.key}
+                      type="button"
+                      onClick={() => openImapConversation(group)}
+                      className={`w-full border-b border-white/5 p-4 text-left transition ${
+                        selected ? 'bg-white/10' : 'hover:bg-white/5'
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div
+                          className={`mt-1 h-2.5 w-2.5 rounded-full ${
+                            group.unreadCount > 0
+                              ? 'bg-red-500'
+                              : 'bg-slate-700'
                           }`}
-                        >
-                          {displayAddress(message.from)}
-                        </p>
-                        <p
-                          className={`mt-1 truncate text-sm ${
-                            message.seen ? 'text-slate-400' : 'font-bold text-white'
-                          }`}
-                        >
-                          {message.subject}
-                        </p>
-                        <div className="mt-1 flex items-center justify-between gap-2 text-xs text-slate-600">
-                          <span>{formatDate(message.date)}</span>
-                          <span>{formatBytes(message.size)}</span>
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <p
+                              className={`min-w-0 flex-1 truncate text-sm ${
+                                group.unreadCount > 0
+                                  ? 'font-black text-white'
+                                  : 'font-semibold text-slate-300'
+                              }`}
+                            >
+                              {displayAddress(message.from)}
+                            </p>
+                            {group.messages.length > 1 && (
+                              <span className="shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-black text-slate-300">
+                                {group.messages.length}
+                              </span>
+                            )}
+                          </div>
+                          <p
+                            className={`mt-1 truncate text-sm ${
+                              group.unreadCount > 0
+                                ? 'font-bold text-white'
+                                : 'text-slate-400'
+                            }`}
+                          >
+                            {message.subject}
+                          </p>
+                          <div className="mt-1 flex items-center justify-between gap-2 text-xs text-slate-600">
+                            <span>{formatDate(message.date)}</span>
+                            {group.unreadCount > 0 && (
+                              <span>
+                                {group.unreadCount} non lu
+                                {group.unreadCount > 1 ? 's' : ''}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </button>
-                ))
+                    </button>
+                  )
+                })
               )
             ) : loading ? (
               <div className="flex items-center justify-center gap-2 p-8 text-sm text-slate-500">
@@ -1233,8 +1474,8 @@ export default function Emails() {
                   Boîte de réception OVH
                 </h2>
                 <p className="mt-2 max-w-md text-sm leading-relaxed text-slate-500">
-                  Sélectionne un e-mail pour lire son contenu directement dans
-                  le CMS.
+                  Sélectionne une conversation pour retrouver les e-mails reçus
+                  et les réponses envoyées depuis le CMS.
                 </p>
               </div>
             ) : loadingImapMessage ? (
@@ -1317,61 +1558,120 @@ export default function Emails() {
                 </header>
 
                 <div className="flex-1 overflow-y-auto p-5">
-                  <article className="max-w-4xl">
-                    <pre className="whitespace-pre-wrap break-words font-sans text-sm leading-7 text-slate-200">
-                      {selectedImapMessage.text}
-                    </pre>
-
-                    {selectedImapMessage.attachments.length > 0 && (
-                      <div className="mt-8 border-t border-white/10 pt-5">
-                        <p className="mb-3 text-xs font-black uppercase tracking-[0.18em] text-slate-500">
-                          Pièces jointes
-                        </p>
-                        <div className="grid gap-2 sm:grid-cols-2">
-                          {selectedImapMessage.attachments.map(
-                            (attachment, index) => (
-                              <div
-                                key={`${attachment.filename}-${index}`}
-                                className="flex items-center gap-3 rounded-xl border border-white/10 bg-slate-950 p-3"
-                              >
-                                <Paperclip
-                                  size={18}
-                                  className="shrink-0 text-[var(--club-yellow)]"
-                                />
-                                <div className="min-w-0 flex-1">
-                                  <p className="truncate text-sm font-bold text-white">
-                                    {attachment.filename}
-                                  </p>
-                                  <p className="mt-0.5 text-xs text-slate-500">
-                                    {attachment.contentType} ·{' '}
-                                    {formatBytes(attachment.size)}
-                                  </p>
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    void downloadAttachment(
-                                      index,
-                                      attachment.filename,
-                                    )
-                                  }
-                                  disabled={attachmentLoadingIndex !== null}
-                                  className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold text-slate-200 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
-                                >
-                                  {attachmentLoadingIndex === index ? (
-                                    <Loader2 size={15} className="animate-spin" />
-                                  ) : (
-                                    <Download size={15} />
-                                  )}
-                                  Télécharger
-                                </button>
-                              </div>
-                            ),
-                          )}
-                        </div>
+                  <div className="max-w-4xl space-y-4">
+                    {loadingConversation ? (
+                      <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 p-5 text-sm text-slate-400">
+                        <Loader2 size={18} className="animate-spin" />
+                        Reconstruction du fil de discussion...
                       </div>
+                    ) : (
+                      <>
+                        {imapConversation.length > 1 && (
+                          <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+                            {imapConversation.length} messages dans cette conversation
+                          </p>
+                        )}
+
+                        {imapConversation.map((item) => (
+                          <article
+                            key={item.key}
+                            className={`rounded-2xl border p-5 ${
+                              item.direction === 'outbound'
+                                ? 'border-[var(--club-yellow)]/20 bg-[var(--club-yellow)]/5'
+                                : 'border-white/10 bg-white/[0.03]'
+                            }`}
+                          >
+                            <div className="mb-4 flex flex-col gap-1 border-b border-white/10 pb-4 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+                              <div className="min-w-0">
+                                <p className="text-sm font-black text-white">
+                                  {item.direction === 'outbound'
+                                    ? 'FC Plouha'
+                                    : item.fromName || item.fromEmail}
+                                </p>
+                                <p className="mt-1 break-all text-xs text-slate-500">
+                                  {item.direction === 'outbound'
+                                    ? `À : ${item.toEmail}`
+                                    : `De : ${item.fromEmail}`}
+                                </p>
+                              </div>
+                              <div className="shrink-0 text-xs text-slate-600">
+                                {formatDate(item.date)}
+                              </div>
+                            </div>
+
+                            <pre className="whitespace-pre-wrap break-words font-sans text-sm leading-7 text-slate-200">
+                              {item.text}
+                            </pre>
+
+                            {item.uid !== null &&
+                              item.attachments.length > 0 && (
+                                <div className="mt-6 border-t border-white/10 pt-4">
+                                  <p className="mb-3 text-xs font-black uppercase tracking-[0.18em] text-slate-500">
+                                    Pièces jointes
+                                  </p>
+                                  <div className="grid gap-2 sm:grid-cols-2">
+                                    {item.attachments.map(
+                                      (attachment, index) => (
+                                        <div
+                                          key={`${item.uid}-${attachment.filename}-${index}`}
+                                          className="flex items-center gap-3 rounded-xl border border-white/10 bg-slate-950 p-3"
+                                        >
+                                          <Paperclip
+                                            size={18}
+                                            className="shrink-0 text-[var(--club-yellow)]"
+                                          />
+                                          <div className="min-w-0 flex-1">
+                                            <p className="truncate text-sm font-bold text-white">
+                                              {attachment.filename}
+                                            </p>
+                                            <p className="mt-0.5 text-xs text-slate-500">
+                                              {attachment.contentType} ·{' '}
+                                              {formatBytes(attachment.size)}
+                                            </p>
+                                          </div>
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              void downloadAttachment(
+                                                item.uid!,
+                                                index,
+                                                attachment.filename,
+                                              )
+                                            }
+                                            disabled={
+                                              attachmentLoadingIndex !== null
+                                            }
+                                            className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold text-slate-200 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+                                          >
+                                            {attachmentLoadingIndex === index ? (
+                                              <Loader2
+                                                size={15}
+                                                className="animate-spin"
+                                              />
+                                            ) : (
+                                              <Download size={15} />
+                                            )}
+                                            Télécharger
+                                          </button>
+                                        </div>
+                                      ),
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                          </article>
+                        ))}
+
+                        {imapConversation.length === 0 && (
+                          <article className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+                            <pre className="whitespace-pre-wrap break-words font-sans text-sm leading-7 text-slate-200">
+                              {selectedImapMessage.text}
+                            </pre>
+                          </article>
+                        )}
+                      </>
                     )}
-                  </article>
+                  </div>
                 </div>
 
                 <footer className="border-t border-white/10 p-4">
