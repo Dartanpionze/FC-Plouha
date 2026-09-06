@@ -108,6 +108,13 @@ async function requireEmailPermission(
   return { ok: true as const }
 }
 
+function normalizeFolder(value: unknown) {
+  const folder =
+    typeof value === 'string' && value.trim() ? value.trim() : 'INBOX'
+  if (folder.length > 250 || /[\r\n\0]/.test(folder)) throw new Error('INVALID_FOLDER')
+  return folder
+}
+
 function createImapClient() {
   const host = process.env.OVH_IMAP_HOST
   const user = process.env.OVH_IMAP_USER
@@ -161,17 +168,18 @@ export default async function handler(req: any, res: any) {
 
   const action = String(req.body?.action || '')
   const uid = Number(req.body?.uid)
+  const folder = normalizeFolder(req.body?.folder)
 
   if (!Number.isInteger(uid) || uid <= 0) {
     return res.status(400).json({ error: "UID d'e-mail invalide." })
   }
 
-  const isDeleteAction = action === 'trash'
+  const isDeleteAction = action === 'trash' || action === 'delete_forever'
   const requiredPermission: RequiredPermission = isDeleteAction
     ? 'delete'
     : 'update'
 
-  if (!['mark_read', 'mark_unread', 'trash'].includes(action)) {
+  if (!['mark_read', 'mark_unread', 'trash', 'delete_forever'].includes(action)) {
     return res.status(400).json({ error: 'Action IMAP inconnue.' })
   }
 
@@ -198,7 +206,7 @@ export default async function handler(req: any, res: any) {
   try {
     await client.connect()
 
-    const lock = await client.getMailboxLock('INBOX')
+    const lock = await client.getMailboxLock(folder)
 
     try {
       if (action === 'mark_read') {
@@ -219,9 +227,32 @@ export default async function handler(req: any, res: any) {
         })
       }
 
+      if (action === 'delete_forever') {
+        const mailboxes = await client.list()
+        const currentMailbox = mailboxes.find((mailbox) => mailbox.path === folder)
+        const isTrash =
+          currentMailbox?.specialUse === '\\Trash' ||
+          /trash|corbeille|deleted/i.test(
+            `${currentMailbox?.path ?? ''} ${currentMailbox?.name ?? ''}`,
+          )
+
+        if (!isTrash) {
+          return res.status(400).json({
+            success: false,
+            error: 'La suppression définitive est autorisée uniquement depuis la Corbeille.',
+          })
+        }
+
+        await client.messageDelete(uid, { uid: true })
+        return res.status(200).json({
+          success: true,
+          message: 'E-mail supprimé définitivement de la boîte OVH.',
+        })
+      }
+
       const trashMailbox = await findTrashMailbox(client)
 
-      if (trashMailbox) {
+      if (trashMailbox && trashMailbox !== folder) {
         await client.messageMove(uid, trashMailbox, { uid: true })
 
         return res.status(200).json({
