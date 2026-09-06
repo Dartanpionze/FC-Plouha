@@ -966,13 +966,6 @@ export default function Emails() {
                     className={active ? 'text-[var(--club-yellow)]' : ''}
                   />
                   <span className="flex-1">{item.label}</span>
-                      {imapTotal > 0 && (
-                        <span className="text-xs font-bold text-slate-500">
-                          {imapTotal}
-                        </span>
-                      )}
-                    </span>
-                  )}
                 </button>
               )
             })}
