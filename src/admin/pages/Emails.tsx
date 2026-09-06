@@ -7,10 +7,12 @@ import {
   Loader2,
   Mail,
   MailOpen,
+  Paperclip,
   Plus,
   RefreshCw,
   Search,
   Send,
+  ShieldCheck,
   Trash2,
   X,
 } from 'lucide-react'
@@ -41,6 +43,36 @@ type EmailMessage = {
   sent_at: string | null
   received_at: string | null
   created_at: string
+}
+
+type ImapAddress = {
+  name: string
+  email: string
+}
+
+type ImapMessageSummary = {
+  uid: number
+  subject: string
+  from: ImapAddress
+  date: string
+  messageId: string | null
+  inReplyTo: string | null
+  flags: string[]
+  seen: boolean
+  size: number
+}
+
+type ImapAttachment = {
+  filename: string
+  contentType: string
+  size: number
+}
+
+type ImapMessageDetail = ImapMessageSummary & {
+  to: ImapAddress[]
+  cc: ImapAddress[]
+  text: string
+  attachments: ImapAttachment[]
 }
 
 type MailboxFilter = 'inbox' | 'unread' | 'sent' | 'archived'
@@ -75,8 +107,19 @@ function formatDate(value: string) {
   }).format(new Date(value))
 }
 
+function formatBytes(value: number) {
+  if (!Number.isFinite(value) || value <= 0) return '0 o'
+  if (value < 1024) return `${value} o`
+  if (value < 1024 * 1024) return `${Math.round(value / 1024)} Ko`
+  return `${(value / (1024 * 1024)).toFixed(1)} Mo`
+}
+
 function normalizeReplySubject(subject: string) {
   return /^re\s*:/i.test(subject) ? subject : `Re: ${subject}`
+}
+
+function displayAddress(address: ImapAddress) {
+  return address.name || address.email || 'Expéditeur inconnu'
 }
 
 export default function Emails() {
@@ -86,23 +129,46 @@ export default function Emails() {
   const canDelete = can('emails', 'delete')
 
   const [searchParams, setSearchParams] = useSearchParams()
+
   const [threads, setThreads] = useState<EmailThread[]>([])
   const [messages, setMessages] = useState<EmailMessage[]>([])
   const [sentThreadIds, setSentThreadIds] = useState<Set<string>>(new Set())
   const [selectedThreadId, setSelectedThreadId] = useState('')
+
+  const [imapMessages, setImapMessages] = useState<ImapMessageSummary[]>([])
+  const [selectedImapUid, setSelectedImapUid] = useState<number | null>(null)
+  const [selectedImapMessage, setSelectedImapMessage] =
+    useState<ImapMessageDetail | null>(null)
+  const [imapTotal, setImapTotal] = useState(0)
+  const [imapUnread, setImapUnread] = useState(0)
+
   const [filter, setFilter] = useState<MailboxFilter>('inbox')
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
+  const [loadingInbox, setLoadingInbox] = useState(true)
   const [loadingMessages, setLoadingMessages] = useState(false)
+  const [loadingImapMessage, setLoadingImapMessage] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
   const [composer, setComposer] = useState<ComposerState>(emptyComposer)
   const [sending, setSending] = useState(false)
   const [imapTesting, setImapTesting] = useState(false)
 
+  const getAccessToken = async () => {
+    const {
+      data: { session },
+      error,
+    } = await supabase.auth.getSession()
+
+    if (error || !session?.access_token) {
+      throw new Error('SESSION_EXPIRED')
+    }
+
+    return session.access_token
+  }
+
   const loadThreads = async (preferredThreadId?: string) => {
     setLoading(true)
-    setErrorMessage('')
 
     const [threadsResult, sentResult] = await Promise.all([
       supabase
@@ -120,7 +186,7 @@ export default function Emails() {
     if (threadsResult.error) {
       console.error(threadsResult.error)
       setErrorMessage(
-        "Impossible de charger la messagerie. Vérifie que la phase 1 est bien installée.",
+        "Impossible de charger l'historique CMS des e-mails envoyés.",
       )
       setLoading(false)
       return
@@ -157,7 +223,6 @@ export default function Emails() {
     }
 
     setLoadingMessages(true)
-    setErrorMessage('')
 
     const { data, error } = await supabase
       .from('email_messages')
@@ -176,39 +241,110 @@ export default function Emails() {
 
     setMessages((data ?? []) as EmailMessage[])
     setLoadingMessages(false)
+  }
 
-    if (canUpdate) {
-      const now = new Date().toISOString()
+  const loadImapInbox = async (preferredUid?: number) => {
+    setLoadingInbox(true)
+    setErrorMessage('')
 
-      await Promise.all([
-        supabase
-          .from('email_threads')
-          .update({ unread_count: 0, updated_at: now })
-          .eq('id', threadId)
-          .gt('unread_count', 0),
-        supabase
-          .from('email_messages')
-          .update({ read_at: now })
-          .eq('thread_id', threadId)
-          .eq('direction', 'inbound')
-          .is('read_at', null),
-      ])
+    try {
+      const token = await getAccessToken()
+      const response = await fetch('/api/admin-imap-inbox', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
 
-      setThreads((current) =>
-        current.map((thread) =>
-          thread.id === threadId ? { ...thread, unread_count: 0 } : thread,
-        ),
+      const result = await response.json().catch(() => null)
+
+      if (!response.ok || !result?.success) {
+        setErrorMessage(
+          result?.error || 'Impossible de charger la boîte de réception OVH.',
+        )
+        return
+      }
+
+      const loaded = (result.messages ?? []) as ImapMessageSummary[]
+      setImapMessages(loaded)
+      setImapTotal(Number(result.total ?? loaded.length))
+      setImapUnread(Number(result.unread ?? 0))
+
+      const nextUid =
+        preferredUid && loaded.some((message) => message.uid === preferredUid)
+          ? preferredUid
+          : selectedImapUid &&
+              loaded.some((message) => message.uid === selectedImapUid)
+            ? selectedImapUid
+            : loaded[0]?.uid ?? null
+
+      setSelectedImapUid(nextUid)
+
+      if (!nextUid) {
+        setSelectedImapMessage(null)
+      }
+    } catch (error: any) {
+      console.error(error)
+      setErrorMessage(
+        error?.message === 'SESSION_EXPIRED'
+          ? 'Ta session administrateur a expiré. Reconnecte-toi.'
+          : 'Impossible de charger la boîte de réception OVH.',
       )
+    } finally {
+      setLoadingInbox(false)
+    }
+  }
+
+  const loadImapMessage = async (uid: number) => {
+    setLoadingImapMessage(true)
+    setErrorMessage('')
+
+    try {
+      const token = await getAccessToken()
+      const response = await fetch(`/api/admin-imap-inbox?uid=${uid}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      const result = await response.json().catch(() => null)
+
+      if (!response.ok || !result?.success) {
+        setSelectedImapMessage(null)
+        setErrorMessage(
+          result?.error || "Impossible d'ouvrir cet e-mail OVH.",
+        )
+        return
+      }
+
+      setSelectedImapMessage(result.message as ImapMessageDetail)
+    } catch (error: any) {
+      console.error(error)
+      setSelectedImapMessage(null)
+      setErrorMessage(
+        error?.message === 'SESSION_EXPIRED'
+          ? 'Ta session administrateur a expiré. Reconnecte-toi.'
+          : "Impossible d'ouvrir cet e-mail OVH.",
+      )
+    } finally {
+      setLoadingImapMessage(false)
     }
   }
 
   useEffect(() => {
-    void loadThreads()
+    void Promise.all([loadThreads(), loadImapInbox()])
   }, [])
 
   useEffect(() => {
-    void loadMessages(selectedThreadId)
-  }, [selectedThreadId])
+    if (filter === 'sent' || filter === 'archived') {
+      void loadMessages(selectedThreadId)
+    }
+  }, [filter, selectedThreadId])
+
+  useEffect(() => {
+    if ((filter === 'inbox' || filter === 'unread') && selectedImapUid) {
+      void loadImapMessage(selectedImapUid)
+    }
+  }, [filter, selectedImapUid])
 
   useEffect(() => {
     if (searchParams.get('compose') !== '1' || !canCreate) return
@@ -231,14 +367,32 @@ export default function Emails() {
     setSearchParams({}, { replace: true })
   }, [canCreate, searchParams, setSearchParams])
 
+  const filteredImapMessages = useMemo(() => {
+    const query = search.trim().toLowerCase()
+
+    return imapMessages.filter((message) => {
+      if (filter === 'unread' && message.seen) return false
+
+      if (!query) return true
+
+      return [
+        message.subject,
+        message.from.name,
+        message.from.email,
+      ]
+        .filter(Boolean)
+        .some((value) => value.toLowerCase().includes(query))
+    })
+  }, [filter, imapMessages, search])
+
   const filteredThreads = useMemo(() => {
     const query = search.trim().toLowerCase()
 
     return threads.filter((thread) => {
       if (filter === 'archived' && !thread.archived) return false
-      if (filter !== 'archived' && thread.archived) return false
-      if (filter === 'unread' && thread.unread_count === 0) return false
-      if (filter === 'sent' && !sentThreadIds.has(thread.id)) return false
+      if (filter === 'sent' && (thread.archived || !sentThreadIds.has(thread.id))) {
+        return false
+      }
 
       if (!query) return true
 
@@ -256,11 +410,6 @@ export default function Emails() {
   const selectedThread =
     threads.find((thread) => thread.id === selectedThreadId) ?? null
 
-  const unreadTotal = threads.reduce(
-    (total, thread) => total + thread.unread_count,
-    0,
-  )
-
   const filters: Array<{
     key: MailboxFilter
     label: string
@@ -269,8 +418,10 @@ export default function Emails() {
     { key: 'inbox', label: 'Boîte de réception', icon: Inbox },
     { key: 'unread', label: 'Non lus', icon: MailOpen },
     { key: 'sent', label: 'Envoyés', icon: Send },
-    { key: 'archived', label: 'Archivés', icon: Archive },
+    { key: 'archived', label: 'Archivés CMS', icon: Archive },
   ]
+
+  const usingImap = filter === 'inbox' || filter === 'unread'
 
   const toggleArchive = async () => {
     if (!canUpdate || !selectedThread) return
@@ -308,7 +459,7 @@ export default function Emails() {
     setSuccessMessage(
       nextArchived
         ? 'Conversation archivée.'
-        : 'Conversation restaurée dans la boîte de réception.',
+        : 'Conversation restaurée dans les envoyés du CMS.',
     )
   }
 
@@ -316,7 +467,7 @@ export default function Emails() {
     if (!canDelete || !selectedThread) return
 
     const confirmed = window.confirm(
-      `Supprimer définitivement la conversation « ${selectedThread.subject} » du CMS ?\n\nTous les messages de ce fil seront supprimés de Supabase. Cette action ne peut pas être annulée.`,
+      `Supprimer définitivement la conversation « ${selectedThread.subject} » du CMS ?\n\nTous les messages enregistrés dans Supabase pour ce fil seront supprimés. Cette action ne touche pas à la boîte OVH.`,
     )
 
     if (!confirmed) return
@@ -354,7 +505,7 @@ export default function Emails() {
     })
   }
 
-  const openReply = () => {
+  const openCmsReply = () => {
     if (!canCreate || !selectedThread) return
 
     setSuccessMessage('')
@@ -366,6 +517,22 @@ export default function Emails() {
       to: selectedThread.contact_email,
       contactName: selectedThread.contact_name || '',
       subject: normalizeReplySubject(selectedThread.subject),
+      body: '',
+    })
+  }
+
+  const openImapReply = () => {
+    if (!canCreate || !selectedImapMessage?.from.email) return
+
+    setSuccessMessage('')
+    setErrorMessage('')
+    setComposer({
+      open: true,
+      threadId: '',
+      registrationId: null,
+      to: selectedImapMessage.from.email,
+      contactName: selectedImapMessage.from.name || '',
+      subject: normalizeReplySubject(selectedImapMessage.subject),
       body: '',
     })
   }
@@ -383,20 +550,12 @@ export default function Emails() {
     setSuccessMessage('')
 
     try {
-      const {
-        data: { session },
-        error: sessionError,
-      } = await supabase.auth.getSession()
-
-      if (sessionError || !session?.access_token) {
-        setErrorMessage('Ta session administrateur a expiré. Reconnecte-toi.')
-        return
-      }
+      const token = await getAccessToken()
 
       const response = await fetch('/api/admin-imap-test', {
         method: 'GET',
         headers: {
-          Authorization: `Bearer ${session.access_token}`,
+          Authorization: `Bearer ${token}`,
         },
       })
 
@@ -409,22 +568,33 @@ export default function Emails() {
         return
       }
 
-      const messageCount = Number(result?.inbox?.messages ?? 0)
-      const unreadCount = Number(result?.inbox?.unread ?? 0)
-      const folderCount = Array.isArray(result?.folders)
-        ? result.folders.length
-        : 0
-
       setSuccessMessage(
-        `Connexion IMAP OVH réussie ✅ Boîte de réception : ${messageCount} message${messageCount > 1 ? 's' : ''}, ${unreadCount} non lu${unreadCount > 1 ? 's' : ''}, ${folderCount} dossier${folderCount > 1 ? 's' : ''} détecté${folderCount > 1 ? 's' : ''}. Aucun e-mail n'a été modifié.`,
+        `Connexion IMAP OVH réussie ✅ ${Number(result?.inbox?.messages ?? 0)} message(s), ${Number(result?.inbox?.unread ?? 0)} non lu(s), ${Array.isArray(result?.folders) ? result.folders.length : 0} dossier(s) détecté(s).`,
       )
-    } catch (error) {
+    } catch (error: any) {
       console.error(error)
       setErrorMessage(
-        "Une erreur est survenue pendant le test de connexion IMAP OVH.",
+        error?.message === 'SESSION_EXPIRED'
+          ? 'Ta session administrateur a expiré. Reconnecte-toi.'
+          : 'Une erreur est survenue pendant le test IMAP OVH.',
       )
     } finally {
       setImapTesting(false)
+    }
+  }
+
+  const refreshCurrentView = async () => {
+    setSuccessMessage('')
+    setErrorMessage('')
+
+    if (usingImap) {
+      await loadImapInbox(selectedImapUid ?? undefined)
+      return
+    }
+
+    await loadThreads(selectedThreadId || undefined)
+    if (selectedThreadId) {
+      await loadMessages(selectedThreadId)
     }
   }
 
@@ -455,21 +625,12 @@ export default function Emails() {
     setSuccessMessage('')
 
     try {
-      const {
-        data: { session },
-        error: sessionError,
-      } = await supabase.auth.getSession()
-
-      if (sessionError || !session?.access_token) {
-        setErrorMessage('Ta session administrateur a expiré. Reconnecte-toi.')
-        setSending(false)
-        return
-      }
+      const token = await getAccessToken()
 
       const response = await fetch('/api/admin-send-email', {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${session.access_token}`,
+          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -488,27 +649,28 @@ export default function Emails() {
         setErrorMessage(
           result?.error || "Impossible d'envoyer l'e-mail pour le moment.",
         )
-        setSending(false)
         return
       }
 
       setComposer(emptyComposer)
 
-      if (result.storage_warning) {
-        setSuccessMessage(result.storage_warning)
-      } else {
-        setSuccessMessage('E-mail envoyé avec succès depuis contact@fcplouha.fr.')
-      }
+      setSuccessMessage(
+        result.storage_warning ||
+          'E-mail envoyé avec succès depuis contact@fcplouha.fr.',
+      )
 
       await loadThreads(result.thread_id || composer.threadId || undefined)
 
       if (result.thread_id) {
         setSelectedThreadId(result.thread_id)
-        await loadMessages(result.thread_id)
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error(error)
-      setErrorMessage("Une erreur est survenue pendant l'envoi.")
+      setErrorMessage(
+        error?.message === 'SESSION_EXPIRED'
+          ? 'Ta session administrateur a expiré. Reconnecte-toi.'
+          : "Une erreur est survenue pendant l'envoi.",
+      )
     } finally {
       setSending(false)
     }
@@ -523,8 +685,8 @@ export default function Emails() {
           </p>
           <h1 className="mt-2 text-3xl font-black text-white">E-mails</h1>
           <p className="mt-2 max-w-3xl text-sm text-slate-400">
-            Envoie les messages du club depuis contact@fcplouha.fr et conserve
-            l'historique des échanges dans le CMS.
+            La réception lit maintenant directement la boîte OVH
+            contact@fcplouha.fr. L'envoi continue de passer par Resend.
           </p>
         </div>
 
@@ -538,14 +700,14 @@ export default function Emails() {
             {imapTesting ? (
               <Loader2 size={17} className="animate-spin" />
             ) : (
-              <Mail size={17} />
+              <ShieldCheck size={17} />
             )}
             {imapTesting ? 'Test IMAP…' : 'Tester IMAP OVH'}
           </button>
 
           <button
             type="button"
-            onClick={() => void loadThreads()}
+            onClick={() => void refreshCurrentView()}
             className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/10"
           >
             <RefreshCw size={17} />
@@ -571,13 +733,13 @@ export default function Emails() {
 
       <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/5 p-4">
         <p className="text-sm font-bold text-emerald-200">
-          Envoi depuis le CMS activé
+          Réception OVH connectée en lecture seule
         </p>
         <p className="mt-1 text-sm text-slate-400">
-          Les messages partent avec FC Plouha &lt;contact@fcplouha.fr&gt;.
-          Le bouton « Tester IMAP OVH » vérifie uniquement l'accès à la boîte
-          contact@fcplouha.fr en lecture seule : aucun message n'est déplacé,
-          supprimé ou marqué comme lu.
+          Les e-mails de la boîte de réception OVH sont affichés directement
+          dans le CMS. Pour cette étape, ouvrir un message ne le marque pas
+          comme lu et aucune action IMAP ne peut encore le supprimer ou le
+          déplacer.
         </p>
       </div>
 
@@ -616,9 +778,16 @@ export default function Emails() {
                     className={active ? 'text-[var(--club-yellow)]' : ''}
                   />
                   <span className="flex-1">{item.label}</span>
-                  {item.key === 'unread' && unreadTotal > 0 && (
+
+                  {item.key === 'inbox' && imapTotal > 0 && (
+                    <span className="text-xs font-bold text-slate-500">
+                      {imapTotal}
+                    </span>
+                  )}
+
+                  {item.key === 'unread' && imapUnread > 0 && (
                     <span className="rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-black text-white">
-                      {unreadTotal > 99 ? '99+' : unreadTotal}
+                      {imapUnread > 99 ? '99+' : imapUnread}
                     </span>
                   )}
                 </button>
@@ -641,7 +810,69 @@ export default function Emails() {
           </div>
 
           <div className="max-h-[560px] overflow-y-auto">
-            {loading ? (
+            {usingImap ? (
+              loadingInbox ? (
+                <div className="flex items-center justify-center gap-2 p-8 text-sm text-slate-500">
+                  <Loader2 size={18} className="animate-spin" />
+                  Lecture de la boîte OVH...
+                </div>
+              ) : filteredImapMessages.length === 0 ? (
+                <div className="p-8 text-center">
+                  <Inbox size={32} className="mx-auto text-slate-700" />
+                  <p className="mt-3 font-bold text-slate-300">
+                    Aucun e-mail dans ce dossier
+                  </p>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Les messages reçus par contact@fcplouha.fr apparaîtront ici.
+                  </p>
+                </div>
+              ) : (
+                filteredImapMessages.map((message) => (
+                  <button
+                    key={message.uid}
+                    type="button"
+                    onClick={() => setSelectedImapUid(message.uid)}
+                    className={`w-full border-b border-white/5 p-4 text-left transition ${
+                      selectedImapUid === message.uid
+                        ? 'bg-white/10'
+                        : 'hover:bg-white/5'
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div
+                        className={`mt-1 h-2.5 w-2.5 rounded-full ${
+                          message.seen
+                            ? 'bg-slate-700'
+                            : 'bg-[var(--club-yellow)]'
+                        }`}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p
+                          className={`truncate text-sm ${
+                            message.seen
+                              ? 'font-semibold text-slate-300'
+                              : 'font-black text-white'
+                          }`}
+                        >
+                          {displayAddress(message.from)}
+                        </p>
+                        <p
+                          className={`mt-1 truncate text-sm ${
+                            message.seen ? 'text-slate-400' : 'font-bold text-white'
+                          }`}
+                        >
+                          {message.subject}
+                        </p>
+                        <div className="mt-1 flex items-center justify-between gap-2 text-xs text-slate-600">
+                          <span>{formatDate(message.date)}</span>
+                          <span>{formatBytes(message.size)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </button>
+                ))
+              )
+            ) : loading ? (
               <div className="flex items-center justify-center gap-2 p-8 text-sm text-slate-500">
                 <Loader2 size={18} className="animate-spin" />
                 Chargement...
@@ -651,9 +882,6 @@ export default function Emails() {
                 <Mail size={32} className="mx-auto text-slate-700" />
                 <p className="mt-3 font-bold text-slate-300">
                   Aucun message ici
-                </p>
-                <p className="mt-1 text-sm text-slate-500">
-                  Les nouveaux envois apparaîtront automatiquement.
                 </p>
               </div>
             ) : (
@@ -668,32 +896,16 @@ export default function Emails() {
                       : 'hover:bg-white/5'
                   }`}
                 >
-                  <div className="flex items-start gap-3">
-                    <div
-                      className={`mt-1 h-2.5 w-2.5 rounded-full ${
-                        thread.unread_count > 0
-                          ? 'bg-[var(--club-yellow)]'
-                          : 'bg-slate-700'
-                      }`}
-                    />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex gap-2">
-                        <p className="min-w-0 flex-1 truncate text-sm font-bold text-white">
-                          {thread.contact_name || thread.contact_email}
-                        </p>
-                        {thread.unread_count > 0 && (
-                          <span className="rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-black text-white">
-                            {thread.unread_count}
-                          </span>
-                        )}
-                      </div>
-                      <p className="mt-1 truncate text-sm text-slate-300">
-                        {thread.subject}
-                      </p>
-                      <p className="mt-1 text-xs text-slate-600">
-                        {formatDate(thread.last_message_at)}
-                      </p>
-                    </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-bold text-white">
+                      {thread.contact_name || thread.contact_email}
+                    </p>
+                    <p className="mt-1 truncate text-sm text-slate-300">
+                      {thread.subject}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-600">
+                      {formatDate(thread.last_message_at)}
+                    </p>
                   </div>
                 </button>
               ))
@@ -702,14 +914,130 @@ export default function Emails() {
         </section>
 
         <section className="min-w-0">
-          {!selectedThread ? (
+          {usingImap ? (
+            !selectedImapUid ? (
+              <div className="flex h-full min-h-[420px] flex-col items-center justify-center p-8 text-center">
+                <Inbox size={44} className="text-slate-700" />
+                <h2 className="mt-4 text-xl font-black text-white">
+                  Boîte de réception OVH
+                </h2>
+                <p className="mt-2 max-w-md text-sm leading-relaxed text-slate-500">
+                  Sélectionne un e-mail pour lire son contenu directement dans
+                  le CMS.
+                </p>
+              </div>
+            ) : loadingImapMessage ? (
+              <div className="flex h-full min-h-[420px] items-center justify-center gap-2 p-8 text-sm text-slate-500">
+                <Loader2 size={20} className="animate-spin" />
+                Ouverture de l'e-mail OVH...
+              </div>
+            ) : !selectedImapMessage ? (
+              <div className="flex h-full min-h-[420px] flex-col items-center justify-center p-8 text-center">
+                <Mail size={44} className="text-slate-700" />
+                <p className="mt-4 text-sm text-slate-500">
+                  Impossible d'afficher ce message.
+                </p>
+              </div>
+            ) : (
+              <div className="flex h-full flex-col">
+                <header className="border-b border-white/10 p-5">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
+                      <h2 className="text-lg font-black text-white">
+                        {selectedImapMessage.subject}
+                      </h2>
+                      <p className="mt-2 text-sm text-slate-400">
+                        De :{' '}
+                        <span className="font-semibold text-slate-200">
+                          {displayAddress(selectedImapMessage.from)}
+                        </span>
+                        {selectedImapMessage.from.name &&
+                          selectedImapMessage.from.email && (
+                            <> &lt;{selectedImapMessage.from.email}&gt;</>
+                          )}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-600">
+                        {formatDate(selectedImapMessage.date)}
+                      </p>
+                    </div>
+
+                    <div className="flex shrink-0 items-center gap-2">
+                      {!selectedImapMessage.seen && (
+                        <span className="rounded-full bg-[var(--club-yellow)]/10 px-3 py-1.5 text-xs font-black text-[var(--club-yellow)]">
+                          Non lu
+                        </span>
+                      )}
+                      <span className="rounded-full border border-sky-400/20 bg-sky-400/10 px-3 py-1.5 text-xs font-bold text-sky-200">
+                        Lecture seule
+                      </span>
+                    </div>
+                  </div>
+                </header>
+
+                <div className="flex-1 overflow-y-auto p-5">
+                  <article className="max-w-4xl">
+                    <pre className="whitespace-pre-wrap break-words font-sans text-sm leading-7 text-slate-200">
+                      {selectedImapMessage.text}
+                    </pre>
+
+                    {selectedImapMessage.attachments.length > 0 && (
+                      <div className="mt-8 border-t border-white/10 pt-5">
+                        <p className="mb-3 text-xs font-black uppercase tracking-[0.18em] text-slate-500">
+                          Pièces jointes
+                        </p>
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          {selectedImapMessage.attachments.map(
+                            (attachment, index) => (
+                              <div
+                                key={`${attachment.filename}-${index}`}
+                                className="flex items-center gap-3 rounded-xl border border-white/10 bg-slate-950 p-3"
+                              >
+                                <Paperclip
+                                  size={18}
+                                  className="shrink-0 text-[var(--club-yellow)]"
+                                />
+                                <div className="min-w-0">
+                                  <p className="truncate text-sm font-bold text-white">
+                                    {attachment.filename}
+                                  </p>
+                                  <p className="mt-0.5 text-xs text-slate-500">
+                                    {attachment.contentType} ·{' '}
+                                    {formatBytes(attachment.size)}
+                                  </p>
+                                </div>
+                              </div>
+                            ),
+                          )}
+                        </div>
+                        <p className="mt-3 text-xs text-slate-600">
+                          Le téléchargement des pièces jointes sera activé dans
+                          l'étape de gestion complète de la boîte OVH.
+                        </p>
+                      </div>
+                    )}
+                  </article>
+                </div>
+
+                <footer className="border-t border-white/10 p-4">
+                  <button
+                    type="button"
+                    onClick={openImapReply}
+                    disabled={!canCreate || !selectedImapMessage.from.email}
+                    className="w-full rounded-xl bg-[var(--club-yellow)] px-4 py-3 text-sm font-black text-slate-950 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Répondre
+                  </button>
+                </footer>
+              </div>
+            )
+          ) : !selectedThread ? (
             <div className="flex h-full min-h-[420px] flex-col items-center justify-center p-8 text-center">
-              <Inbox size={44} className="text-slate-700" />
+              <Send size={44} className="text-slate-700" />
               <h2 className="mt-4 text-xl font-black text-white">
-                Messagerie FC Plouha
+                Historique des envois
               </h2>
               <p className="mt-2 max-w-md text-sm leading-relaxed text-slate-500">
-                Écris un nouveau message ou sélectionne une conversation.
+                Sélectionne une conversation envoyée depuis le CMS.
               </p>
             </div>
           ) : (
@@ -733,11 +1061,6 @@ export default function Emails() {
                       type="button"
                       onClick={() => void toggleArchive()}
                       disabled={!canUpdate}
-                      title={
-                        selectedThread.archived
-                          ? 'Restaurer cette conversation'
-                          : 'Archiver cette conversation'
-                      }
                       className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold text-slate-300 hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       {selectedThread.archived ? (
@@ -752,7 +1075,6 @@ export default function Emails() {
                       type="button"
                       onClick={() => void deleteThread()}
                       disabled={!canDelete}
-                      title="Supprimer définitivement cette conversation du CMS"
                       className="inline-flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs font-bold text-red-200 hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       <Trash2 size={16} />
@@ -807,7 +1129,7 @@ export default function Emails() {
               <footer className="border-t border-white/10 p-4">
                 <button
                   type="button"
-                  onClick={openReply}
+                  onClick={openCmsReply}
                   disabled={!canCreate}
                   className="w-full rounded-xl bg-[var(--club-yellow)] px-4 py-3 text-sm font-black text-slate-950 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
                 >
@@ -828,7 +1150,7 @@ export default function Emails() {
                   FC Plouha
                 </p>
                 <h2 className="mt-1 text-xl font-black text-white">
-                  {composer.threadId ? 'Répondre' : 'Nouveau message'}
+                  {composer.to ? 'Message' : 'Nouveau message'}
                 </h2>
               </div>
 
@@ -915,9 +1237,8 @@ export default function Emails() {
               </div>
 
               <p className="text-xs text-slate-500">
-                Si le destinataire répond, sa réponse arrivera pour l'instant
-                dans la boîte contact@fcplouha.fr existante. L'intégration des
-                réponses dans ce CMS sera la phase suivante.
+                L'envoi continue de passer par Resend. La boîte OVH reste la
+                boîte de réception réelle de contact@fcplouha.fr.
               </p>
             </div>
 
