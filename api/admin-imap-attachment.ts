@@ -133,7 +133,7 @@ export default async function handler(req: any, res: any) {
         { uid: true },
       )
 
-      if (!message?.source) {
+      if (message === false || !message.source) {
         return res.status(404).json({ error: 'E-mail introuvable.' })
       }
 
