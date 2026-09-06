@@ -374,7 +374,17 @@ export default function Emails() {
     const query = search.trim().toLowerCase()
 
     return imapMessages.filter((message) => {
-      if (filter === 'unread' && message.seen) return false
+      // Dans l'onglet « Non lus », le message que l'on vient d'ouvrir reste
+      // affiché et sélectionné même après son passage en lu. Il disparaîtra
+      // naturellement lorsqu'on ouvrira un autre message, changera de dossier
+      // ou actualisera la boîte.
+      if (
+        filter === 'unread' &&
+        message.seen &&
+        message.uid !== selectedImapUid
+      ) {
+        return false
+      }
 
       if (!query) return true
 
@@ -386,7 +396,7 @@ export default function Emails() {
         .filter(Boolean)
         .some((value) => value.toLowerCase().includes(query))
     })
-  }, [filter, imapMessages, search])
+  }, [filter, imapMessages, search, selectedImapUid])
 
   const filteredThreads = useMemo(() => {
     const query = search.trim().toLowerCase()
