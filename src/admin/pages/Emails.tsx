@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import {
   Archive,
   ArchiveRestore,
+  Download,
   Inbox,
   Loader2,
   Mail,
@@ -153,6 +154,8 @@ export default function Emails() {
   const [composer, setComposer] = useState<ComposerState>(emptyComposer)
   const [sending, setSending] = useState(false)
   const [imapTesting, setImapTesting] = useState(false)
+  const [imapActionLoading, setImapActionLoading] = useState(false)
+  const [attachmentLoadingIndex, setAttachmentLoadingIndex] = useState<number | null>(null)
 
   const getAccessToken = async () => {
     const {
@@ -495,6 +498,136 @@ export default function Emails() {
     setSuccessMessage('Conversation supprimée définitivement du CMS.')
   }
 
+  const runImapAction = async (
+    action: 'mark_read' | 'mark_unread' | 'trash',
+  ) => {
+    if (!selectedImapMessage || imapActionLoading) return
+
+    if (action === 'trash' && !canDelete) return
+    if (action !== 'trash' && !canUpdate) return
+
+    if (
+      action === 'trash' &&
+      !window.confirm(
+        `Déplacer « ${selectedImapMessage.subject} » dans la corbeille OVH ?`,
+      )
+    ) {
+      return
+    }
+
+    setImapActionLoading(true)
+    setErrorMessage('')
+    setSuccessMessage('')
+
+    try {
+      const token = await getAccessToken()
+      const response = await fetch('/api/admin-imap-action', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action,
+          uid: selectedImapMessage.uid,
+        }),
+      })
+
+      const result = await response.json().catch(() => null)
+
+      if (!response.ok || !result?.success) {
+        setErrorMessage(
+          result?.error || "Impossible d'appliquer cette action à l'e-mail.",
+        )
+        return
+      }
+
+      setSuccessMessage(result.message || 'Action effectuée.')
+
+      if (action === 'trash') {
+        setSelectedImapMessage(null)
+        setSelectedImapUid(null)
+        await loadImapInbox()
+        return
+      }
+
+      const nextSeen = action === 'mark_read'
+
+      setSelectedImapMessage((current) =>
+        current ? { ...current, seen: nextSeen } : current,
+      )
+
+      setImapMessages((current) =>
+        current.map((message) =>
+          message.uid === selectedImapMessage.uid
+            ? { ...message, seen: nextSeen }
+            : message,
+        ),
+      )
+
+      setImapUnread((current) =>
+        action === 'mark_read'
+          ? Math.max(0, current - (selectedImapMessage.seen ? 0 : 1))
+          : current + (selectedImapMessage.seen ? 1 : 0),
+      )
+    } catch (error: any) {
+      console.error(error)
+      setErrorMessage(
+        error?.message === 'SESSION_EXPIRED'
+          ? 'Ta session administrateur a expiré. Reconnecte-toi.'
+          : "Une erreur est survenue pendant l'action IMAP.",
+      )
+    } finally {
+      setImapActionLoading(false)
+    }
+  }
+
+  const downloadAttachment = async (index: number, filename: string) => {
+    if (!selectedImapMessage || attachmentLoadingIndex !== null) return
+
+    setAttachmentLoadingIndex(index)
+    setErrorMessage('')
+
+    try {
+      const token = await getAccessToken()
+      const response = await fetch(
+        `/api/admin-imap-attachment?uid=${selectedImapMessage.uid}&index=${index}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      )
+
+      if (!response.ok) {
+        const result = await response.json().catch(() => null)
+        setErrorMessage(
+          result?.error || 'Impossible de télécharger cette pièce jointe.',
+        )
+        return
+      }
+
+      const blob = await response.blob()
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = filename || `piece-jointe-${index + 1}`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(url)
+    } catch (error: any) {
+      console.error(error)
+      setErrorMessage(
+        error?.message === 'SESSION_EXPIRED'
+          ? 'Ta session administrateur a expiré. Reconnecte-toi.'
+          : 'Impossible de télécharger cette pièce jointe.',
+      )
+    } finally {
+      setAttachmentLoadingIndex(null)
+    }
+  }
+
   const openNewMessage = () => {
     if (!canCreate) return
     setSuccessMessage('')
@@ -737,9 +870,8 @@ export default function Emails() {
         </p>
         <p className="mt-1 text-sm text-slate-400">
           Les e-mails de la boîte de réception OVH sont affichés directement
-          dans le CMS. Pour cette étape, ouvrir un message ne le marque pas
-          comme lu et aucune action IMAP ne peut encore le supprimer ou le
-          déplacer.
+          dans le CMS. Tu peux maintenant gérer le statut lu/non lu, déplacer
+          un message dans la corbeille OVH et télécharger ses pièces jointes.
         </p>
       </div>
 
@@ -961,15 +1093,40 @@ export default function Emails() {
                       </p>
                     </div>
 
-                    <div className="flex shrink-0 items-center gap-2">
-                      {!selectedImapMessage.seen && (
-                        <span className="rounded-full bg-[var(--club-yellow)]/10 px-3 py-1.5 text-xs font-black text-[var(--club-yellow)]">
-                          Non lu
-                        </span>
-                      )}
-                      <span className="rounded-full border border-sky-400/20 bg-sky-400/10 px-3 py-1.5 text-xs font-bold text-sky-200">
-                        Lecture seule
-                      </span>
+                    <div className="flex shrink-0 flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          void runImapAction(
+                            selectedImapMessage.seen
+                              ? 'mark_unread'
+                              : 'mark_read',
+                          )
+                        }
+                        disabled={!canUpdate || imapActionLoading}
+                        className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold text-slate-300 hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        {imapActionLoading ? (
+                          <Loader2 size={15} className="animate-spin" />
+                        ) : selectedImapMessage.seen ? (
+                          <Mail size={15} />
+                        ) : (
+                          <MailOpen size={15} />
+                        )}
+                        {selectedImapMessage.seen
+                          ? 'Marquer non lu'
+                          : 'Marquer lu'}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => void runImapAction('trash')}
+                        disabled={!canDelete || imapActionLoading}
+                        className="inline-flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs font-bold text-red-200 hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        <Trash2 size={15} />
+                        Corbeille
+                      </button>
                     </div>
                   </div>
                 </header>
@@ -996,7 +1153,7 @@ export default function Emails() {
                                   size={18}
                                   className="shrink-0 text-[var(--club-yellow)]"
                                 />
-                                <div className="min-w-0">
+                                <div className="min-w-0 flex-1">
                                   <p className="truncate text-sm font-bold text-white">
                                     {attachment.filename}
                                   </p>
@@ -1005,14 +1162,28 @@ export default function Emails() {
                                     {formatBytes(attachment.size)}
                                   </p>
                                 </div>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    void downloadAttachment(
+                                      index,
+                                      attachment.filename,
+                                    )
+                                  }
+                                  disabled={attachmentLoadingIndex !== null}
+                                  className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold text-slate-200 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+                                >
+                                  {attachmentLoadingIndex === index ? (
+                                    <Loader2 size={15} className="animate-spin" />
+                                  ) : (
+                                    <Download size={15} />
+                                  )}
+                                  Télécharger
+                                </button>
                               </div>
                             ),
                           )}
                         </div>
-                        <p className="mt-3 text-xs text-slate-600">
-                          Le téléchargement des pièces jointes sera activé dans
-                          l'étape de gestion complète de la boîte OVH.
-                        </p>
                       </div>
                     )}
                   </article>
