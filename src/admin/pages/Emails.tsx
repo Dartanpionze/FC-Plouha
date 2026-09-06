@@ -825,10 +825,47 @@ export default function Emails() {
   }
 
   const deleteThread = async () => {
-    if (!canDelete || !selectedThread) return
+    if (!selectedThread) return
+
+    // Dans « Envoyés », le bouton Supprimer sert volontairement d'archivage :
+    // on ne détruit pas l'historique du CMS par erreur.
+    if (!selectedThread.archived) {
+      if (!canUpdate) return
+
+      const { error } = await supabase
+        .from('email_threads')
+        .update({
+          archived: true,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', selectedThread.id)
+
+      if (error) {
+        console.error(error)
+        setErrorMessage("Impossible d'archiver cette conversation.")
+        return
+      }
+
+      setThreads((current) =>
+        current.map((thread) =>
+          thread.id === selectedThread.id
+            ? { ...thread, archived: true }
+            : thread,
+        ),
+      )
+      setMessages([])
+      setSelectedThreadId('')
+      setSuccessMessage(
+        'Conversation déplacée dans « Archivés CMS ».',
+      )
+      return
+    }
+
+    // Une suppression définitive n'est proposée que depuis « Archivés CMS ».
+    if (!canDelete) return
 
     const confirmed = window.confirm(
-      `Supprimer définitivement la conversation « ${selectedThread.subject} » du CMS ?\n\nTous les messages enregistrés dans Supabase pour ce fil seront supprimés. Cette action ne touche pas à la boîte OVH.`,
+      `Supprimer définitivement la conversation « ${selectedThread.subject} » du CMS ?\n\nTous les messages enregistrés dans Supabase pour ce fil seront supprimés. Cette action est irréversible et ne touche pas à la boîte OVH.`,
     )
 
     if (!confirmed) return
@@ -852,7 +889,9 @@ export default function Emails() {
     const remaining = threads.filter((thread) => thread.id !== deletedId)
     setThreads(remaining)
     setMessages([])
-    setSelectedThreadId(remaining[0]?.id ?? '')
+    setSelectedThreadId(
+      remaining.find((thread) => thread.archived)?.id ?? '',
+    )
     setSuccessMessage('Conversation supprimée définitivement du CMS.')
   }
 
@@ -1772,11 +1811,19 @@ export default function Emails() {
                     <button
                       type="button"
                       onClick={() => void deleteThread()}
-                      disabled={!canDelete}
+                      disabled={
+                        selectedThread.archived ? !canDelete : !canUpdate
+                      }
                       className="inline-flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs font-bold text-red-200 hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-40"
                     >
-                      <Trash2 size={16} />
-                      Supprimer
+                      {selectedThread.archived ? (
+                        <Trash2 size={16} />
+                      ) : (
+                        <Archive size={16} />
+                      )}
+                      {selectedThread.archived
+                        ? 'Supprimer définitivement'
+                        : 'Supprimer'}
                     </button>
                   </div>
                 </div>
