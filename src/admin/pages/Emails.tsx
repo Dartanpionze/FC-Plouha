@@ -432,7 +432,7 @@ export default function Emails() {
     label: string
     icon: typeof Inbox
   }> = [
-    { key: 'sent', label: 'Envoyés CMS', icon: Send },
+    { key: 'sent', label: 'Envoyés', icon: Send },
     { key: 'archived', label: 'Archivés CMS', icon: Archive },
   ]
 
@@ -970,12 +970,14 @@ export default function Emails() {
               )
             })}
 
-            {imapFolders.length > 0 && (
+            {imapFolders.filter((folder) => folder.specialUse !== '\\Sent').length > 0 && (
               <div className="space-y-1">
                 <p className="px-3 pb-1 pt-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-600">
                   Boîte OVH
                 </p>
-                {imapFolders.map((folder) => {
+                {imapFolders
+                  .filter((folder) => folder.specialUse !== '\\Sent')
+                  .map((folder) => {
                   const FolderIcon = folderIcon(folder)
                   const active =
                     filter === 'imap' &&
