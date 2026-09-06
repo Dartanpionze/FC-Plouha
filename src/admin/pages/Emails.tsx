@@ -147,8 +147,8 @@ export default function Emails() {
   const [selectedImapUid, setSelectedImapUid] = useState<number | null>(null)
   const [selectedImapMessage, setSelectedImapMessage] =
     useState<ImapMessageDetail | null>(null)
-  const [imapTotal, setImapTotal] = useState(0)
-  const [imapUnread, setImapUnread] = useState(0)
+  const [, setImapTotal] = useState(0)
+  const [, setImapUnread] = useState(0)
   const [inboxUnread, setInboxUnread] = useState(0)
   const [imapFolders, setImapFolders] = useState<ImapFolder[]>([])
   const [selectedImapFolder, setSelectedImapFolder] = useState('INBOX')
