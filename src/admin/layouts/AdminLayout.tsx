@@ -19,6 +19,7 @@ import {
   Menu,
   X,
   DatabaseBackup,
+  Mail,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import {
@@ -60,6 +61,11 @@ const navigation = [
     label: 'Inscriptions',
     path: '/admin/registrations',
     icon: ClipboardList,
+  },
+  {
+    label: 'E-mails',
+    path: '/admin/emails',
+    icon: Mail,
   },
   {
     label: 'Tarifs licences',
@@ -325,6 +331,7 @@ export default function AdminLayout() {
             '/admin/teams': 'teams',
             '/admin/players': 'players',
             '/admin/registrations': 'registrations',
+            '/admin/emails': 'emails',
             '/admin/pricing': 'settings',
             '/admin/matches': 'matches',
             '/admin/trainings': 'teams',
