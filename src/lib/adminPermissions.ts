@@ -11,6 +11,7 @@ export type AdminModule =
   | 'gallery'
   | 'partners'
   | 'registrations'
+  | 'emails'
   | 'settings'
 
 export type AdminAction =
