@@ -135,6 +135,24 @@ function formatAddress(address: any) {
   }
 }
 
+function addressValues(value: any) {
+  if (!value) return []
+
+  const objects = Array.isArray(value) ? value : [value]
+
+  return objects.flatMap((object: any) =>
+    Array.isArray(object?.value) ? object.value : [],
+  )
+}
+
+function toIsoString(value: string | Date | undefined | null) {
+  if (!value) return null
+
+  const date = value instanceof Date ? value : new Date(value)
+
+  return Number.isNaN(date.getTime()) ? null : date.toISOString()
+}
+
 function stripHtml(html: string) {
   return html
     .replace(/<style[\s\S]*?<\/style>/gi, '')
@@ -218,9 +236,9 @@ export default async function handler(req: any, res: any) {
         }
 
         const parsed = await simpleParser(message.source)
-        const sender = formatAddress(parsed.from?.value?.[0])
-        const recipients = (parsed.to?.value ?? []).map(formatAddress)
-        const cc = (parsed.cc?.value ?? []).map(formatAddress)
+        const sender = formatAddress(addressValues(parsed.from)[0])
+        const recipients = addressValues(parsed.to).map(formatAddress)
+        const cc = addressValues(parsed.cc).map(formatAddress)
 
         let bodyText =
           typeof parsed.text === 'string' ? parsed.text.trim() : ''
@@ -238,8 +256,8 @@ export default async function handler(req: any, res: any) {
             to: recipients,
             cc,
             date:
-              parsed.date?.toISOString() ||
-              message.internalDate?.toISOString() ||
+              toIsoString(parsed.date) ||
+              toIsoString(message.internalDate) ||
               new Date().toISOString(),
             messageId: parsed.messageId || message.envelope?.messageId || null,
             inReplyTo: parsed.inReplyTo || message.envelope?.inReplyTo || null,
@@ -257,7 +275,7 @@ export default async function handler(req: any, res: any) {
         })
       }
 
-      const exists = client.mailbox?.exists ?? 0
+      const exists = client.mailbox ? client.mailbox.exists : 0
 
       if (exists === 0) {
         return res.status(200).json({
@@ -296,8 +314,8 @@ export default async function handler(req: any, res: any) {
             subject: message.envelope?.subject || '(Sans objet)',
             from: sender,
             date:
-              message.internalDate?.toISOString() ||
-              message.envelope?.date?.toISOString() ||
+              toIsoString(message.internalDate) ||
+              toIsoString(message.envelope?.date) ||
               new Date().toISOString(),
             messageId: message.envelope?.messageId || null,
             inReplyTo: message.envelope?.inReplyTo || null,
