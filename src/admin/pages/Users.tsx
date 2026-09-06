@@ -39,6 +39,7 @@ const modules: Array<{ key: AdminModule; label: string }> = [
   { key: 'gallery', label: 'Galerie' },
   { key: 'partners', label: 'Partenaires' },
   { key: 'registrations', label: 'Inscriptions' },
+  { key: 'emails', label: 'E-mails' },
   { key: 'settings', label: 'Paramètres' },
 ]
 
