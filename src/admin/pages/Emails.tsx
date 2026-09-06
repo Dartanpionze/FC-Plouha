@@ -114,6 +114,8 @@ type ComposerState = {
   contactName: string
   subject: string
   body: string
+  inReplyTo: string
+  references: string
 }
 
 const emptyComposer: ComposerState = {
@@ -124,6 +126,8 @@ const emptyComposer: ComposerState = {
   contactName: '',
   subject: '',
   body: '',
+  inReplyTo: '',
+  references: '',
 }
 
 function formatDate(value: string) {
@@ -593,6 +597,8 @@ export default function Emails() {
       contactName: searchParams.get('name') || '',
       subject: searchParams.get('subject') || '',
       body: searchParams.get('body') || '',
+      inReplyTo: '',
+      references: '',
     })
 
     setSearchParams({}, { replace: true })
@@ -1082,6 +1088,8 @@ export default function Emails() {
       contactName: selectedThread.contact_name || '',
       subject: normalizeReplySubject(selectedThread.subject),
       body: '',
+      inReplyTo: '',
+      references: '',
     })
   }
 
@@ -1098,6 +1106,8 @@ export default function Emails() {
       contactName: selectedImapMessage.from.name || '',
       subject: normalizeReplySubject(selectedImapMessage.subject),
       body: '',
+      inReplyTo: selectedImapMessage.messageId || '',
+      references: selectedImapMessage.messageId || '',
     })
   }
 
@@ -1204,6 +1214,8 @@ export default function Emails() {
           contact_name: composer.contactName.trim() || null,
           subject,
           body,
+          in_reply_to: composer.inReplyTo || null,
+          references: composer.references || null,
         }),
       })
 
