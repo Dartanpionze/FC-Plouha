@@ -1454,16 +1454,38 @@ export default function Emails() {
                       : 'hover:bg-white/5'
                   }`}
                 >
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-bold text-white">
-                      {thread.contact_name || thread.contact_email}
-                    </p>
-                    <p className="mt-1 truncate text-sm text-slate-300">
-                      {thread.subject}
-                    </p>
-                    <p className="mt-1 text-xs text-slate-600">
-                      {formatDate(thread.last_message_at)}
-                    </p>
+                  <div className="flex items-start gap-3">
+                    <div
+                      className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
+                        filter === 'archived'
+                          ? 'bg-white/5 text-slate-500'
+                          : 'bg-[var(--club-yellow)]/10 text-[var(--club-yellow)]'
+                      }`}
+                    >
+                      {filter === 'archived' ? (
+                        <Archive size={17} />
+                      ) : (
+                        <Send size={17} />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="min-w-0 flex-1 truncate text-sm font-bold text-white">
+                          {thread.contact_name || thread.contact_email}
+                        </p>
+                        {filter === 'archived' && (
+                          <span className="shrink-0 rounded-full bg-white/5 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-slate-500">
+                            Archivé
+                          </span>
+                        )}
+                      </div>
+                      <p className="mt-1 truncate text-sm text-slate-300">
+                        {thread.subject}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-600">
+                        {formatDate(thread.last_message_at)}
+                      </p>
+                    </div>
                   </div>
                 </button>
               ))
@@ -1694,12 +1716,20 @@ export default function Emails() {
             )
           ) : !selectedThread ? (
             <div className="flex h-full min-h-[420px] flex-col items-center justify-center p-8 text-center">
-              <Send size={44} className="text-slate-700" />
+              {filter === 'archived' ? (
+                <Archive size={44} className="text-slate-700" />
+              ) : (
+                <Send size={44} className="text-slate-700" />
+              )}
               <h2 className="mt-4 text-xl font-black text-white">
-                Historique des envois
+                {filter === 'archived'
+                  ? 'Conversations archivées'
+                  : 'Historique des envois'}
               </h2>
               <p className="mt-2 max-w-md text-sm leading-relaxed text-slate-500">
-                Sélectionne une conversation envoyée depuis le CMS.
+                {filter === 'archived'
+                  ? 'Sélectionne une conversation archivée pour afficher son contenu.'
+                  : 'Sélectionne une conversation envoyée depuis le CMS.'}
               </p>
             </div>
           ) : (
@@ -1707,6 +1737,12 @@ export default function Emails() {
               <header className="border-b border-white/10 p-5">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0">
+                    {selectedThread.archived && (
+                      <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">
+                        <Archive size={12} />
+                        Conversation archivée
+                      </div>
+                    )}
                     <h2 className="truncate text-lg font-black text-white">
                       {selectedThread.subject}
                     </h2>
