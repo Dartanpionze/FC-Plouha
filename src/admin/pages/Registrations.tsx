@@ -275,6 +275,12 @@ export default function Registrations() {
       registration.legal_guardian_first_name?.trim() ||
       registration.first_name.trim()
 
+    const contactName = registration.legal_guardian_first_name?.trim()
+      ? `${registration.legal_guardian_first_name.trim()} ${
+          registration.legal_guardian_last_name?.trim() || ''
+        }`.trim()
+      : `${registration.first_name} ${registration.last_name}`.trim()
+
     const categoryLine = registration.category
       ? ` pour la catégorie ${registration.category}`
       : ''
@@ -295,16 +301,23 @@ Vous y trouverez :
 
 Vous pouvez télécharger et imprimer le dossier afin de le compléter selon les indications du club.
 
-Pour toute question, vous pouvez simplement répondre à cet e-mail.
+Pour toute question, vous pouvez répondre directement à cet e-mail.
 
 Sportivement,
 
 Football Club Plouha – Les Falaises
 https://fcplouha.fr`
 
-    window.location.href = `mailto:${encodeURIComponent(recipient)}?subject=${encodeURIComponent(
+    const params = new URLSearchParams({
+      compose: '1',
+      registration: String(registration.id),
+      to: recipient,
+      name: contactName,
       subject,
-    )}&body=${encodeURIComponent(body)}`
+      body,
+    })
+
+    window.location.href = `/admin/emails?${params.toString()}`
   }
 
   const filteredRegistrations = useMemo(() => {
@@ -864,9 +877,7 @@ https://fcplouha.fr`
 
                     <div className="rounded-xl border border-white/10 bg-slate-950 p-4">
                       <p className="text-sm text-slate-400 leading-relaxed">
-                        Prépare un e-mail avec le nom du licencié, sa catégorie et le lien
-                        vers les documents de pré-inscription sur fcplouha.fr. Le message
-                        reste modifiable avant envoi.
+                        Ouvre la messagerie du CMS avec le destinataire, l'objet et le message de pré-inscription déjà préparés. Le message reste modifiable avant envoi.
                       </p>
 
                       <button
@@ -879,7 +890,7 @@ https://fcplouha.fr`
                         className="mt-4 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--club-yellow)] px-4 py-3 font-bold text-slate-950 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 transition"
                       >
                         <Send size={17} />
-                        Préparer l'e-mail d'inscription
+                        Contacter depuis le CMS
                       </button>
 
                       <p className="mt-3 text-xs text-slate-600">
