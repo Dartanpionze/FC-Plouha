@@ -4,6 +4,7 @@ import {
   Archive,
   ArchiveRestore,
   Download,
+  FileText,
   Inbox,
   Loader2,
   Mail,
@@ -118,6 +119,14 @@ type ComposerState = {
   references: string
 }
 
+type EmailDraft = {
+  id: string
+  updatedAt: string
+  composer: Omit<ComposerState, 'open'>
+}
+
+const DRAFTS_STORAGE_KEY = 'fcplouha-email-drafts-v1'
+
 const emptyComposer: ComposerState = {
   open: false,
   threadId: '',
@@ -214,6 +223,10 @@ export default function Emails() {
   const [errorMessage, setErrorMessage] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
   const [composer, setComposer] = useState<ComposerState>(emptyComposer)
+  const [drafts, setDrafts] = useState<EmailDraft[]>([])
+  const [activeDraftId, setActiveDraftId] = useState('')
+  const [showDrafts, setShowDrafts] = useState(false)
+  const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null)
   const [sending, setSending] = useState(false)
   const [imapTesting, setImapTesting] = useState(false)
   const [imapActionLoading, setImapActionLoading] = useState(false)
@@ -571,6 +584,20 @@ export default function Emails() {
     }
   }
 
+
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(DRAFTS_STORAGE_KEY)
+      if (!stored) return
+
+      const parsed = JSON.parse(stored)
+      if (Array.isArray(parsed)) {
+        setDrafts(parsed as EmailDraft[])
+      }
+    } catch (error) {
+      console.error('EMAIL DRAFTS LOAD ERROR:', error)
+    }
+  }, [])
 
   useEffect(() => {
     void Promise.all([loadThreads(), loadImapInbox()])
@@ -1215,9 +1242,36 @@ export default function Emails() {
     })
   }
 
+  const persistDrafts = (nextDrafts: EmailDraft[]) => {
+    setDrafts(nextDrafts)
+    window.localStorage.setItem(DRAFTS_STORAGE_KEY, JSON.stringify(nextDrafts))
+  }
+
+  const removeDraft = (draftId: string) => {
+    const nextDrafts = drafts.filter((draft) => draft.id !== draftId)
+    persistDrafts(nextDrafts)
+
+    if (activeDraftId === draftId) {
+      setActiveDraftId('')
+      setDraftSavedAt(null)
+    }
+  }
+
+  const openDraft = (draft: EmailDraft) => {
+    setActiveDraftId(draft.id)
+    setDraftSavedAt(draft.updatedAt)
+    setShowDrafts(false)
+    setComposer({
+      ...draft.composer,
+      open: true,
+    })
+  }
+
   const openCmsReply = () => {
     if (!canCreate || !selectedThread) return
 
+    setActiveDraftId('')
+    setDraftSavedAt(null)
     setSuccessMessage('')
     setErrorMessage('')
     setComposer({
@@ -1236,6 +1290,8 @@ export default function Emails() {
   const openImapReply = () => {
     if (!canCreate || !selectedImapMessage?.from.email) return
 
+    setActiveDraftId('')
+    setDraftSavedAt(null)
     setSuccessMessage('')
     setErrorMessage('')
     setComposer({
@@ -1253,8 +1309,60 @@ export default function Emails() {
 
   const closeComposer = () => {
     if (sending) return
-    setComposer(emptyComposer)
+    setComposer((current) => ({ ...current, open: false }))
+    setActiveDraftId('')
+    setDraftSavedAt(null)
   }
+
+  useEffect(() => {
+    if (!composer.open || sending) return
+
+    const hasContent = Boolean(
+      composer.to.trim() ||
+        composer.subject.trim() ||
+        composer.body.trim(),
+    )
+
+    if (!hasContent) return
+
+    const timer = window.setTimeout(() => {
+      const now = new Date().toISOString()
+      const draftId =
+        activeDraftId ||
+        `draft-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+
+      const draft: EmailDraft = {
+        id: draftId,
+        updatedAt: now,
+        composer: {
+          threadId: composer.threadId,
+          registrationId: composer.registrationId,
+          to: composer.to,
+          contactName: composer.contactName,
+          subject: composer.subject,
+          body: composer.body,
+          inReplyTo: composer.inReplyTo,
+          references: composer.references,
+        },
+      }
+
+      const nextDrafts = [
+        draft,
+        ...drafts.filter((item) => item.id !== draftId),
+      ].slice(0, 50)
+
+      persistDrafts(nextDrafts)
+      setActiveDraftId(draftId)
+      setDraftSavedAt(now)
+    }, 700)
+
+    return () => window.clearTimeout(timer)
+  }, [
+    activeDraftId,
+    composer,
+    drafts,
+    sending,
+  ])
 
   const testImapConnection = async () => {
     if (imapTesting) return
@@ -1368,6 +1476,11 @@ export default function Emails() {
         return
       }
 
+      if (activeDraftId) {
+        removeDraft(activeDraftId)
+      }
+      setActiveDraftId('')
+      setDraftSavedAt(null)
       setComposer(emptyComposer)
 
       setSuccessMessage(
@@ -1432,7 +1545,25 @@ export default function Emails() {
 
           <button
             type="button"
-            onClick={openNewMessage}
+            onClick={() => setShowDrafts(true)}
+            className="relative inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/10"
+          >
+            <FileText size={17} />
+            Brouillons
+            {drafts.length > 0 && (
+              <span className="rounded-full bg-[var(--club-yellow)] px-2 py-0.5 text-[10px] font-black text-slate-950">
+                {drafts.length}
+              </span>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setActiveDraftId('')
+              setDraftSavedAt(null)
+              openNewMessage()
+            }}
             disabled={!canCreate}
             title={
               canCreate
@@ -2084,6 +2215,100 @@ export default function Emails() {
         </section>
       </div>
 
+      {showDrafts && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/70 p-4">
+          <div className="w-full max-w-3xl overflow-hidden rounded-2xl border border-white/10 bg-slate-900 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--club-yellow)]">
+                  Messagerie
+                </p>
+                <h2 className="mt-1 text-xl font-black text-white">
+                  Brouillons
+                </h2>
+                <p className="mt-1 text-xs text-slate-500">
+                  Les messages en cours sont sauvegardés automatiquement sur cet appareil.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDrafts(false)}
+                className="rounded-lg p-2 text-slate-400 hover:bg-white/5 hover:text-white"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="max-h-[65vh] overflow-y-auto p-4">
+              {drafts.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <FileText size={40} className="text-slate-700" />
+                  <p className="mt-4 font-bold text-slate-300">
+                    Aucun brouillon
+                  </p>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Commence à rédiger un e-mail : il sera sauvegardé automatiquement.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {drafts.map((draft) => (
+                    <div
+                      key={draft.id}
+                      className="flex items-center gap-3 rounded-xl border border-white/10 bg-slate-950 p-4"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => openDraft(draft)}
+                        className="min-w-0 flex-1 text-left"
+                      >
+                        <div className="flex items-center gap-2">
+                          <FileText
+                            size={16}
+                            className="shrink-0 text-[var(--club-yellow)]"
+                          />
+                          <p className="truncate text-sm font-black text-white">
+                            {draft.composer.subject.trim() || '(Sans objet)'}
+                          </p>
+                        </div>
+                        <p className="mt-1 truncate text-xs text-slate-400">
+                          À : {draft.composer.to || 'Destinataire non renseigné'}
+                        </p>
+                        <p className="mt-1 truncate text-xs text-slate-600">
+                          {draft.composer.body || 'Message vide'}
+                        </p>
+                        <p className="mt-2 text-[10px] font-bold uppercase tracking-wider text-slate-600">
+                          Modifié le {formatDate(draft.updatedAt)}
+                        </p>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (
+                            window.confirm(
+                              `Supprimer le brouillon « ${
+                                draft.composer.subject.trim() || 'Sans objet'
+                              } » ?`,
+                            )
+                          ) {
+                            removeDraft(draft.id)
+                          }
+                        }}
+                        className="rounded-lg border border-red-500/20 bg-red-500/10 p-2.5 text-red-200 hover:bg-red-500/20"
+                        title="Supprimer le brouillon"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {composer.open && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4">
           <div className="w-full max-w-3xl overflow-hidden rounded-2xl border border-white/10 bg-slate-900 shadow-2xl">
@@ -2095,6 +2320,15 @@ export default function Emails() {
                 <h2 className="mt-1 text-xl font-black text-white">
                   {composer.to ? 'Message' : 'Nouveau message'}
                 </h2>
+                {draftSavedAt && (
+                  <p className="mt-1 text-xs text-emerald-300">
+                    Brouillon sauvegardé automatiquement à{' '}
+                    {new Intl.DateTimeFormat('fr-FR', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    }).format(new Date(draftSavedAt))}
+                  </p>
+                )}
               </div>
 
               <button
