@@ -14,6 +14,18 @@ function cleanText(value: unknown, maxLength: number) {
   return value.trim().slice(0, maxLength)
 }
 
+function cleanMessageId(value: unknown) {
+  const cleaned = cleanText(value, 998)
+  if (!cleaned) return ''
+  return cleaned.replace(/[\r\n]/g, '').trim()
+}
+
+function cleanReferences(value: unknown) {
+  const cleaned = cleanText(value, 4000)
+  if (!cleaned) return ''
+  return cleaned.replace(/[\r\n]/g, ' ').replace(/\s+/g, ' ').trim()
+}
+
 function isEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
 }
@@ -105,6 +117,8 @@ export default async function handler(req: any, res: any) {
     const requestedName = cleanText(req.body?.contact_name, 160)
     const requestedSubject = cleanText(req.body?.subject, 200)
     const requestedBody = cleanText(req.body?.body, 20000)
+    let requestedInReplyTo = cleanMessageId(req.body?.in_reply_to)
+    let requestedReferences = cleanReferences(req.body?.references)
 
     const registrationValue = req.body?.registration_id
     const registrationId =
@@ -153,6 +167,32 @@ export default async function handler(req: any, res: any) {
       recipient = existingThread.contact_email
       contactName = existingThread.contact_name || requestedName
       threadRegistrationId = existingThread.registration_id || registrationId
+
+      if (!requestedInReplyTo) {
+        const { data: previousMessage, error: previousMessageError } =
+          await adminClient
+            .from('email_messages')
+            .select('message_id, references_header')
+            .eq('thread_id', threadId)
+            .not('message_id', 'is', null)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle()
+
+        if (previousMessageError) {
+          console.error('EMAIL PREVIOUS MESSAGE LOOKUP ERROR:', previousMessageError)
+        } else if (previousMessage?.message_id) {
+          requestedInReplyTo = cleanMessageId(previousMessage.message_id)
+          requestedReferences = cleanReferences(
+            [
+              previousMessage.references_header,
+              previousMessage.message_id,
+            ]
+              .filter(Boolean)
+              .join(' '),
+          )
+        }
+      }
     }
 
     if (!isEmail(recipient)) {
@@ -171,6 +211,18 @@ export default async function handler(req: any, res: any) {
         reply_to: REPLY_TO_EMAIL,
         subject: requestedSubject,
         text: requestedBody,
+        ...(requestedInReplyTo || requestedReferences
+          ? {
+              headers: {
+                ...(requestedInReplyTo
+                  ? { 'In-Reply-To': requestedInReplyTo }
+                  : {}),
+                ...(requestedReferences
+                  ? { References: requestedReferences }
+                  : {}),
+              },
+            }
+          : {}),
       }),
     })
 
@@ -268,6 +320,8 @@ export default async function handler(req: any, res: any) {
         provider: 'resend',
         provider_email_id: resendData.id,
         message_id: outboundMessageId,
+        in_reply_to: requestedInReplyTo || null,
+        references_header: requestedReferences || null,
         status: 'sent',
         sent_at: now,
         created_by: callerId,
