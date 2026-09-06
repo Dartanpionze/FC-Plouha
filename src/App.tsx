@@ -35,6 +35,7 @@ import Registrations from './admin/pages/Registrations'
 import Emails from './admin/pages/Emails'
 import Users from './admin/pages/Users'
 import AcceptInvite from './admin/pages/AcceptInvite'
+import ResetPassword from './admin/pages/ResetPassword'
 import Backups from './admin/pages/Backups'
 import RequireAdminPermission from './admin/components/RequireAdminPermission'
 import RequireSuperadmin from './admin/components/RequireSuperadmin'
@@ -68,6 +69,7 @@ function App() {
         {/* ADMINISTRATION - séparée du Navbar/Footer public */}
         <Route path="/admin/login" element={<Login />} />
         <Route path="/admin/accept-invite" element={<AcceptInvite />} />
+        <Route path="/admin/reset-password" element={<ResetPassword />} />
 
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<Dashboard />} />
