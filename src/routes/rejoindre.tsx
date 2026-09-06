@@ -3,6 +3,9 @@ import { Link } from 'react-router-dom'
 import {
   ArrowRight,
   CheckCircle2,
+  Download,
+  Eye,
+  FileText,
   Euro,
   GraduationCap,
   HandHeart,
@@ -660,6 +663,94 @@ function RejoindrePage() {
                 </div>
               </form>
             )}
+          </div>
+        </section>
+
+        <section className="border-b border-black/5 bg-white">
+          <div className="max-w-6xl 2xl:max-w-[1380px] mx-auto px-4 sm:px-6 2xl:px-8 py-14 2xl:py-18">
+            <div className="max-w-3xl">
+              <span className="font-condensed font-bold text-xs tracking-[0.25em] text-[var(--club-red)]">
+                DOCUMENTS 2026/2027
+              </span>
+              <h2 className="mt-3 text-3xl sm:text-4xl text-[var(--club-navy-deep)]">
+                Documents de pré-inscription
+              </h2>
+              <p className="mt-4 font-condensed text-lg leading-relaxed text-[var(--club-navy-deep)]/65">
+                Vous pouvez consulter ou télécharger la fiche officielle du FC Plouha.
+                Le dossier complet contient le recto de pré-inscription et le verso avec
+                les informations pratiques de la saison.
+              </p>
+            </div>
+
+            <div className="mt-8 grid gap-5 lg:grid-cols-3">
+              <article className="rounded-2xl border border-black/5 bg-[var(--club-cream)]/45 p-6 shadow-sm">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--club-yellow)]/20 text-[var(--club-navy-deep)]">
+                  <FileText size={24} />
+                </div>
+                <h3 className="mt-5 font-condensed text-xl font-bold text-[var(--club-navy-deep)]">
+                  Fiche de pré-inscription
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-[var(--club-navy-deep)]/60">
+                  Le recto à compléter avec les informations du licencié et le règlement.
+                </p>
+                <a
+                  href="/documents/fiche-preinscription-2026-2027-recto.pdf"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-5 inline-flex items-center gap-2 font-condensed font-bold text-[var(--club-red)] hover:underline"
+                >
+                  <Eye size={18} />
+                  Consulter le recto
+                </a>
+              </article>
+
+              <article className="rounded-2xl border border-black/5 bg-[var(--club-cream)]/45 p-6 shadow-sm">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--club-yellow)]/20 text-[var(--club-navy-deep)]">
+                  <FileText size={24} />
+                </div>
+                <h3 className="mt-5 font-condensed text-xl font-bold text-[var(--club-navy-deep)]">
+                  Informations pratiques
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-[var(--club-navy-deep)]/60">
+                  Le verso avec les catégories, entraînements, terrains, tarifs et informations du club.
+                </p>
+                <a
+                  href="/documents/fiche-preinscription-2026-2027-verso.pdf"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-5 inline-flex items-center gap-2 font-condensed font-bold text-[var(--club-red)] hover:underline"
+                >
+                  <Eye size={18} />
+                  Consulter le verso
+                </a>
+              </article>
+
+              <article className="rounded-2xl border border-[var(--club-yellow)]/40 bg-[var(--club-navy-deep)] p-6 shadow-sm">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--club-yellow)] text-[var(--club-navy-deep)]">
+                  <Download size={24} />
+                </div>
+                <h3 className="mt-5 font-condensed text-xl font-bold text-white">
+                  Dossier complet
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-white/65">
+                  Recto + verso réunis dans un seul PDF de 2 pages, prêt à être conservé ou imprimé.
+                </p>
+                <a
+                  href="/documents/fiche-preinscription-fc-plouha-2026-2027.pdf"
+                  download
+                  className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[var(--club-yellow)] px-4 py-2.5 font-condensed font-bold text-[var(--club-navy-deep)] hover:opacity-90 transition"
+                >
+                  <Download size={18} />
+                  Télécharger le PDF
+                </a>
+              </article>
+            </div>
+
+            <div className="mt-6 rounded-xl border border-black/5 bg-white p-4 text-sm leading-relaxed text-[var(--club-navy-deep)]/60">
+              La pré-inscription en ligne reste la démarche la plus rapide pour signaler
+              votre souhait de rejoindre le club. Ces documents peuvent ensuite être
+              téléchargés, imprimés et complétés selon les indications du FC Plouha.
+            </div>
           </div>
         </section>
 
