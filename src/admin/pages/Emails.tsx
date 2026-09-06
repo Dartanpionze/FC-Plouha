@@ -669,7 +669,7 @@ export default function Emails() {
   }, [filter, search, sentThreadIds, threads])
 
   const selectedThread =
-    threads.find((thread) => thread.id === selectedThreadId) ?? null
+    filteredThreads.find((thread) => thread.id === selectedThreadId) ?? null
 
   const filters: Array<{
     key: MailboxFilter
@@ -681,6 +681,18 @@ export default function Emails() {
   ]
 
   const usingImap = filter === 'imap'
+
+  const selectCmsFilter = (nextFilter: Extract<MailboxFilter, 'sent' | 'archived'>) => {
+    setFilter(nextFilter)
+    setSelectedThreadId('')
+    setMessages([])
+    setSelectedImapUid(null)
+    setSelectedImapMessage(null)
+    setImapConversation([])
+    setSearch('')
+    setErrorMessage('')
+    setSuccessMessage('')
+  }
 
   const openImapConversation = (group: ImapConversationGroup) => {
     setSelectedImapUid(group.latest.uid)
@@ -776,6 +788,8 @@ export default function Emails() {
 
   const selectImapFolder = (folder: string) => {
     setFilter('imap')
+    setErrorMessage('')
+    setSuccessMessage('')
     setSelectedImapFolder(folder)
     setSelectedImapUid(null)
     setSelectedImapMessage(null)
@@ -1315,7 +1329,13 @@ export default function Emails() {
                 <button
                   key={item.key}
                   type="button"
-                  onClick={() => setFilter(item.key)}
+                  onClick={() => {
+                    if (item.key === 'sent' || item.key === 'archived') {
+                      selectCmsFilter(item.key)
+                    } else {
+                      setFilter(item.key)
+                    }
+                  }}
                   className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold transition ${
                     active
                       ? 'bg-white/10 text-white'
