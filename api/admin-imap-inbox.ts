@@ -246,9 +246,7 @@ export default async function handler(req: any, res: any) {
       })
     }
 
-    const folders = mailboxes
-      .filter((mailbox) => mailbox.selectable !== false)
-      .map((mailbox) => ({
+    const folders = mailboxes.map((mailbox) => ({
         path: mailbox.path,
         name: mailbox.name,
         label: folderLabel(mailbox.path, mailbox.specialUse),
