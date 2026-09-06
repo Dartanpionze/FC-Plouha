@@ -13,6 +13,7 @@ import {
   Clock3,
   CheckCircle2,
   XCircle,
+  Send,
 } from 'lucide-react'
 
 type Registration = {
@@ -257,6 +258,53 @@ export default function Registrations() {
     if (refreshed) {
       setMessage('Demande supprimée.')
     }
+  }
+
+  const prepareRegistrationEmail = (registration: Registration) => {
+    const recipient =
+      registration.legal_guardian_email?.trim() ||
+      registration.email?.trim() ||
+      ''
+
+    if (!recipient) {
+      setMessage("Aucune adresse e-mail n'est disponible pour cette demande.")
+      return
+    }
+
+    const greetingName =
+      registration.legal_guardian_first_name?.trim() ||
+      registration.first_name.trim()
+
+    const categoryLine = registration.category
+      ? ` pour la catégorie ${registration.category}`
+      : ''
+
+    const subject = 'FC Plouha – Suite de votre pré-inscription 2026/2027'
+
+    const body = `Bonjour ${greetingName},
+
+Nous faisons suite à la pré-inscription de ${registration.first_name} ${registration.last_name}${categoryLine} pour la saison 2026/2027.
+
+Vous pouvez retrouver les documents de pré-inscription du Football Club Plouha à l'adresse suivante :
+https://fcplouha.fr/rejoindre#documents-preinscription
+
+Vous y trouverez :
+- la fiche de pré-inscription ;
+- les informations pratiques de la saison ;
+- le dossier complet recto + verso au format PDF.
+
+Vous pouvez télécharger et imprimer le dossier afin de le compléter selon les indications du club.
+
+Pour toute question, vous pouvez simplement répondre à cet e-mail.
+
+Sportivement,
+
+Football Club Plouha – Les Falaises
+https://fcplouha.fr`
+
+    window.location.href = `mailto:${encodeURIComponent(recipient)}?subject=${encodeURIComponent(
+      subject,
+    )}&body=${encodeURIComponent(body)}`
   }
 
   const filteredRegistrations = useMemo(() => {
@@ -806,6 +854,43 @@ export default function Registrations() {
                   </div>
 
                 </div>
+
+                {/* E-MAIL D'INSCRIPTION */}
+                {selected.request_type === 'Joueur' && (
+                  <div>
+                    <label className="block text-xs uppercase tracking-wider text-slate-500 mb-2">
+                      Réponse à la pré-inscription
+                    </label>
+
+                    <div className="rounded-xl border border-white/10 bg-slate-950 p-4">
+                      <p className="text-sm text-slate-400 leading-relaxed">
+                        Prépare un e-mail avec le nom du licencié, sa catégorie et le lien
+                        vers les documents de pré-inscription sur fcplouha.fr. Le message
+                        reste modifiable avant envoi.
+                      </p>
+
+                      <button
+                        type="button"
+                        onClick={() => prepareRegistrationEmail(selected)}
+                        disabled={
+                          !selected.legal_guardian_email?.trim() &&
+                          !selected.email?.trim()
+                        }
+                        className="mt-4 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--club-yellow)] px-4 py-3 font-bold text-slate-950 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 transition"
+                      >
+                        <Send size={17} />
+                        Préparer l'e-mail d'inscription
+                      </button>
+
+                      <p className="mt-3 text-xs text-slate-600">
+                        Destinataire :{' '}
+                        {selected.legal_guardian_email?.trim() ||
+                          selected.email?.trim() ||
+                          'aucune adresse e-mail disponible'}
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 {/* MESSAGE */}
                 {selected.message && (
