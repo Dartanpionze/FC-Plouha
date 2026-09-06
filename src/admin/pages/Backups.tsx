@@ -31,6 +31,8 @@ const backupTables = [
   'partners',
   'registration_fees',
   'registrations',
+  'email_threads',
+  'email_messages',
   'admin_users',
   'admin_permissions',
 ] as const
@@ -50,6 +52,8 @@ const restoreOrder = [
   'partners',
   'registration_fees',
   'registrations',
+  'email_threads',
+  'email_messages',
   'admin_users',
   'admin_permissions',
 ] as const
