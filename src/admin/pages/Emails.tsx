@@ -963,7 +963,67 @@ export default function Emails() {
                   <button
                     key={message.uid}
                     type="button"
-                    onClick={() => setSelectedImapUid(message.uid)}
+                    onClick={() => {
+                      setSelectedImapUid(message.uid)
+
+                      if (!message.seen && canUpdate && !imapActionLoading) {
+                        void (async () => {
+                          setImapActionLoading(true)
+                          setErrorMessage('')
+                          setSuccessMessage('')
+
+                          try {
+                            const token = await getAccessToken()
+                            const response = await fetch('/api/admin-imap-action', {
+                              method: 'POST',
+                              headers: {
+                                Authorization: `Bearer ${token}`,
+                                'Content-Type': 'application/json',
+                              },
+                              body: JSON.stringify({
+                                action: 'mark_read',
+                                uid: message.uid,
+                              }),
+                            })
+
+                            const result = await response.json().catch(() => null)
+
+                            if (!response.ok || !result?.success) {
+                              setErrorMessage(
+                                result?.error ||
+                                  "Impossible de marquer automatiquement cet e-mail comme lu.",
+                              )
+                              return
+                            }
+
+                            setImapMessages((current) =>
+                              current.map((item) =>
+                                item.uid === message.uid
+                                  ? { ...item, seen: true }
+                                  : item,
+                              ),
+                            )
+
+                            setSelectedImapMessage((current) =>
+                              current?.uid === message.uid
+                                ? { ...current, seen: true }
+                                : current,
+                            )
+
+                            setImapUnread((current) => Math.max(0, current - 1))
+                          } catch (error: any) {
+                            console.error(error)
+                            setErrorMessage(
+                              error?.message === 'SESSION_EXPIRED'
+                                ? 'Ta session administrateur a expiré. Reconnecte-toi.'
+                                : "Impossible de marquer automatiquement cet e-mail comme lu.",
+                            )
+                          } finally {
+                            setImapActionLoading(false)
+                          }
+                        })()
+                      }
+                    }}
                     className={`w-full border-b border-white/5 p-4 text-left transition ${
                       selectedImapUid === message.uid
                         ? 'bg-white/10'
