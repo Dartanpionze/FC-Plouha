@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
   Archive,
+  ArchiveRestore,
   Inbox,
   Loader2,
   Mail,
@@ -10,6 +11,7 @@ import {
   RefreshCw,
   Search,
   Send,
+  Trash2,
   X,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
@@ -81,6 +83,7 @@ export default function Emails() {
   const { can } = useAdminAccess()
   const canCreate = can('emails', 'create')
   const canUpdate = can('emails', 'update')
+  const canDelete = can('emails', 'delete')
 
   const [searchParams, setSearchParams] = useSearchParams()
   const [threads, setThreads] = useState<EmailThread[]>([])
@@ -267,6 +270,78 @@ export default function Emails() {
     { key: 'sent', label: 'Envoyés', icon: Send },
     { key: 'archived', label: 'Archivés', icon: Archive },
   ]
+
+  const toggleArchive = async () => {
+    if (!canUpdate || !selectedThread) return
+
+    const nextArchived = !selectedThread.archived
+    setErrorMessage('')
+    setSuccessMessage('')
+
+    const { error } = await supabase
+      .from('email_threads')
+      .update({
+        archived: nextArchived,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', selectedThread.id)
+
+    if (error) {
+      console.error(error)
+      setErrorMessage(
+        nextArchived
+          ? "Impossible d'archiver cette conversation."
+          : "Impossible de restaurer cette conversation.",
+      )
+      return
+    }
+
+    setThreads((current) =>
+      current.map((thread) =>
+        thread.id === selectedThread.id
+          ? { ...thread, archived: nextArchived }
+          : thread,
+      ),
+    )
+
+    setSuccessMessage(
+      nextArchived
+        ? 'Conversation archivée.'
+        : 'Conversation restaurée dans la boîte de réception.',
+    )
+  }
+
+  const deleteThread = async () => {
+    if (!canDelete || !selectedThread) return
+
+    const confirmed = window.confirm(
+      `Supprimer définitivement la conversation « ${selectedThread.subject} » du CMS ?\n\nTous les messages de ce fil seront supprimés de Supabase. Cette action ne peut pas être annulée.`,
+    )
+
+    if (!confirmed) return
+
+    setErrorMessage('')
+    setSuccessMessage('')
+
+    const deletedId = selectedThread.id
+
+    const { error } = await supabase
+      .from('email_threads')
+      .delete()
+      .eq('id', deletedId)
+
+    if (error) {
+      console.error(error)
+      setErrorMessage('Impossible de supprimer cette conversation.')
+      return
+    }
+
+    const remaining = threads.filter((thread) => thread.id !== deletedId)
+    setThreads(remaining)
+    setMessages([])
+    setSelectedThreadId(remaining[0]?.id ?? '')
+    setSuccessMessage('Conversation supprimée définitivement du CMS.')
+  }
 
   const openNewMessage = () => {
     if (!canCreate) return
@@ -570,15 +645,51 @@ export default function Emails() {
           ) : (
             <div className="flex h-full flex-col">
               <header className="border-b border-white/10 p-5">
-                <h2 className="text-lg font-black text-white">
-                  {selectedThread.subject}
-                </h2>
-                <p className="mt-1 text-sm text-slate-400">
-                  {selectedThread.contact_name
-                    ? `${selectedThread.contact_name} · `
-                    : ''}
-                  {selectedThread.contact_email}
-                </p>
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
+                    <h2 className="truncate text-lg font-black text-white">
+                      {selectedThread.subject}
+                    </h2>
+                    <p className="mt-1 truncate text-sm text-slate-400">
+                      {selectedThread.contact_name
+                        ? `${selectedThread.contact_name} · `
+                        : ''}
+                      {selectedThread.contact_email}
+                    </p>
+                  </div>
+
+                  <div className="flex shrink-0 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => void toggleArchive()}
+                      disabled={!canUpdate}
+                      title={
+                        selectedThread.archived
+                          ? 'Restaurer cette conversation'
+                          : 'Archiver cette conversation'
+                      }
+                      className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold text-slate-300 hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      {selectedThread.archived ? (
+                        <ArchiveRestore size={16} />
+                      ) : (
+                        <Archive size={16} />
+                      )}
+                      {selectedThread.archived ? 'Restaurer' : 'Archiver'}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => void deleteThread()}
+                      disabled={!canDelete}
+                      title="Supprimer définitivement cette conversation du CMS"
+                      className="inline-flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs font-bold text-red-200 hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      <Trash2 size={16} />
+                      Supprimer
+                    </button>
+                  </div>
+                </div>
               </header>
 
               <div className="flex-1 space-y-4 overflow-y-auto p-5">
