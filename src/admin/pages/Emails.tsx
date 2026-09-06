@@ -200,6 +200,13 @@ export default function Emails() {
 
   const [filter, setFilter] = useState<MailboxFilter>('imap')
   const [search, setSearch] = useState('')
+  const [searchingContent, setSearchingContent] = useState(false)
+  const [contentMatchedThreadIds, setContentMatchedThreadIds] = useState<
+    Set<string>
+  >(new Set())
+  const [contentMatchedImapUids, setContentMatchedImapUids] = useState<
+    Set<number>
+  >(new Set())
   const [loading, setLoading] = useState(true)
   const [loadingInbox, setLoadingInbox] = useState(true)
   const [loadingMessages, setLoadingMessages] = useState(false)
@@ -604,6 +611,123 @@ export default function Emails() {
     setSearchParams({}, { replace: true })
   }, [canCreate, searchParams, setSearchParams])
 
+  useEffect(() => {
+    const query = search.trim().toLowerCase()
+
+    if (query.length < 2) {
+      setContentMatchedThreadIds(new Set())
+      setContentMatchedImapUids(new Set())
+      setSearchingContent(false)
+      return
+    }
+
+    let cancelled = false
+    const timer = window.setTimeout(() => {
+      void (async () => {
+        setSearchingContent(true)
+
+        try {
+          if (filter === 'sent' || filter === 'archived') {
+            const { data, error } = await supabase
+              .from('email_messages')
+              .select('thread_id, body_text, subject, from_email, to_email')
+              .or(
+                `body_text.ilike.%${query.replace(/[%_,]/g, '')}%,subject.ilike.%${query.replace(/[%_,]/g, '')}%,from_email.ilike.%${query.replace(/[%_,]/g, '')}%,to_email.ilike.%${query.replace(/[%_,]/g, '')}%`,
+              )
+              .limit(200)
+
+            if (error) {
+              console.error('EMAIL CONTENT SEARCH ERROR:', error)
+              if (!cancelled) setContentMatchedThreadIds(new Set())
+            } else if (!cancelled) {
+              setContentMatchedThreadIds(
+                new Set(
+                  (data ?? []).map(
+                    (row: { thread_id: string }) => row.thread_id,
+                  ),
+                ),
+              )
+            }
+
+            return
+          }
+
+          const token = await getAccessToken()
+          const candidates = imapMessages.slice(0, 100)
+
+          const results = await Promise.all(
+            candidates.map(async (summary) => {
+              if (
+                [
+                  summary.subject,
+                  summary.from.name,
+                  summary.from.email,
+                ]
+                  .filter(Boolean)
+                  .some((value) => value.toLowerCase().includes(query))
+              ) {
+                return summary.uid
+              }
+
+              try {
+                const response = await fetch(
+                  `/api/admin-imap-inbox?uid=${summary.uid}&folder=${encodeURIComponent(
+                    selectedImapFolder,
+                  )}`,
+                  {
+                    headers: {
+                      Authorization: `Bearer ${token}`,
+                    },
+                  },
+                )
+
+                const result = await response.json().catch(() => null)
+                if (!response.ok || !result?.success || !result.message) {
+                  return null
+                }
+
+                const detail = result.message as ImapMessageDetail
+                const haystack = [
+                  detail.subject,
+                  detail.from.name,
+                  detail.from.email,
+                  detail.text,
+                ]
+                  .filter(Boolean)
+                  .join('\n')
+                  .toLowerCase()
+
+                return haystack.includes(query) ? summary.uid : null
+              } catch (error) {
+                console.error('IMAP CONTENT SEARCH MESSAGE ERROR:', error)
+                return null
+              }
+            }),
+          )
+
+          if (!cancelled) {
+            setContentMatchedImapUids(
+              new Set(
+                results.filter(
+                  (uid): uid is number => typeof uid === 'number',
+                ),
+              ),
+            )
+          }
+        } catch (error) {
+          console.error('EMAIL GLOBAL SEARCH ERROR:', error)
+        } finally {
+          if (!cancelled) setSearchingContent(false)
+        }
+      })()
+    }, 350)
+
+    return () => {
+      cancelled = true
+      window.clearTimeout(timer)
+    }
+  }, [filter, imapMessages, search, selectedImapFolder])
+
   const imapConversationGroups = useMemo(() => {
     const groups = new Map<string, ImapMessageSummary[]>()
 
@@ -640,16 +764,24 @@ export default function Emails() {
 
     if (!query) return imapConversationGroups
 
-    return imapConversationGroups.filter((group) =>
-      [
-        group.latest.subject,
-        group.latest.from.name,
-        group.latest.from.email,
-      ]
-        .filter(Boolean)
-        .some((value) => value.toLowerCase().includes(query)),
-    )
-  }, [imapConversationGroups, search])
+    return imapConversationGroups.filter((group) => {
+      const metadataMatch = group.messages.some((message) =>
+        [
+          message.subject,
+          message.from.name,
+          message.from.email,
+        ]
+          .filter(Boolean)
+          .some((value) => value.toLowerCase().includes(query)),
+      )
+
+      const contentMatch = group.messages.some((message) =>
+        contentMatchedImapUids.has(message.uid),
+      )
+
+      return metadataMatch || contentMatch
+    })
+  }, [contentMatchedImapUids, imapConversationGroups, search])
 
 
   const filteredThreads = useMemo(() => {
@@ -663,7 +795,7 @@ export default function Emails() {
 
       if (!query) return true
 
-      return [
+      const metadataMatch = [
         thread.subject,
         thread.contact_name,
         thread.contact_email,
@@ -671,8 +803,16 @@ export default function Emails() {
       ]
         .filter(Boolean)
         .some((value) => value!.toLowerCase().includes(query))
+
+      return metadataMatch || contentMatchedThreadIds.has(thread.id)
     })
-  }, [filter, search, sentThreadIds, threads])
+  }, [
+    contentMatchedThreadIds,
+    filter,
+    search,
+    sentThreadIds,
+    threads,
+  ])
 
   const selectedThread =
     filteredThreads.find((thread) => thread.id === selectedThreadId) ?? null
@@ -1409,14 +1549,33 @@ export default function Emails() {
         <section className="border-b border-white/10 lg:border-b-0 lg:border-r">
           <div className="border-b border-white/10 p-3">
             <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-slate-950 px-3">
-              <Search size={17} className="text-slate-500" />
+              {searchingContent ? (
+                <Loader2 size={17} className="animate-spin text-[var(--club-yellow)]" />
+              ) : (
+                <Search size={17} className="text-slate-500" />
+              )}
               <input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                placeholder="Rechercher un e-mail..."
+                placeholder="Nom, adresse, objet ou contenu..."
                 className="min-w-0 flex-1 bg-transparent py-2.5 text-sm text-white outline-none placeholder:text-slate-600"
               />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch('')}
+                  className="rounded-md p-1 text-slate-600 hover:bg-white/5 hover:text-white"
+                  title="Effacer la recherche"
+                >
+                  <X size={14} />
+                </button>
+              )}
             </div>
+            {search.trim().length === 1 && (
+              <p className="mt-2 px-1 text-[11px] text-slate-600">
+                Saisis au moins 2 caractères pour rechercher dans le contenu.
+              </p>
+            )}
           </div>
 
           <div className="max-h-[560px] overflow-y-auto">
@@ -1430,10 +1589,12 @@ export default function Emails() {
                 <div className="p-8 text-center">
                   <Inbox size={32} className="mx-auto text-slate-700" />
                   <p className="mt-3 font-bold text-slate-300">
-                    Aucun e-mail dans ce dossier
+                    {search ? 'Aucun résultat' : 'Aucun e-mail dans ce dossier'}
                   </p>
                   <p className="mt-1 text-sm text-slate-500">
-                    Les messages reçus par contact@fcplouha.fr apparaîtront ici.
+                    {search
+                      ? 'Aucun nom, adresse, objet ou contenu ne correspond à cette recherche.'
+                      : 'Les messages reçus par contact@fcplouha.fr apparaîtront ici.'}
                   </p>
                 </div>
               ) : (
@@ -1510,8 +1671,13 @@ export default function Emails() {
               <div className="p-8 text-center">
                 <Mail size={32} className="mx-auto text-slate-700" />
                 <p className="mt-3 font-bold text-slate-300">
-                  Aucun message ici
+                  {search ? 'Aucun résultat' : 'Aucun message ici'}
                 </p>
+                {search && (
+                  <p className="mt-1 text-sm text-slate-500">
+                    Aucun nom, adresse, objet ou contenu ne correspond à cette recherche.
+                  </p>
+                )}
               </div>
             ) : (
               filteredThreads.map((thread) => (
