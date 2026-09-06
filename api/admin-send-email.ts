@@ -185,6 +185,31 @@ export default async function handler(req: any, res: any) {
       })
     }
 
+    let outboundMessageId: string | null = null
+
+    try {
+      const sentEmailResponse = await fetch(
+        `https://api.resend.com/emails/${encodeURIComponent(resendData.id)}`,
+        {
+          headers: {
+            Authorization: `Bearer ${resendApiKey}`,
+          },
+        },
+      )
+
+      const sentEmailData = await sentEmailResponse.json().catch(() => null)
+
+      if (
+        sentEmailResponse.ok &&
+        typeof sentEmailData?.message_id === 'string' &&
+        sentEmailData.message_id.trim()
+      ) {
+        outboundMessageId = sentEmailData.message_id.trim()
+      }
+    } catch (messageIdError) {
+      console.error('RESEND MESSAGE-ID LOOKUP ERROR:', messageIdError)
+    }
+
     const now = new Date().toISOString()
 
     if (!threadId) {
@@ -242,6 +267,7 @@ export default async function handler(req: any, res: any) {
         body_text: requestedBody,
         provider: 'resend',
         provider_email_id: resendData.id,
+        message_id: outboundMessageId,
         status: 'sent',
         sent_at: now,
         created_by: callerId,
