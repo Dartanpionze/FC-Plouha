@@ -474,10 +474,16 @@ export default function Emails() {
           }),
         )
 
-      const merged = [
-        ...inboundItems.filter(
-          (item): item is ImapConversationItem => item !== null,
-        ),
+      const validInboundItems: ImapConversationItem[] =
+        inboundItems.filter(
+          (
+            item,
+          ): item is Exclude<(typeof inboundItems)[number], null> =>
+            item !== null,
+        )
+
+      const merged: ImapConversationItem[] = [
+        ...validInboundItems,
         ...outboundItems,
       ].sort(
         (a, b) =>
