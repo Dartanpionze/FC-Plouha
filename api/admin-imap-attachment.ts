@@ -90,6 +90,13 @@ function createImapClient() {
   })
 }
 
+function normalizeFolder(value: unknown) {
+  const folder =
+    typeof value === 'string' && value.trim() ? value.trim() : 'INBOX'
+  if (folder.length > 250 || /[\r\n\0]/.test(folder)) throw new Error('INVALID_FOLDER')
+  return folder
+}
+
 function safeFilename(value: string) {
   return value.replace(/[\r\n"]/g, '_').slice(0, 180) || 'piece-jointe'
 }
@@ -124,7 +131,8 @@ export default async function handler(req: any, res: any) {
   try {
     await client.connect()
 
-    const lock = await client.getMailboxLock('INBOX', { readOnly: true })
+    const folder = normalizeFolder(req.query?.folder)
+    const lock = await client.getMailboxLock(folder, { readOnly: true })
 
     try {
       const message = await client.fetchOne(
