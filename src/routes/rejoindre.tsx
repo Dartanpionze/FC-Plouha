@@ -669,7 +669,10 @@ function RejoindrePage() {
           </div>
         </section>
 
-        <section className="border-b border-black/5 bg-white">
+        <section
+          id="documents-preinscription"
+          className="scroll-mt-24 border-b border-black/5 bg-white"
+        >
           <div className="max-w-6xl 2xl:max-w-[1380px] mx-auto px-4 sm:px-6 2xl:px-8 py-14 2xl:py-18">
             <div className="max-w-3xl">
               <span className="font-condensed font-bold text-xs tracking-[0.25em] text-[var(--club-red)]">
