@@ -966,11 +966,26 @@ export default function Emails() {
                     onClick={() => {
                       setSelectedImapUid(message.uid)
 
-                      if (!message.seen && canUpdate && !imapActionLoading) {
+                      if (!message.seen) {
+                        // Mise à jour immédiate de l'interface au clic.
+                        // Le serveur IMAP reste la source de vérité et confirme ensuite
+                        // le drapeau \\Seen dans la vraie boîte OVH.
+                        setImapMessages((current) =>
+                          current.map((item) =>
+                            item.uid === message.uid
+                              ? { ...item, seen: true }
+                              : item,
+                          ),
+                        )
+                        setSelectedImapMessage((current) =>
+                          current?.uid === message.uid
+                            ? { ...current, seen: true }
+                            : current,
+                        )
+                        setImapUnread((current) => Math.max(0, current - 1))
+
                         void (async () => {
-                          setImapActionLoading(true)
                           setErrorMessage('')
-                          setSuccessMessage('')
 
                           try {
                             const token = await getAccessToken()
@@ -989,37 +1004,46 @@ export default function Emails() {
                             const result = await response.json().catch(() => null)
 
                             if (!response.ok || !result?.success) {
+                              // Si OVH refuse l'action, on remet l'état non lu
+                              // pour que le CMS ne mente jamais sur l'état réel.
+                              setImapMessages((current) =>
+                                current.map((item) =>
+                                  item.uid === message.uid
+                                    ? { ...item, seen: false }
+                                    : item,
+                                ),
+                              )
+                              setSelectedImapMessage((current) =>
+                                current?.uid === message.uid
+                                  ? { ...current, seen: false }
+                                  : current,
+                              )
+                              setImapUnread((current) => current + 1)
                               setErrorMessage(
                                 result?.error ||
                                   "Impossible de marquer automatiquement cet e-mail comme lu.",
                               )
-                              return
                             }
-
+                          } catch (error: any) {
+                            console.error(error)
                             setImapMessages((current) =>
                               current.map((item) =>
                                 item.uid === message.uid
-                                  ? { ...item, seen: true }
+                                  ? { ...item, seen: false }
                                   : item,
                               ),
                             )
-
                             setSelectedImapMessage((current) =>
                               current?.uid === message.uid
-                                ? { ...current, seen: true }
+                                ? { ...current, seen: false }
                                 : current,
                             )
-
-                            setImapUnread((current) => Math.max(0, current - 1))
-                          } catch (error: any) {
-                            console.error(error)
+                            setImapUnread((current) => current + 1)
                             setErrorMessage(
                               error?.message === 'SESSION_EXPIRED'
                                 ? 'Ta session administrateur a expiré. Reconnecte-toi.'
                                 : "Impossible de marquer automatiquement cet e-mail comme lu.",
                             )
-                          } finally {
-                            setImapActionLoading(false)
                           }
                         })()
                       }
