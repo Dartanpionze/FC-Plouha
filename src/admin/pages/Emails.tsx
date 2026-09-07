@@ -125,8 +125,6 @@ type EmailDraft = {
   composer: Omit<ComposerState, 'open'>
 }
 
-const DRAFTS_STORAGE_KEY = 'fcplouha-email-drafts-v1'
-
 const emptyComposer: ComposerState = {
   open: false,
   threadId: '',
@@ -585,22 +583,41 @@ export default function Emails() {
   }
 
 
-  useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem(DRAFTS_STORAGE_KEY)
-      if (!stored) return
+  const loadDrafts = async () => {
+    const { data, error } = await supabase
+      .from('email_drafts')
+      .select(
+        'id, thread_id, registration_id, to_email, contact_name, subject, body_text, in_reply_to, references_header, updated_at',
+      )
+      .order('updated_at', { ascending: false })
+      .limit(50)
 
-      const parsed = JSON.parse(stored)
-      if (Array.isArray(parsed)) {
-        setDrafts(parsed as EmailDraft[])
-      }
-    } catch (error) {
+    if (error) {
       console.error('EMAIL DRAFTS LOAD ERROR:', error)
+      setErrorMessage("Impossible de charger les brouillons.")
+      return
     }
-  }, [])
+
+    setDrafts(
+      (data ?? []).map((row: any) => ({
+        id: row.id,
+        updatedAt: row.updated_at,
+        composer: {
+          threadId: row.thread_id || '',
+          registrationId: row.registration_id ?? null,
+          to: row.to_email || '',
+          contactName: row.contact_name || '',
+          subject: row.subject || '',
+          body: row.body_text || '',
+          inReplyTo: row.in_reply_to || '',
+          references: row.references_header || '',
+        },
+      })),
+    )
+  }
 
   useEffect(() => {
-    void Promise.all([loadThreads(), loadImapInbox()])
+    void Promise.all([loadThreads(), loadImapInbox(), loadDrafts()])
   }, [])
 
   useEffect(() => {
@@ -1242,19 +1259,26 @@ export default function Emails() {
     })
   }
 
-  const persistDrafts = (nextDrafts: EmailDraft[]) => {
-    setDrafts(nextDrafts)
-    window.localStorage.setItem(DRAFTS_STORAGE_KEY, JSON.stringify(nextDrafts))
-  }
+  const removeDraft = async (draftId: string) => {
+    const { error } = await supabase
+      .from('email_drafts')
+      .delete()
+      .eq('id', draftId)
 
-  const removeDraft = (draftId: string) => {
-    const nextDrafts = drafts.filter((draft) => draft.id !== draftId)
-    persistDrafts(nextDrafts)
+    if (error) {
+      console.error('EMAIL DRAFT DELETE ERROR:', error)
+      setErrorMessage("Impossible de supprimer le brouillon.")
+      return false
+    }
+
+    setDrafts((current) => current.filter((draft) => draft.id !== draftId))
 
     if (activeDraftId === draftId) {
       setActiveDraftId('')
       setDraftSavedAt(null)
     }
+
+    return true
   }
 
   const openDraft = (draft: EmailDraft) => {
@@ -1325,42 +1349,58 @@ export default function Emails() {
 
     if (!hasContent) return
 
-    const timer = window.setTimeout(() => {
-      const now = new Date().toISOString()
-      const draftId =
-        activeDraftId ||
-        `draft-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    const timer = window.setTimeout(async () => {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser()
 
-      const draft: EmailDraft = {
-        id: draftId,
-        updatedAt: now,
-        composer: {
-          threadId: composer.threadId,
-          registrationId: composer.registrationId,
-          to: composer.to,
-          contactName: composer.contactName,
-          subject: composer.subject,
-          body: composer.body,
-          inReplyTo: composer.inReplyTo,
-          references: composer.references,
-        },
+      if (userError || !user) {
+        console.error('EMAIL DRAFT USER ERROR:', userError)
+        return
       }
 
-      const nextDrafts = [
-        draft,
-        ...drafts.filter((item) => item.id !== draftId),
-      ].slice(0, 50)
+      const payload = {
+        created_by: user.id,
+        thread_id: composer.threadId || null,
+        registration_id: composer.registrationId,
+        to_email: composer.to,
+        contact_name: composer.contactName || null,
+        subject: composer.subject,
+        body_text: composer.body,
+        in_reply_to: composer.inReplyTo || null,
+        references_header: composer.references || null,
+      }
 
-      persistDrafts(nextDrafts)
-      setActiveDraftId(draftId)
-      setDraftSavedAt(now)
+      const query = activeDraftId
+        ? supabase
+            .from('email_drafts')
+            .update(payload)
+            .eq('id', activeDraftId)
+            .select('id, updated_at')
+            .single()
+        : supabase
+            .from('email_drafts')
+            .insert(payload)
+            .select('id, updated_at')
+            .single()
+
+      const { data, error } = await query
+
+      if (error || !data) {
+        console.error('EMAIL DRAFT SAVE ERROR:', error)
+        return
+      }
+
+      setActiveDraftId(data.id)
+      setDraftSavedAt(data.updated_at)
+      await loadDrafts()
     }, 700)
 
     return () => window.clearTimeout(timer)
   }, [
     activeDraftId,
     composer,
-    drafts,
     sending,
   ])
 
@@ -1477,7 +1517,7 @@ export default function Emails() {
       }
 
       if (activeDraftId) {
-        removeDraft(activeDraftId)
+        await removeDraft(activeDraftId)
       }
       setActiveDraftId('')
       setDraftSavedAt(null)
@@ -2227,7 +2267,7 @@ export default function Emails() {
                   Brouillons
                 </h2>
                 <p className="mt-1 text-xs text-slate-500">
-                  Les messages en cours sont sauvegardés automatiquement sur cet appareil.
+                  Tes brouillons sont sauvegardés dans le CMS et te suivent sur tous tes appareils.
                 </p>
               </div>
               <button
@@ -2292,7 +2332,7 @@ export default function Emails() {
                               } » ?`,
                             )
                           ) {
-                            removeDraft(draft.id)
+                            void removeDraft(draft.id)
                           }
                         }}
                         className="rounded-lg border border-red-500/20 bg-red-500/10 p-2.5 text-red-200 hover:bg-red-500/20"
