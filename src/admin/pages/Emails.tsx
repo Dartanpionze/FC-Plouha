@@ -5,6 +5,7 @@ import {
   ArchiveRestore,
   Download,
   FileText,
+  PenLine,
   Inbox,
   Loader2,
   Mail,
@@ -125,6 +126,16 @@ type EmailDraft = {
   composer: Omit<ComposerState, 'open'>
 }
 
+type EmailSignature = {
+  signatureText: string
+  enabled: boolean
+}
+
+const DEFAULT_CLUB_SIGNATURE = `FC Plouha
+Football Club Plouha
+contact@fcplouha.fr
+https://fcplouha.fr`
+
 const emptyComposer: ComposerState = {
   open: false,
   threadId: '',
@@ -225,6 +236,14 @@ export default function Emails() {
   const [activeDraftId, setActiveDraftId] = useState('')
   const [showDrafts, setShowDrafts] = useState(false)
   const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null)
+  const [signature, setSignature] = useState<EmailSignature>({
+    signatureText: DEFAULT_CLUB_SIGNATURE,
+    enabled: true,
+  })
+  const [signatureEditorOpen, setSignatureEditorOpen] = useState(false)
+  const [signatureEditorText, setSignatureEditorText] = useState(DEFAULT_CLUB_SIGNATURE)
+  const [signatureEditorEnabled, setSignatureEditorEnabled] = useState(true)
+  const [signatureSaving, setSignatureSaving] = useState(false)
   const [sending, setSending] = useState(false)
   const [imapTesting, setImapTesting] = useState(false)
   const [imapActionLoading, setImapActionLoading] = useState(false)
@@ -583,6 +602,40 @@ export default function Emails() {
   }
 
 
+  const loadSignature = async () => {
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser()
+
+    if (userError || !user) return
+
+    const { data, error } = await supabase
+      .from('email_signatures')
+      .select('signature_text, enabled')
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    if (error) {
+      console.error('EMAIL SIGNATURE LOAD ERROR:', error)
+      return
+    }
+
+    const nextSignature: EmailSignature = data
+      ? {
+          signatureText: data.signature_text || DEFAULT_CLUB_SIGNATURE,
+          enabled: data.enabled !== false,
+        }
+      : {
+          signatureText: DEFAULT_CLUB_SIGNATURE,
+          enabled: true,
+        }
+
+    setSignature(nextSignature)
+    setSignatureEditorText(nextSignature.signatureText)
+    setSignatureEditorEnabled(nextSignature.enabled)
+  }
+
   const loadDrafts = async () => {
     const { data, error } = await supabase
       .from('email_drafts')
@@ -617,7 +670,7 @@ export default function Emails() {
   }
 
   useEffect(() => {
-    void Promise.all([loadThreads(), loadImapInbox(), loadDrafts()])
+    void Promise.all([loadThreads(), loadImapInbox(), loadDrafts(), loadSignature()])
   }, [])
 
   useEffect(() => {
@@ -1249,6 +1302,56 @@ export default function Emails() {
     }
   }
 
+  const signatureBody = () =>
+    signature.enabled && signature.signatureText.trim()
+      ? `\n\n--\n${signature.signatureText.trim()}`
+      : ''
+
+  const saveSignature = async () => {
+    if (signatureSaving) return
+
+    setSignatureSaving(true)
+    setErrorMessage('')
+
+    try {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser()
+
+      if (userError || !user) {
+        setErrorMessage('Ta session administrateur a expiré.')
+        return
+      }
+
+      const payload = {
+        user_id: user.id,
+        signature_text: signatureEditorText.trim() || DEFAULT_CLUB_SIGNATURE,
+        enabled: signatureEditorEnabled,
+      }
+
+      const { error } = await supabase
+        .from('email_signatures')
+        .upsert(payload, { onConflict: 'user_id' })
+
+      if (error) {
+        console.error('EMAIL SIGNATURE SAVE ERROR:', error)
+        setErrorMessage("Impossible d'enregistrer la signature.")
+        return
+      }
+
+      setSignature({
+        signatureText: payload.signature_text,
+        enabled: payload.enabled,
+      })
+      setSignatureEditorText(payload.signature_text)
+      setSignatureEditorOpen(false)
+      setSuccessMessage('Signature e-mail enregistrée.')
+    } finally {
+      setSignatureSaving(false)
+    }
+  }
+
   const openNewMessage = () => {
     if (!canCreate) return
     setSuccessMessage('')
@@ -1256,6 +1359,7 @@ export default function Emails() {
     setComposer({
       ...emptyComposer,
       open: true,
+      body: signatureBody(),
     })
   }
 
@@ -1305,7 +1409,7 @@ export default function Emails() {
       to: selectedThread.contact_email,
       contactName: selectedThread.contact_name || '',
       subject: normalizeReplySubject(selectedThread.subject),
-      body: '',
+      body: signatureBody(),
       inReplyTo: '',
       references: '',
     })
@@ -1325,7 +1429,7 @@ export default function Emails() {
       to: selectedImapMessage.from.email,
       contactName: selectedImapMessage.from.name || '',
       subject: normalizeReplySubject(selectedImapMessage.subject),
-      body: '',
+      body: signatureBody(),
       inReplyTo: selectedImapMessage.messageId || '',
       references: selectedImapMessage.messageId || '',
     })
@@ -1581,6 +1685,19 @@ export default function Emails() {
           >
             <RefreshCw size={17} />
             Actualiser
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setSignatureEditorText(signature.signatureText)
+              setSignatureEditorEnabled(signature.enabled)
+              setSignatureEditorOpen(true)
+            }}
+            className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/10"
+          >
+            <PenLine size={17} />
+            Ma signature
           </button>
 
           <button
@@ -2254,6 +2371,102 @@ export default function Emails() {
           )}
         </section>
       </div>
+
+      {signatureEditorOpen && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/70 p-4">
+          <div className="w-full max-w-2xl overflow-hidden rounded-2xl border border-white/10 bg-slate-900 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--club-yellow)]">
+                  Messagerie
+                </p>
+                <h2 className="mt-1 text-xl font-black text-white">
+                  Ma signature
+                </h2>
+                <p className="mt-1 text-xs text-slate-500">
+                  Cette signature est personnelle à ton compte administrateur.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSignatureEditorOpen(false)}
+                disabled={signatureSaving}
+                className="rounded-lg p-2 text-slate-400 hover:bg-white/5 hover:text-white disabled:opacity-40"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="space-y-5 p-5">
+              <label className="flex items-center gap-3 rounded-xl border border-white/10 bg-slate-950 p-4">
+                <input
+                  type="checkbox"
+                  checked={signatureEditorEnabled}
+                  onChange={(event) =>
+                    setSignatureEditorEnabled(event.target.checked)
+                  }
+                  className="h-4 w-4"
+                />
+                <span>
+                  <span className="block text-sm font-bold text-white">
+                    Ajouter automatiquement ma signature
+                  </span>
+                  <span className="mt-1 block text-xs text-slate-500">
+                    Elle sera insérée dans les nouveaux messages et les réponses.
+                  </span>
+                </span>
+              </label>
+
+              <div>
+                <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Signature
+                </label>
+                <textarea
+                  value={signatureEditorText}
+                  onChange={(event) => setSignatureEditorText(event.target.value)}
+                  rows={7}
+                  className="w-full resize-y rounded-xl border border-white/10 bg-slate-950 px-4 py-3 text-sm leading-relaxed text-white outline-none focus:border-[var(--club-yellow)]/50"
+                  placeholder={DEFAULT_CLUB_SIGNATURE}
+                />
+                <p className="mt-2 text-xs text-slate-600">
+                  Tu peux indiquer ton nom, ta fonction et les coordonnées que tu souhaites afficher.
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-white/10 bg-slate-950 p-4">
+                <p className="mb-3 text-[10px] font-black uppercase tracking-[0.18em] text-slate-600">
+                  Aperçu
+                </p>
+                <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-slate-300">
+                  {signatureEditorEnabled
+                    ? signatureEditorText.trim() || DEFAULT_CLUB_SIGNATURE
+                    : 'Signature automatique désactivée'}
+                </pre>
+              </div>
+
+              <div className="flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setSignatureEditorOpen(false)}
+                  disabled={signatureSaving}
+                  className="rounded-xl border border-white/10 px-4 py-2.5 text-sm font-bold text-slate-300 hover:bg-white/5 disabled:opacity-40"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void saveSignature()}
+                  disabled={signatureSaving}
+                  className="inline-flex items-center gap-2 rounded-xl bg-[var(--club-yellow)] px-4 py-2.5 text-sm font-black text-slate-950 hover:opacity-90 disabled:opacity-40"
+                >
+                  {signatureSaving && <Loader2 size={16} className="animate-spin" />}
+                  {signatureSaving ? 'Enregistrement…' : 'Enregistrer'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showDrafts && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/70 p-4">
