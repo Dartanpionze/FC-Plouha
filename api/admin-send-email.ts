@@ -2,6 +2,11 @@ import { createClient } from '@supabase/supabase-js'
 
 const FROM_EMAIL = 'FC Plouha <contact@fcplouha.fr>'
 const REPLY_TO_EMAIL = 'contact@fcplouha.fr'
+const MAX_ATTACHMENTS = 5
+const MAX_ATTACHMENTS_BYTES = 3 * 1024 * 1024
+const ALLOWED_ATTACHMENT_EXTENSIONS = new Set([
+  'pdf', 'jpg', 'jpeg', 'png', 'webp', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'txt',
+])
 
 function getBearerToken(req: any) {
   const header = req.headers?.authorization
@@ -28,6 +33,58 @@ function cleanReferences(value: unknown) {
 
 function isEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+}
+
+function cleanFilename(value: unknown) {
+  if (typeof value !== 'string') return ''
+  return value.replace(/[\r\n\0]/g, '').replace(/[\\/]/g, '_').trim().slice(0, 180)
+}
+
+function parseAttachments(value: unknown) {
+  if (value == null) return { attachments: [] as any[], error: '' }
+  if (!Array.isArray(value)) return { attachments: [], error: 'Format des pièces jointes invalide.' }
+  if (value.length > MAX_ATTACHMENTS) {
+    return { attachments: [], error: `Maximum ${MAX_ATTACHMENTS} pièces jointes par e-mail.` }
+  }
+
+  let totalBytes = 0
+  const attachments: Array<{ filename: string; content: string; content_type: string }> = []
+
+  for (const item of value) {
+    const filename = cleanFilename(item?.filename)
+    const content = typeof item?.content === 'string' ? item.content.replace(/\s/g, '') : ''
+    const contentType = typeof item?.content_type === 'string'
+      ? item.content_type.replace(/[\r\n]/g, '').slice(0, 120)
+      : 'application/octet-stream'
+    const declaredSize = typeof item?.size === 'number' && Number.isFinite(item.size)
+      ? Math.max(0, Math.floor(item.size))
+      : 0
+
+    if (!filename || !content) return { attachments: [], error: 'Une pièce jointe est invalide.' }
+
+    const extension = filename.split('.').pop()?.toLowerCase() || ''
+    if (!ALLOWED_ATTACHMENT_EXTENSIONS.has(extension)) {
+      return { attachments: [], error: `Le type du fichier « ${filename} » n'est pas autorisé.` }
+    }
+    if (!/^[A-Za-z0-9+/]*={0,2}$/.test(content)) {
+      return { attachments: [], error: `Le contenu du fichier « ${filename} » est invalide.` }
+    }
+
+    const padding = content.endsWith('==') ? 2 : content.endsWith('=') ? 1 : 0
+    const decodedBytes = Math.max(0, Math.floor((content.length * 3) / 4) - padding)
+    if (declaredSize && Math.abs(decodedBytes - declaredSize) > 2) {
+      return { attachments: [], error: `La taille du fichier « ${filename} » est invalide.` }
+    }
+
+    totalBytes += decodedBytes
+    if (totalBytes > MAX_ATTACHMENTS_BYTES) {
+      return { attachments: [], error: 'Les pièces jointes dépassent la limite totale de 3 Mo.' }
+    }
+
+    attachments.push({ filename, content, content_type: contentType || 'application/octet-stream' })
+  }
+
+  return { attachments, error: '' }
 }
 
 function isUuid(value: string) {
@@ -119,6 +176,13 @@ export default async function handler(req: any, res: any) {
     const requestedBody = cleanText(req.body?.body, 20000)
     let requestedInReplyTo = cleanMessageId(req.body?.in_reply_to)
     let requestedReferences = cleanReferences(req.body?.references)
+    const parsedAttachments = parseAttachments(req.body?.attachments)
+
+    if (parsedAttachments.error) {
+      return res.status(400).json({ error: parsedAttachments.error })
+    }
+
+    const requestedAttachments = parsedAttachments.attachments
 
     const registrationValue = req.body?.registration_id
     const registrationId =
@@ -211,6 +275,7 @@ export default async function handler(req: any, res: any) {
         reply_to: REPLY_TO_EMAIL,
         subject: requestedSubject,
         text: requestedBody,
+        ...(requestedAttachments.length ? { attachments: requestedAttachments } : {}),
         ...(requestedInReplyTo || requestedReferences
           ? {
               headers: {
