@@ -131,6 +131,17 @@ type EmailSignature = {
   enabled: boolean
 }
 
+type OutgoingAttachment = {
+  id: string
+  file: File
+}
+
+const MAX_OUTGOING_ATTACHMENTS = 5
+const MAX_OUTGOING_ATTACHMENTS_BYTES = 3 * 1024 * 1024
+const ACCEPTED_ATTACHMENT_EXTENSIONS = [
+  'pdf', 'jpg', 'jpeg', 'png', 'webp', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'txt',
+]
+
 const DEFAULT_CLUB_SIGNATURE = `FC Plouha
 Football Club Plouha
 contact@fcplouha.fr
@@ -244,6 +255,7 @@ export default function Emails() {
   const [signatureEditorText, setSignatureEditorText] = useState(DEFAULT_CLUB_SIGNATURE)
   const [signatureEditorEnabled, setSignatureEditorEnabled] = useState(true)
   const [signatureSaving, setSignatureSaving] = useState(false)
+  const [outgoingAttachments, setOutgoingAttachments] = useState<OutgoingAttachment[]>([])
   const [sending, setSending] = useState(false)
   const [imapTesting, setImapTesting] = useState(false)
   const [imapActionLoading, setImapActionLoading] = useState(false)
@@ -1352,10 +1364,60 @@ export default function Emails() {
     }
   }
 
+  const clearOutgoingAttachments = () => setOutgoingAttachments([])
+
+  const addOutgoingAttachments = (files: FileList | null) => {
+    if (!files?.length) return
+    setErrorMessage('')
+    const candidates = Array.from(files)
+    if (outgoingAttachments.length + candidates.length > MAX_OUTGOING_ATTACHMENTS) {
+      setErrorMessage(`Tu peux joindre au maximum ${MAX_OUTGOING_ATTACHMENTS} fichiers par e-mail.`)
+      return
+    }
+    const invalid = candidates.find((file) => {
+      const ext = file.name.split('.').pop()?.toLowerCase() || ''
+      return !ACCEPTED_ATTACHMENT_EXTENSIONS.includes(ext)
+    })
+    if (invalid) {
+      setErrorMessage(`Le fichier « ${invalid.name} » n'est pas accepté. Formats autorisés : PDF, images, Word, Excel, CSV et TXT.`)
+      return
+    }
+    const total = [...outgoingAttachments.map((a) => a.file), ...candidates]
+      .reduce((sum, file) => sum + file.size, 0)
+    if (total > MAX_OUTGOING_ATTACHMENTS_BYTES) {
+      setErrorMessage(`Les pièces jointes ne doivent pas dépasser ${formatBytes(MAX_OUTGOING_ATTACHMENTS_BYTES)} au total.`)
+      return
+    }
+    setOutgoingAttachments((current) => [
+      ...current,
+      ...candidates.map((file) => ({
+        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        file,
+      })),
+    ])
+  }
+
+  const removeOutgoingAttachment = (id: string) => {
+    if (!sending) setOutgoingAttachments((current) => current.filter((a) => a.id !== id))
+  }
+
+  const fileToBase64 = (file: File) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onerror = () => reject(new Error('ATTACHMENT_READ_FAILED'))
+      reader.onload = () => {
+        const result = typeof reader.result === 'string' ? reader.result : ''
+        const comma = result.indexOf(',')
+        resolve(comma >= 0 ? result.slice(comma + 1) : result)
+      }
+      reader.readAsDataURL(file)
+    })
+
   const openNewMessage = () => {
     if (!canCreate) return
     setSuccessMessage('')
     setErrorMessage('')
+    clearOutgoingAttachments()
     setComposer({
       ...emptyComposer,
       open: true,
@@ -1389,6 +1451,7 @@ export default function Emails() {
     setActiveDraftId(draft.id)
     setDraftSavedAt(draft.updatedAt)
     setShowDrafts(false)
+    clearOutgoingAttachments()
     setComposer({
       ...draft.composer,
       open: true,
@@ -1402,6 +1465,7 @@ export default function Emails() {
     setDraftSavedAt(null)
     setSuccessMessage('')
     setErrorMessage('')
+    clearOutgoingAttachments()
     setComposer({
       open: true,
       threadId: selectedThread.id,
@@ -1422,6 +1486,7 @@ export default function Emails() {
     setDraftSavedAt(null)
     setSuccessMessage('')
     setErrorMessage('')
+    clearOutgoingAttachments()
     setComposer({
       open: true,
       threadId: '',
@@ -1440,6 +1505,7 @@ export default function Emails() {
     setComposer((current) => ({ ...current, open: false }))
     setActiveDraftId('')
     setDraftSavedAt(null)
+    clearOutgoingAttachments()
   }
 
   useEffect(() => {
@@ -1592,6 +1658,14 @@ export default function Emails() {
 
     try {
       const token = await getAccessToken()
+      const attachments = await Promise.all(
+        outgoingAttachments.map(async ({ file }) => ({
+          filename: file.name,
+          content: await fileToBase64(file),
+          content_type: file.type || 'application/octet-stream',
+          size: file.size,
+        })),
+      )
 
       const response = await fetch('/api/admin-send-email', {
         method: 'POST',
@@ -1608,6 +1682,7 @@ export default function Emails() {
           body,
           in_reply_to: composer.inReplyTo || null,
           references: composer.references || null,
+          attachments,
         }),
       })
 
@@ -1625,6 +1700,7 @@ export default function Emails() {
       }
       setActiveDraftId('')
       setDraftSavedAt(null)
+      clearOutgoingAttachments()
       setComposer(emptyComposer)
 
       setSuccessMessage(
@@ -2664,6 +2740,60 @@ export default function Emails() {
                   placeholder="Écris ton message..."
                   className="w-full resize-y rounded-xl border border-white/10 bg-slate-950 px-4 py-3 text-sm leading-relaxed text-white outline-none focus:border-[var(--club-yellow)]/40"
                 />
+              </div>
+
+              <div className="rounded-xl border border-white/10 bg-slate-950/70 p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                      Pièces jointes
+                    </p>
+                    <p className="mt-1 text-xs text-slate-600">
+                      Jusqu'à {MAX_OUTGOING_ATTACHMENTS} fichiers, {formatBytes(MAX_OUTGOING_ATTACHMENTS_BYTES)} au total.
+                    </p>
+                  </div>
+                  <label className={`inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-white/10 px-4 py-2.5 text-sm font-bold text-white hover:bg-white/5 ${sending ? 'pointer-events-none opacity-40' : ''}`}>
+                    <Paperclip size={16} />
+                    Ajouter un fichier
+                    <input
+                      type="file"
+                      multiple
+                      disabled={sending}
+                      accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.csv,.txt"
+                      className="hidden"
+                      onChange={(event) => {
+                        addOutgoingAttachments(event.target.files)
+                        event.currentTarget.value = ''
+                      }}
+                    />
+                  </label>
+                </div>
+
+                {outgoingAttachments.length > 0 && (
+                  <div className="mt-4 space-y-2">
+                    {outgoingAttachments.map((attachment) => (
+                      <div key={attachment.id} className="flex items-center gap-3 rounded-xl border border-white/10 bg-slate-900 px-3 py-2.5">
+                        <FileText size={17} className="shrink-0 text-[var(--club-yellow)]" />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold text-white">{attachment.file.name}</p>
+                          <p className="text-xs text-slate-500">{formatBytes(attachment.file.size)}</p>
+                        </div>
+                        <button
+                          type="button"
+                          disabled={sending}
+                          onClick={() => removeOutgoingAttachment(attachment.id)}
+                          className="rounded-lg p-2 text-slate-500 hover:bg-red-500/10 hover:text-red-300 disabled:opacity-40"
+                          title="Retirer la pièce jointe"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    ))}
+                    <p className="pt-1 text-xs text-slate-500">
+                      Total : {formatBytes(outgoingAttachments.reduce((total, attachment) => total + attachment.file.size, 0))}
+                    </p>
+                  </div>
+                )}
               </div>
 
               <p className="text-xs text-slate-500">
