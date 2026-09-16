@@ -188,6 +188,17 @@ export default function AdminLayout() {
   }, [location.pathname])
 
   useEffect(() => {
+    if (!mobileMenuOpen) return
+
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    return () => {
+      document.body.style.overflow = previousOverflow
+    }
+  }, [mobileMenuOpen])
+
+  useEffect(() => {
     if (!session || !canView('registrations')) return
 
     const fetchNewRegistrationsCount = async () => {
@@ -511,7 +522,7 @@ export default function AdminLayout() {
   )
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white lg:flex">
+    <div className="min-h-screen min-w-0 bg-slate-950 text-white lg:flex">
       {/* SIDEBAR DESKTOP */}
       <aside className="hidden lg:flex w-72 h-screen sticky top-0 shrink-0 bg-slate-900 border-r border-white/10 flex-col">
         {sidebarContent}
@@ -530,7 +541,7 @@ export default function AdminLayout() {
       {/* SIDEBAR MOBILE */}
       <aside
         className={`
-          fixed inset-y-0 left-0 z-50 w-[min(18rem,calc(100vw-3rem))]
+          fixed inset-y-0 left-0 z-50 w-[min(19rem,calc(100vw-2rem))]
           bg-slate-900 border-r border-white/10 flex flex-col
           transform transition-transform duration-200 ease-out lg:hidden
           ${
@@ -547,7 +558,7 @@ export default function AdminLayout() {
       {/* CONTENU */}
       <div className="min-w-0 flex-1 flex flex-col min-h-screen">
         {/* TOPBAR */}
-        <header className="h-16 sm:h-20 shrink-0 sticky top-0 z-30 border-b border-white/10 bg-slate-950/90 backdrop-blur flex items-center justify-between px-4 sm:px-6 lg:px-8">
+        <header className="min-h-16 sm:min-h-20 shrink-0 sticky top-0 z-30 border-b border-white/10 bg-slate-950/90 backdrop-blur flex items-center justify-between gap-3 px-3 py-2 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3 min-w-0">
             <button
               type="button"
