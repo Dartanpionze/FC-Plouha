@@ -72,15 +72,26 @@ export function Navbar() {
     setOpen(false)
   }, [pathname])
 
+  useEffect(() => {
+    if (!open) return
+
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    return () => {
+      document.body.style.overflow = previousOverflow
+    }
+  }, [open])
+
   return (
     <header className="sticky top-0 z-50 bg-[var(--club-navy)] shadow-lg shadow-black/20">
       <div className="h-1.5 stripe-diagonal" />
       <nav
         aria-label="Navigation principale"
-        className="max-w-7xl 2xl:max-w-[1540px] mx-auto px-4 sm:px-6 2xl:px-8 flex items-center justify-between h-20 2xl:h-24"
+        className="max-w-7xl 2xl:max-w-[1540px] mx-auto px-3 sm:px-6 2xl:px-8 flex items-center justify-between h-16 sm:h-20 2xl:h-24"
       >
         <Link to="/" className="flex items-center gap-3 shrink-0">
-          <ClubCrest className="w-14 h-14 2xl:w-16 2xl:h-16" />
+          <ClubCrest className="w-11 h-11 sm:w-14 sm:h-14 2xl:w-16 2xl:h-16" />
           <span className="text-white leading-tight">
             <span className="block font-display text-lg 2xl:text-2xl tracking-wide">
               FC Plouha
@@ -130,7 +141,7 @@ export function Navbar() {
       {open && (
         <div
           id="mobile-navigation"
-          className="lg:hidden bg-[var(--club-navy-deep)] border-t border-white/10"
+          className="lg:hidden max-h-[calc(100dvh-4.375rem)] overflow-y-auto overscroll-contain bg-[var(--club-navy-deep)] border-t border-white/10"
         >
           <ul className="px-4 py-3 flex flex-col font-condensed font-semibold text-base">
             {visibleLinks.map((link) => {
