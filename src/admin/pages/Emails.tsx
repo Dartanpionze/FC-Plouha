@@ -2639,9 +2639,9 @@ export default function Emails() {
       )}
 
       {composer.open && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4">
-          <div className="w-full max-w-3xl overflow-hidden rounded-2xl border border-white/10 bg-slate-900 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+        <div className="fixed inset-0 z-[100] flex min-h-0 items-stretch justify-center bg-black/70 p-0 sm:items-center sm:p-4">
+          <div className="flex max-h-[100dvh] min-h-0 w-full max-w-3xl flex-col overflow-hidden bg-slate-900 shadow-2xl sm:max-h-[calc(100dvh-2rem)] sm:rounded-2xl sm:border sm:border-white/10">
+            <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-3 sm:px-5 sm:py-4">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--club-yellow)]">
                   FC Plouha
@@ -2670,7 +2670,7 @@ export default function Emails() {
               </button>
             </div>
 
-            <div className="space-y-4 p-5">
+            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-4 sm:p-5">
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
                   <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
@@ -2735,7 +2735,7 @@ export default function Emails() {
                     }))
                   }
                   disabled={sending}
-                  rows={14}
+                  rows={10}
                   maxLength={20000}
                   placeholder="Écris ton message..."
                   className="w-full resize-y rounded-xl border border-white/10 bg-slate-950 px-4 py-3 text-sm leading-relaxed text-white outline-none focus:border-[var(--club-yellow)]/40"
@@ -2802,7 +2802,7 @@ export default function Emails() {
               </p>
             </div>
 
-            <div className="flex flex-col-reverse gap-3 border-t border-white/10 px-5 py-4 sm:flex-row sm:justify-end">
+            <div className="flex shrink-0 flex-col-reverse gap-3 border-t border-white/10 bg-slate-900 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 sm:flex-row sm:justify-end sm:px-5 sm:py-4">
               <button
                 type="button"
                 onClick={closeComposer}
