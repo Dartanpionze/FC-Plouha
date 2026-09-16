@@ -396,3 +396,139 @@ code {
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
 }
+
+
+/* ============================================================
+   RESPONSIVE GLOBAL — SITE PUBLIC + CMS
+   ============================================================ */
+html {
+  min-width: 0;
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+}
+
+body,
+#root {
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+}
+
+img,
+svg,
+video,
+canvas,
+iframe {
+  max-width: 100%;
+}
+
+input,
+select,
+textarea,
+button {
+  max-width: 100%;
+}
+
+input,
+select,
+textarea {
+  font-size: 16px;
+}
+
+/* Empêche une longue adresse, un e-mail ou une URL de casser une carte. */
+p,
+li,
+dd,
+td,
+th,
+a,
+button,
+label {
+  overflow-wrap: anywhere;
+}
+
+/* Les zones de données restent utilisables au doigt sans élargir toute la page. */
+.admin-table-scroll,
+.cms-table-scroll {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 767px) {
+  /* Cibles tactiles confortables dans le CMS et les formulaires publics. */
+  button,
+  a,
+  input[type='checkbox'],
+  input[type='radio'] {
+    touch-action: manipulation;
+  }
+
+  /* Les titres très longs ne doivent jamais provoquer un scroll horizontal. */
+  h1,
+  h2,
+  h3 {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  /* Éditeur CMS : barre réellement exploitable sur téléphone. */
+  .cms-editor-toolbar {
+    top: 4rem;
+    max-height: 46vh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 0.55rem;
+  }
+
+  .cms-editor-button,
+  .cms-editor-select {
+    min-height: 2.5rem;
+  }
+
+  .cms-editor-select {
+    max-width: 10.5rem;
+  }
+
+  .cms-editor-workspace {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  .cms-editor-content {
+    width: 100%;
+    min-width: 0;
+    min-height: 360px;
+    padding: 1.5rem 1rem;
+  }
+
+  /* Les tableaux des articles se font défiler dans leur propre zone. */
+  .article-richtext table,
+  .cms-editor-content table {
+    width: max-content;
+    min-width: 100%;
+  }
+
+  /* Évite les contrôles trop larges sur petits écrans. */
+  .article-richtext pre,
+  .cms-editor-content pre {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+}
+
+@media (max-width: 420px) {
+  .article-page {
+    padding-inline: 0.85rem;
+  }
+
+  .cms-editor-toolbar {
+    gap: 0.3rem;
+  }
+
+  .cms-editor-button {
+    padding-inline: 0.6rem;
+  }
+}
