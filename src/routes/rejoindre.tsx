@@ -335,7 +335,7 @@ function RejoindrePage() {
         </div>
       </section>
 
-      <main>
+      <div>
         <section className="max-w-6xl 2xl:max-w-[1380px] mx-auto px-4 sm:px-6 2xl:px-8 py-14 2xl:py-20">
           <div className="text-center max-w-3xl mx-auto">
             <span className="font-condensed font-bold text-xs tracking-[0.25em] text-[var(--club-red)]">
@@ -880,7 +880,7 @@ function RejoindrePage() {
             </Link>
           </div>
         </section>
-      </main>
+      </div>
     </div>
   )
 }
