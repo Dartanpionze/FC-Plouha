@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { checkAdminRateLimit, sendRateLimitError } from './_admin-rate-limit'
 
 const modules = [
   'news',
@@ -113,6 +114,22 @@ export default async function handler(req: any, res: any) {
       caller.active !== true
     ) {
       return res.status(403).json({ error: 'Accès réservé au Superadmin.' })
+    }
+
+    const rateLimit = await checkAdminRateLimit(
+      adminClient,
+      authData.user.id,
+      'invite_user',
+      5,
+      60 * 60 * 1000,
+    )
+
+    if (!rateLimit.allowed) {
+      return sendRateLimitError(
+        res,
+        rateLimit,
+        'Trop d’invitations ont été envoyées. Réessayez dans une heure.',
+      )
     }
 
     const displayName = cleanText(req.body?.display_name, 120)
