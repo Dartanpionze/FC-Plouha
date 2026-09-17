@@ -1,5 +1,6 @@
 import { ImapFlow } from 'imapflow'
 import { createClient } from '@supabase/supabase-js'
+import { checkAdminRateLimit, sendRateLimitError } from './_admin-rate-limit'
 
 type RequiredPermission = 'update' | 'delete'
 
@@ -70,7 +71,7 @@ async function requireEmailPermission(
   }
 
   if (caller.role === 'superadmin') {
-    return { ok: true as const }
+    return { ok: true as const, adminClient, userId: callerId }
   }
 
   const { data: permission, error: permissionError } = await adminClient
@@ -105,7 +106,7 @@ async function requireEmailPermission(
     }
   }
 
-  return { ok: true as const }
+  return { ok: true as const, adminClient, userId: callerId }
 }
 
 function normalizeFolder(value: unknown) {
@@ -187,6 +188,22 @@ export default async function handler(req: any, res: any) {
 
   if (!access.ok) {
     return res.status(access.status).json({ error: access.error })
+  }
+
+  const rateLimit = await checkAdminRateLimit(
+    access.adminClient,
+    access.userId,
+    'imap_action',
+    60,
+    10 * 60 * 1000,
+  )
+
+  if (!rateLimit.allowed) {
+    return sendRateLimitError(
+      res,
+      rateLimit,
+      'Trop d’actions ont été effectuées sur la boîte mail. Réessayez dans 10 minutes.',
+    )
   }
 
   let client: ImapFlow
