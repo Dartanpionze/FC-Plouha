@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import DOMPurify from 'dompurify'
 import {
   AlertTriangle,
   ArrowLeft,
@@ -70,6 +71,27 @@ function getRenderableContent(value: string | null) {
   const looksLikeHtml = /<\/?[a-z][\s\S]*>/i.test(value)
 
   return looksLikeHtml ? value : plainTextToHtml(value)
+}
+
+function getSanitizedContent(value: string | null) {
+  return DOMPurify.sanitize(getRenderableContent(value), {
+    USE_PROFILES: { html: true },
+    ADD_ATTR: ['target', 'rel'],
+    FORBID_TAGS: [
+      'script',
+      'style',
+      'iframe',
+      'object',
+      'embed',
+      'form',
+      'input',
+      'button',
+      'textarea',
+      'select',
+      'option',
+    ],
+    ALLOW_DATA_ATTR: false,
+  })
 }
 
 function ArticlePage() {
@@ -328,7 +350,7 @@ function ArticlePage() {
             <div
               className="article-richtext"
               dangerouslySetInnerHTML={{
-                __html: getRenderableContent(article.content),
+                __html: getSanitizedContent(article.content),
               }}
             />
           </div>
