@@ -121,6 +121,7 @@ function ArticlePage() {
         .from('news')
         .select('id, title, excerpt, content, image_url, created_at')
         .eq('id', id)
+        .eq('is_published', true)
         .maybeSingle()
 
       if (fetchError) {
@@ -141,6 +142,7 @@ function ArticlePage() {
       const { data: relatedData, error: relatedError } = await supabase
         .from('news')
         .select('id, title, excerpt, image_url, created_at')
+        .eq('is_published', true)
         .neq('id', data.id)
         .order('created_at', { ascending: false })
         .limit(3)
