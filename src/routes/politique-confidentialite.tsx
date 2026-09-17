@@ -30,7 +30,7 @@ function PolitiqueConfidentialitePage() {
         </div>
       </section>
 
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-14 2xl:py-20">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-14 2xl:py-20">
         <div className="space-y-6">
           <PrivacySection icon={ShieldCheck} title="Responsable du traitement">
             <p>
@@ -104,7 +104,7 @@ function PolitiqueConfidentialitePage() {
             Dernière mise à jour : septembre 2026.
           </p>
         </div>
-      </main>
+      </div>
     </div>
   )
 }
