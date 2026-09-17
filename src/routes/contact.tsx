@@ -50,6 +50,7 @@ type FormFields = {
   birthYear: string
   category: string
   message: string
+  website: string
 }
 
 const formatPrice = (amount: number) =>
@@ -80,12 +81,14 @@ function ContactPage() {
     birthYear: '',
     category: '',
     message: '',
+    website: '',
   })
 
   const [status, setStatus] = useState<
     'idle' | 'sending' | 'sent' | 'error'
   >('idle')
   const [formError, setFormError] = useState('')
+  const formStartedAtRef = useRef(Date.now())
 
   const isRegistration = fields.subject === 'Inscription'
 
@@ -249,39 +252,28 @@ function ContactPage() {
   }
 
   const submitRequest = async () => {
-    const requestType =
-      fields.subject === 'Inscription'
-        ? 'Joueur'
-        : fields.subject === 'Benevolat'
-          ? 'Bénévole'
-          : fields.subject === 'Partenariat'
-            ? 'Partenaire'
-            : 'Autre'
+    const response = await fetch('/api/public-registration', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        form_type: 'contact',
+        form_started_at: formStartedAtRef.current,
+        website: fields.website,
+        first_name: fields.firstName,
+        last_name: fields.lastName,
+        email: fields.email,
+        phone: fields.phone,
+        subject: fields.subject,
+        birth_year: fields.birthYear || null,
+        category: fields.category,
+        message: fields.message,
+      }),
+    })
 
-    const { error } = await supabase
-      .from('registrations')
-      .insert([
-        {
-          first_name: fields.firstName.trim(),
-          last_name: fields.lastName.trim(),
-          birth_year:
-            fields.subject === 'Inscription' && fields.birthYear !== ''
-              ? Number(fields.birthYear)
-              : null,
-          category:
-            fields.subject === 'Inscription'
-              ? fields.category || null
-              : null,
-          email: fields.email.trim() || null,
-          phone: fields.phone.trim() || null,
-          request_type: requestType,
-          message: fields.message.trim() || null,
-          status: 'Nouveau',
-        },
-      ])
+    const result = await response.json().catch(() => null)
 
-    if (error) {
-      throw error
+    if (!response.ok || result?.success !== true) {
+      throw new Error(result?.error || "Impossible d'envoyer la demande.")
     }
   }
 
@@ -352,11 +344,15 @@ function ContactPage() {
         birthYear: '',
         category: '',
         message: '',
+        website: '',
       })
+      formStartedAtRef.current = Date.now()
     } catch (error) {
       console.error(error)
       setFormError(
-        "Impossible d'envoyer votre demande pour le moment. Merci de réessayer.",
+        error instanceof Error
+          ? error.message
+          : "Impossible d'envoyer votre demande pour le moment. Merci de réessayer.",
       )
       setStatus('error')
     }
@@ -752,6 +748,19 @@ function ContactPage() {
               aria-busy={status === 'sending'}
               className="space-y-5"
             >
+              <div className="absolute -left-[10000px] h-px w-px overflow-hidden" aria-hidden="true">
+                <label>
+                  Ne pas remplir ce champ
+                  <input
+                    type="text"
+                    name="website"
+                    value={fields.website}
+                    onChange={handleChange}
+                    tabIndex={-1}
+                    autoComplete="off"
+                  />
+                </label>
+              </div>
 
               <label className="block">
                 <span className="text-sm font-condensed font-semibold text-[var(--club-navy-deep)]/80">
