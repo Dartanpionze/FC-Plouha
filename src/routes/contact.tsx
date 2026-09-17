@@ -680,11 +680,11 @@ function ContactPage() {
 
             <iframe
               title={`Localisation du ${shortName} au stade Jean Derrien`}
-               src="https://www.google.com/maps?q=Stade+Jean+Derrien,+Rue+Louis+Droumaguet,+22580+Plouha&z=17&output=embed"
-               className="w-full h-full border-0"
-               loading="lazy"
-               referrerPolicy="strict-origin-when-cross-origin"
-               allowFullScreen
+                src="https://www.google.com/maps?q=48.67983363305893,-2.9269387118059194&z=18&output=embed"
+                className="w-full h-full border-0"
+                loading="lazy"
+                referrerPolicy="strict-origin-when-cross-origin"
+                allowFullScreen
               />
 
           </div>
