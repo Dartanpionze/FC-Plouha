@@ -499,6 +499,7 @@ type NewsItem = {
   content: string
   image_url: string | null
   created_at: string
+  is_published: boolean
 }
 
 export default function News() {
@@ -508,6 +509,7 @@ export default function News() {
   const [title, setTitle] = useState('')
   const [excerpt, setExcerpt] = useState('')
   const [content, setContent] = useState('')
+  const [isPublished, setIsPublished] = useState(false)
   const [image, setImage] = useState<File | null>(null)
   const [preview, setPreview] = useState('')
   const [editingId, setEditingId] = useState<number | null>(null)
@@ -700,6 +702,7 @@ export default function News() {
     setTitle('')
     setExcerpt('')
     setContent('')
+    setIsPublished(false)
     setImage(null)
     setPreview('')
     setEditingId(null)
@@ -735,6 +738,7 @@ export default function News() {
     setTitle(item.title)
     setExcerpt(item.excerpt || '')
     setContent(item.content || '')
+    setIsPublished(item.is_published)
     setPreview(item.image_url || '')
     setImage(null)
     setPendingInlineImages([])
@@ -866,6 +870,7 @@ export default function News() {
           title,
           excerpt,
           content,
+          is_published: isPublished,
           ...(imageUrl && { image_url: imageUrl }),
         })
         .eq('id', editingId)
@@ -880,6 +885,7 @@ export default function News() {
             excerpt,
             content,
             image_url: imageUrl,
+            is_published: isPublished,
             created_at: new Date(),
           },
         ])
@@ -930,6 +936,7 @@ export default function News() {
     ])
 
     const wasEditing = Boolean(editingId)
+    const wasPublished = isPublished
 
     setPendingInlineImages([])
     resetForm()
@@ -940,7 +947,9 @@ export default function News() {
       setMessage(
         wasEditing
           ? 'Actualité modifiée avec succès.'
-          : 'Actualité publiée avec succès.',
+          : wasPublished
+            ? 'Actualité publiée avec succès.'
+            : 'Brouillon enregistré avec succès.',
       )
     }
 
@@ -1677,6 +1686,24 @@ export default function News() {
               </div>
             </div>
 
+            <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-4">
+              <input
+                type="checkbox"
+                checked={isPublished}
+                onChange={(event) => setIsPublished(event.target.checked)}
+                className="mt-1 h-4 w-4 accent-[var(--club-yellow)]"
+              />
+              <span>
+                <span className="block font-semibold text-white">
+                  Publier cette actualité sur le site
+                </span>
+                <span className="mt-1 block text-sm text-slate-400">
+                  Si cette case est décochée, l'article reste en brouillon et
+                  demeure invisible pour les visiteurs.
+                </span>
+              </span>
+            </label>
+
             {/* ACTIONS */}
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
 
@@ -1689,7 +1716,9 @@ export default function News() {
                   ? 'Enregistrement...'
                   : editingId
                     ? "Mettre à jour l'actualité"
-                    : "Publier l'actualité"}
+                    : isPublished
+                      ? "Publier l'actualité"
+                      : 'Enregistrer le brouillon'}
               </button>
 
               <button
@@ -1712,7 +1741,7 @@ export default function News() {
 
           <div>
             <h2 className="font-semibold">
-              Articles publiés
+              Actualités et brouillons
             </h2>
 
             <p className="text-sm text-slate-500 mt-1">
@@ -1775,6 +1804,16 @@ export default function News() {
                 <h3 className="font-semibold truncate">
                   {item.title}
                 </h3>
+
+                <span
+                  className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${
+                    item.is_published
+                      ? 'bg-emerald-500/10 text-emerald-300'
+                      : 'bg-amber-500/10 text-amber-300'
+                  }`}
+                >
+                  {item.is_published ? 'Publiée' : 'Brouillon'}
+                </span>
 
                 <p className="text-sm text-slate-500 mt-1">
                   {new Date(
