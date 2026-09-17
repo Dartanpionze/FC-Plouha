@@ -48,6 +48,7 @@ type RegistrationForm = {
   legalGuardianPhone: string
   message: string
   consent: boolean
+  website: string
 }
 
 const emptyForm: RegistrationForm = {
@@ -65,6 +66,7 @@ const emptyForm: RegistrationForm = {
   legalGuardianPhone: '',
   message: '',
   consent: false,
+  website: '',
 }
 
 const profiles = [
@@ -113,6 +115,7 @@ function RejoindrePage() {
   const [form, setForm] = useState<RegistrationForm>(emptyForm)
   const [formStatus, setFormStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
   const [formError, setFormError] = useState('')
+  const formStartedAtRef = useRef(Date.now())
 
   useEffect(() => {
     let cancelled = false
@@ -259,39 +262,53 @@ function RejoindrePage() {
 
     setFormStatus('sending')
 
-    const birthYear = Number(form.birthDate.slice(0, 4))
+    try {
+      const response = await fetch('/api/public-registration', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          form_type: 'pre_registration',
+          form_started_at: formStartedAtRef.current,
+          website: form.website,
+          first_name: form.firstName,
+          last_name: form.lastName,
+          birth_date: form.birthDate,
+          category: form.category,
+          email: form.email,
+          phone: form.phone,
+          previous_club: form.previousClub,
+          first_licence: form.firstLicence,
+          legal_guardian_first_name: form.legalGuardianFirstName,
+          legal_guardian_last_name: form.legalGuardianLastName,
+          legal_guardian_email: form.legalGuardianEmail,
+          legal_guardian_phone: form.legalGuardianPhone,
+          message: form.message,
+          contact_consent: form.consent,
+        }),
+      })
 
-    const { error } = await supabase.from('registrations').insert([
-      {
-        first_name: form.firstName.trim(),
-        last_name: form.lastName.trim(),
-        birth_year: Number.isFinite(birthYear) ? birthYear : null,
-        birth_date: form.birthDate,
-        category: form.category,
-        email: form.email.trim(),
-        phone: form.phone.trim(),
-        request_type: 'Joueur',
-        message: form.message.trim() || null,
-        status: 'Nouveau',
-        previous_club: form.firstLicence ? null : form.previousClub.trim() || null,
-        first_licence: form.firstLicence,
-        legal_guardian_first_name: isMinor ? form.legalGuardianFirstName.trim() : null,
-        legal_guardian_last_name: isMinor ? form.legalGuardianLastName.trim() : null,
-        legal_guardian_email: isMinor ? form.legalGuardianEmail.trim() : null,
-        legal_guardian_phone: isMinor ? form.legalGuardianPhone.trim() : null,
-        contact_consent: true,
-      },
-    ])
+      const result = await response.json().catch(() => null)
 
-    if (error) {
+      if (!response.ok || result?.success !== true) {
+        throw new Error(
+          result?.error ||
+            "La pré-inscription n'a pas pu être envoyée. Merci de réessayer.",
+        )
+      }
+
+      setForm(emptyForm)
+      formStartedAtRef.current = Date.now()
+      setFormStatus('sent')
+    } catch (error) {
       console.error(error)
       setFormStatus('error')
-      setFormError("La pré-inscription n'a pas pu être envoyée. Merci de réessayer.")
-      return
+      setFormError(
+        error instanceof Error
+          ? error.message
+          :
+          "La pré-inscription n'a pas pu être envoyée. Merci de réessayer.",
+      )
     }
-
-    setForm(emptyForm)
-    setFormStatus('sent')
   }
 
   return (
@@ -418,6 +435,19 @@ function RejoindrePage() {
                 onSubmit={handleSubmit}
                 className="mt-8 rounded-2xl border border-black/5 bg-white p-5 sm:p-8 shadow-sm"
               >
+                <div className="absolute -left-[10000px] h-px w-px overflow-hidden" aria-hidden="true">
+                  <label>
+                    Ne pas remplir ce champ
+                    <input
+                      type="text"
+                      name="website"
+                      value={form.website}
+                      onChange={handleChange}
+                      tabIndex={-1}
+                      autoComplete="off"
+                    />
+                  </label>
+                </div>
                 <div className="grid gap-5 sm:grid-cols-2">
                   <div>
                     <label className="block font-condensed font-bold text-[var(--club-navy-deep)]">
