@@ -45,6 +45,7 @@ function NewsPage() {
     const { data, error } = await supabase
       .from('news')
       .select('id, title, excerpt, content, image_url, created_at')
+      .eq('is_published', true)
       .order('created_at', { ascending: false })
 
     if (error) {
