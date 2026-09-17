@@ -1,5 +1,6 @@
 import { ImapFlow } from 'imapflow'
 import { createClient } from '@supabase/supabase-js'
+import { checkAdminRateLimit, sendRateLimitError } from './_admin-rate-limit'
 
 function getBearerToken(req: any) {
   const header = req.headers?.authorization
@@ -65,7 +66,7 @@ async function requireEmailAdmin(req: any) {
   }
 
   if (caller.role === 'superadmin') {
-    return { ok: true as const }
+    return { ok: true as const, adminClient, userId: callerId }
   }
 
   const { data: permission, error: permissionError } = await adminClient
@@ -93,7 +94,7 @@ async function requireEmailAdmin(req: any) {
     }
   }
 
-  return { ok: true as const }
+  return { ok: true as const, adminClient, userId: callerId }
 }
 
 export default async function handler(req: any, res: any) {
@@ -106,6 +107,22 @@ export default async function handler(req: any, res: any) {
 
   if (!adminAccess.ok) {
     return res.status(adminAccess.status).json({ error: adminAccess.error })
+  }
+
+  const rateLimit = await checkAdminRateLimit(
+    adminAccess.adminClient,
+    adminAccess.userId,
+    'imap_test',
+    10,
+    10 * 60 * 1000,
+  )
+
+  if (!rateLimit.allowed) {
+    return sendRateLimitError(
+      res,
+      rateLimit,
+      'Trop de tests IMAP ont été lancés. Réessayez dans 10 minutes.',
+    )
   }
 
   const host = process.env.OVH_IMAP_HOST
