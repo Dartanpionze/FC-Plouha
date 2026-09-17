@@ -68,9 +68,7 @@ function ContactPage() {
 
   const [settings, setSettings] = useState<ClubSettings | null>(null)
   const [teamCategories, setTeamCategories] = useState<string[]>([])
-  const [registrationFees, setRegistrationFees] = useState<RegistrationFee[]>(
-    [],
-  )
+  const [registrationFees, setRegistrationFees] = useState<RegistrationFee[]>([])
   const [loadingSettings, setLoadingSettings] = useState(true)
   const [pageDataError, setPageDataError] = useState(false)
 
@@ -173,6 +171,7 @@ function ContactPage() {
 
     const requestedSubject = searchParams.get('subject')
     const requestedCategory = searchParams.get('category')
+
     const allowedSubjects = [
       'Inscription',
       'Benevolat',
@@ -197,15 +196,20 @@ function ContactPage() {
       return teamCategories
     }
 
-    return ['École de foot', 'Jeunes', 'Séniors', 'Je ne sais pas']
+    return [
+      'École de foot',
+      'Jeunes',
+      'Séniors',
+      'Je ne sais pas',
+    ]
   }, [teamCategories])
 
   const handleChange = (
-    event: React.ChangeEvent<
+    e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
     >,
   ) => {
-    const { name, value } = event.target
+    const { name, value } = e.target
 
     setFields((current) => ({
       ...current,
@@ -273,8 +277,8 @@ function ContactPage() {
     }
   }
 
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault()
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
 
     if (
       !fields.firstName.trim() ||
@@ -297,7 +301,10 @@ function ContactPage() {
       return
     }
 
-    if (isRegistration && (!fields.birthYear || !fields.category)) {
+    if (
+      isRegistration &&
+      (!fields.birthYear || !fields.category)
+    ) {
       setFormError(
         "Merci d'indiquer l'année de naissance et la catégorie souhaitée.",
       )
@@ -325,6 +332,7 @@ function ContactPage() {
 
     try {
       await submitRequest()
+
       setStatus('sent')
 
       setFields({
@@ -338,7 +346,6 @@ function ContactPage() {
         message: '',
         website: '',
       })
-
       formStartedAtRef.current = Date.now()
     } catch (error) {
       console.error(error)
@@ -351,44 +358,21 @@ function ContactPage() {
     }
   }
 
-  const clubName = settings?.club_name || 'Football Club Plouha'
-  const shortName = settings?.short_name || 'FC Plouha'
+  const clubName =
+    settings?.club_name || 'Football Club Plouha'
+
+  const shortName =
+    settings?.short_name || 'FC Plouha'
 
   const addressLine =
     [
       settings?.address,
-      [settings?.postal_code, settings?.city].filter(Boolean).join(' '),
+      [settings?.postal_code, settings?.city]
+        .filter(Boolean)
+        .join(' '),
     ]
       .filter(Boolean)
       .join(', ') || 'Plouha'
-
-  const requestTypes = [
-    {
-      value: 'Inscription',
-      title: 'Rejoindre une équipe',
-      description:
-        "Joueur, joueuse ou inscription d'un enfant. Accédez à la pré-inscription en ligne.",
-      icon: UserPlus,
-    },
-    {
-      value: 'Benevolat',
-      title: 'Devenir bénévole',
-      description: 'Donner un coup de main à la vie du club.',
-      icon: HandHeart,
-    },
-    {
-      value: 'Partenariat',
-      title: 'Devenir partenaire',
-      description: 'Soutenir le projet et la vie locale.',
-      icon: Handshake,
-    },
-    {
-      value: 'Autre',
-      title: 'Poser une question',
-      description: 'Pour toute autre demande ou information.',
-      icon: MessageCircle,
-    },
-  ]
 
   return (
     <div>
@@ -397,39 +381,47 @@ function ContactPage() {
         description="Contactez le Football Club Plouha, inscrivez-vous comme joueur ou bénévole, ou proposez un partenariat."
       />
 
-      <section className="grain-overlay bg-[var(--club-navy-deep)] py-16 2xl:py-20">
-        <div className="mx-auto max-w-5xl px-4 text-center sm:px-6 2xl:max-w-6xl 2xl:px-8">
-          <span className="font-condensed text-xs font-bold tracking-[0.3em] text-[var(--club-yellow)]">
+      {/* HERO */}
+      <section className="bg-[var(--club-navy-deep)] grain-overlay py-16 2xl:py-20">
+
+        <div className="max-w-5xl 2xl:max-w-6xl mx-auto px-4 sm:px-6 2xl:px-8 text-center">
+
+          <span className="font-condensed font-bold text-xs tracking-[0.3em] text-[var(--club-yellow)]">
             RESTONS EN CONTACT
           </span>
 
-          <h1 className="mt-4 text-4xl text-white sm:text-6xl 2xl:mt-5 2xl:text-7xl">
+          <h1 className="mt-4 2xl:mt-5 text-4xl sm:text-6xl 2xl:text-7xl text-white">
             Contact & inscriptions
           </h1>
 
-          <p className="mx-auto mt-6 max-w-2xl font-condensed text-lg text-white/70 2xl:max-w-3xl 2xl:text-xl 2xl:leading-relaxed">
+          <p className="mt-6 text-white/70 font-condensed text-lg 2xl:text-xl max-w-2xl 2xl:max-w-3xl mx-auto 2xl:leading-relaxed">
             Inscription au club, bénévolat, partenariat ou simple question :
             choisissez votre demande et contactez le FC Plouha.
           </p>
+
         </div>
+
       </section>
 
       {pageDataError && (
-        <div className="border-b border-amber-200 bg-amber-50">
-          <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <div className="bg-amber-50 border-b border-amber-200">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="flex items-start gap-3 text-amber-900">
-              <AlertTriangle size={20} className="mt-0.5 shrink-0" />
+              <AlertTriangle
+                size={20}
+                className="mt-0.5 shrink-0"
+              />
 
               <p className="font-condensed text-sm">
-                Certaines informations de contact n&apos;ont pas pu être
-                chargées. Le formulaire reste disponible.
+                Certaines informations de contact n'ont pas pu être chargées.
+                Le formulaire reste disponible.
               </p>
             </div>
 
             <button
               type="button"
               onClick={fetchPageData}
-              className="inline-flex items-center justify-center gap-2 rounded-lg border border-amber-300 bg-white px-4 py-2 font-condensed text-sm font-bold text-amber-900 transition-colors hover:bg-amber-100"
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-amber-300 bg-white px-4 py-2 font-condensed font-bold text-sm text-amber-900 hover:bg-amber-100 transition-colors"
             >
               <RefreshCw size={16} />
               Réessayer
@@ -438,19 +430,43 @@ function ContactPage() {
         </div>
       )}
 
-      <section className="mx-auto max-w-6xl px-4 pt-14 sm:px-6 2xl:max-w-[1380px] 2xl:px-8 2xl:pt-16">
+      <section className="max-w-6xl 2xl:max-w-[1380px] mx-auto px-4 sm:px-6 2xl:px-8 pt-14 2xl:pt-16">
         <div className="text-center">
-          <span className="font-condensed text-xs font-bold tracking-[0.25em] text-[var(--club-red)]">
+          <span className="font-condensed font-bold text-xs tracking-[0.25em] text-[var(--club-red)]">
             COMMENT POUVONS-NOUS VOUS AIDER ?
           </span>
-
-          <h2 className="mt-2 text-3xl text-[var(--club-navy-deep)] 2xl:text-4xl">
+          <h2 className="mt-2 text-3xl 2xl:text-4xl text-[var(--club-navy-deep)]">
             Choisissez votre demande
           </h2>
         </div>
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {requestTypes.map((request) => {
+          {[
+            {
+              value: 'Inscription',
+              title: 'Rejoindre une équipe',
+              description: "Joueur, joueuse ou inscription d'un enfant. Accédez à la pré-inscription en ligne.",
+              icon: UserPlus,
+            },
+            {
+              value: 'Benevolat',
+              title: 'Devenir bénévole',
+              description: 'Donner un coup de main à la vie du club.',
+              icon: HandHeart,
+            },
+            {
+              value: 'Partenariat',
+              title: 'Devenir partenaire',
+              description: 'Soutenir le projet et la vie locale.',
+              icon: Handshake,
+            },
+            {
+              value: 'Autre',
+              title: 'Poser une question',
+              description: 'Pour toute autre demande ou information.',
+              icon: MessageCircle,
+            },
+          ].map((request) => {
             const Icon = request.icon
             const selected = fields.subject === request.value
 
@@ -507,7 +523,7 @@ function ContactPage() {
       </section>
 
       {isRegistration && registrationFees.length > 0 && (
-        <section className="mx-auto max-w-6xl px-4 pt-10 sm:px-6 2xl:max-w-[1380px] 2xl:px-8 2xl:pt-12">
+        <section className="max-w-6xl 2xl:max-w-[1380px] mx-auto px-4 sm:px-6 2xl:px-8 pt-10 2xl:pt-12">
           <div className="rounded-2xl border border-[var(--club-yellow)]/60 bg-[var(--club-yellow)]/10 p-6 sm:p-7">
             <div className="flex items-start gap-3">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--club-yellow)] text-[var(--club-navy-deep)]">
@@ -516,12 +532,10 @@ function ContactPage() {
 
               <div>
                 <h2 className="font-condensed text-2xl font-bold text-[var(--club-navy-deep)]">
-                  Tarifs d&apos;inscription
+                  Tarifs d'inscription
                 </h2>
-
                 <p className="mt-1 text-sm leading-relaxed text-[var(--club-navy-deep)]/60">
-                  Retrouvez ci-dessous les tarifs actuellement proposés pour
-                  rejoindre une équipe du club.
+                  Retrouvez ci-dessous les tarifs actuellement proposés pour rejoindre une équipe du club.
                 </p>
               </div>
             </div>
@@ -537,7 +551,6 @@ function ContactPage() {
                       <p className="font-condensed font-bold text-[var(--club-navy-deep)]">
                         {fee.title}
                       </p>
-
                       {fee.season && (
                         <p className="mt-0.5 text-xs text-[var(--club-navy-deep)]/50">
                           Saison {fee.season}
@@ -562,27 +575,36 @@ function ContactPage() {
         </section>
       )}
 
-      <section className="mx-auto grid max-w-6xl gap-14 px-4 py-14 sm:px-6 lg:grid-cols-[1fr_1.2fr] 2xl:max-w-[1380px] 2xl:gap-20 2xl:px-8 2xl:py-20">
+      <section className="max-w-6xl 2xl:max-w-[1380px] mx-auto px-4 sm:px-6 2xl:px-8 py-14 2xl:py-20 grid lg:grid-cols-[1fr_1.2fr] gap-14 2xl:gap-20">
+
+        {/* COORDONNEES */}
         <div>
-          <h2 className="mb-6 font-condensed text-2xl font-bold text-[var(--club-navy-deep)] 2xl:text-3xl">
+
+          <h2 className="font-condensed font-bold text-2xl 2xl:text-3xl text-[var(--club-navy-deep)] mb-6">
             Coordonnées
           </h2>
 
           {loadingSettings ? (
-            <div className="flex items-center gap-3 font-condensed text-[var(--club-navy-deep)]/50">
-              <Loader2 size={20} className="animate-spin" />
+            <div className="flex items-center gap-3 text-[var(--club-navy-deep)]/50 font-condensed">
+              <Loader2
+                size={20}
+                className="animate-spin"
+              />
               Chargement des coordonnées...
             </div>
           ) : (
             <ul className="space-y-5">
+
               <li className="flex gap-3">
                 <MapPin
-                  className="mt-1 shrink-0 text-[var(--club-red)]"
+                  className="text-[var(--club-red)] shrink-0 mt-1"
                   size={20}
                 />
 
                 <div>
-                  <div className="font-condensed font-bold">{shortName}</div>
+                  <div className="font-condensed font-bold">
+                    {shortName}
+                  </div>
 
                   <div className="text-sm text-[var(--club-navy-deep)]/70">
                     {addressLine}
@@ -593,14 +615,14 @@ function ContactPage() {
               {settings?.phone && (
                 <li className="flex gap-3">
                   <Phone
-                    className="mt-1 shrink-0 text-[var(--club-red)]"
+                    className="text-[var(--club-red)] shrink-0 mt-1"
                     size={20}
                   />
 
                   <div>
                     <a
                       href={`tel:${settings.phone.replace(/\s/g, '')}`}
-                      className="font-condensed font-bold transition-colors hover:text-[var(--club-red)]"
+                      className="font-condensed font-bold hover:text-[var(--club-red)] transition-colors"
                     >
                       {settings.phone}
                     </a>
@@ -612,72 +634,70 @@ function ContactPage() {
                 </li>
               )}
 
-              <li className="flex gap-3">
-                <Mail
-                  className="mt-1 shrink-0 text-[var(--club-red)]"
-                  size={20}
-                />
+              {(settings?.email || 'contact@fcplouha.fr') && (
+                <li className="flex gap-3">
+                  <Mail
+                    className="text-[var(--club-red)] shrink-0 mt-1"
+                    size={20}
+                  />
 
-                <div>
-                  <a
-                    href={`mailto:${settings?.email || 'contact@fcplouha.fr'}`}
-                    className="font-condensed font-bold transition-colors hover:text-[var(--club-red)]"
-                  >
-                    {settings?.email || 'contact@fcplouha.fr'}
-                  </a>
+                  <div>
+                    <a
+                      href={`mailto:${settings?.email || 'contact@fcplouha.fr'}`}
+                      className="font-condensed font-bold hover:text-[var(--club-red)] transition-colors"
+                    >
+                      {settings?.email || 'contact@fcplouha.fr'}
+                    </a>
 
-                  <div className="text-sm text-[var(--club-navy-deep)]/70">
-                    Adresse e-mail du club
+                    <div className="text-sm text-[var(--club-navy-deep)]/70">
+                      Adresse e-mail du club
+                    </div>
                   </div>
-                </div>
-              </li>
+                </li>
+              )}
 
               <li className="flex gap-3">
                 <Clock
-                  className="mt-1 shrink-0 text-[var(--club-red)]"
+                  className="text-[var(--club-red)] shrink-0 mt-1"
                   size={20}
                 />
 
                 <div>
-                  <div className="font-condensed font-bold">{clubName}</div>
+                  <div className="font-condensed font-bold">
+                    {clubName}
+                  </div>
 
                   <div className="text-sm text-[var(--club-navy-deep)]/70">
                     Contactez-nous avant de vous déplacer.
                   </div>
                 </div>
               </li>
+
             </ul>
           )}
 
-          <div className="mt-8 overflow-hidden rounded-2xl border border-black/10 bg-white">
+          <div className="mt-8 rounded-2xl overflow-hidden border border-black/10 h-64">
+
             <iframe
-              title={`Localisation du ${shortName} au stade Jean Derrien`}
-              src="https://www.openstreetmap.org/export/embed.html?bbox=-2.9460%2C48.6710%2C-2.9340%2C48.6790&layer=mapnik&marker=48.6750%2C-2.9400"
-              className="h-64 w-full border-0"
+              title={`Localisation du ${shortName}`}
+              src="https://www.openstreetmap.org/export/embed.html?bbox=-2.9550%2C48.6650%2C-2.9250%2C48.6850&layer=mapnik"
+              className="w-full h-full border-0"
               loading="lazy"
-              referrerPolicy="strict-origin-when-cross-origin"
             />
 
-            <div className="border-t border-black/10 px-4 py-3">
-              <a
-                href="https://www.openstreetmap.org/?mlat=48.6750&mlon=-2.9400#map=17/48.6750/-2.9400"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 font-condensed text-sm font-bold text-[var(--club-navy-deep)] transition-colors hover:text-[var(--club-red)]"
-              >
-                <MapPin size={16} />
-                Voir le stade Jean Derrien sur la carte
-              </a>
-            </div>
           </div>
+
         </div>
 
+        {/* FORMULAIRE */}
         <div
           ref={formRef}
-          className="scroll-mt-28 rounded-2xl border border-black/5 bg-white p-6 shadow-sm sm:p-8"
+          className="scroll-mt-28 bg-white rounded-2xl border border-black/5 p-6 sm:p-8 shadow-sm"
         >
-          <div className="mb-6 flex items-start gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--club-yellow)]/20">
+
+          <div className="flex items-start gap-3 mb-6">
+
+            <div className="w-11 h-11 rounded-xl bg-[var(--club-yellow)]/20 flex items-center justify-center shrink-0">
               <UserPlus
                 size={21}
                 className="text-[var(--club-navy-deep)]"
@@ -685,39 +705,42 @@ function ContactPage() {
             </div>
 
             <div>
-              <h2 className="font-condensed text-2xl font-bold text-[var(--club-navy-deep)] 2xl:text-3xl">
+              <h2 className="font-condensed font-bold text-2xl 2xl:text-3xl text-[var(--club-navy-deep)]">
                 Votre demande
               </h2>
 
-              <p className="mt-1 text-sm text-[var(--club-navy-deep)]/55">
-                Les champs s&apos;adaptent automatiquement selon votre demande.
+              <p className="text-sm text-[var(--club-navy-deep)]/55 mt-1">
+                Les champs s'adaptent automatiquement selon votre demande.
               </p>
             </div>
+
           </div>
 
           {status === 'sent' ? (
             <div
               role="status"
               aria-live="polite"
-              className="rounded-xl border border-[var(--club-yellow)] bg-[var(--club-yellow)]/15 p-6 text-center"
+              className="rounded-xl bg-[var(--club-yellow)]/15 border border-[var(--club-yellow)] p-6 text-center"
             >
+
               <p className="font-condensed font-bold text-[var(--club-navy-deep)]">
                 {isRegistration
                   ? "Votre demande d'inscription a bien été enregistrée !"
                   : 'Merci, votre message a bien été envoyé !'}
               </p>
 
-              <p className="mt-1 text-sm text-[var(--club-navy-deep)]/70">
+              <p className="text-sm text-[var(--club-navy-deep)]/70 mt-1">
                 Un membre du club vous recontactera rapidement.
               </p>
 
               <button
                 type="button"
                 onClick={() => setStatus('idle')}
-                className="mt-5 font-condensed text-sm font-bold text-[var(--club-navy)] hover:text-[var(--club-red)]"
+                className="mt-5 text-sm font-condensed font-bold text-[var(--club-navy)] hover:text-[var(--club-red)]"
               >
                 Envoyer une autre demande
               </button>
+
             </div>
           ) : (
             <form
@@ -725,10 +748,7 @@ function ContactPage() {
               aria-busy={status === 'sending'}
               className="space-y-5"
             >
-              <div
-                className="absolute -left-[10000px] h-px w-px overflow-hidden"
-                aria-hidden="true"
-              >
+              <div className="absolute -left-[10000px] h-px w-px overflow-hidden" aria-hidden="true">
                 <label>
                   Ne pas remplir ce champ
                   <input
@@ -743,7 +763,7 @@ function ContactPage() {
               </div>
 
               <label className="block">
-                <span className="font-condensed text-sm font-semibold text-[var(--club-navy-deep)]/80">
+                <span className="text-sm font-condensed font-semibold text-[var(--club-navy-deep)]/80">
                   Je souhaite...
                 </span>
 
@@ -752,23 +772,34 @@ function ContactPage() {
                   required
                   value={fields.subject}
                   onChange={handleChange}
-                  className="mt-1.5 w-full rounded-lg border border-black/15 bg-white px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-[var(--club-blue-light)]"
+                  className="mt-1.5 w-full rounded-lg border border-black/15 px-3.5 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--club-blue-light)]"
                 >
-                  <option value="">Choisir une demande</option>
-                  <option value="Inscription">
-                    M&apos;inscrire / inscrire mon enfant
+                  <option value="">
+                    Choisir une demande
                   </option>
-                  <option value="Benevolat">Devenir bénévole</option>
+
+                  <option value="Inscription">
+                    M'inscrire / inscrire mon enfant
+                  </option>
+
+                  <option value="Benevolat">
+                    Devenir bénévole
+                  </option>
+
                   <option value="Partenariat">
                     Devenir partenaire / sponsor
                   </option>
-                  <option value="Autre">Poser une autre question</option>
+
+                  <option value="Autre">
+                    Poser une autre question
+                  </option>
                 </select>
               </label>
 
-              <div className="grid gap-5 sm:grid-cols-2">
+              <div className="grid sm:grid-cols-2 gap-5">
+
                 <label className="block">
-                  <span className="font-condensed text-sm font-semibold text-[var(--club-navy-deep)]/80">
+                  <span className="text-sm font-condensed font-semibold text-[var(--club-navy-deep)]/80">
                     Prénom
                   </span>
 
@@ -784,7 +815,7 @@ function ContactPage() {
                 </label>
 
                 <label className="block">
-                  <span className="font-condensed text-sm font-semibold text-[var(--club-navy-deep)]/80">
+                  <span className="text-sm font-condensed font-semibold text-[var(--club-navy-deep)]/80">
                     Nom
                   </span>
 
@@ -798,11 +829,13 @@ function ContactPage() {
                     placeholder="Nom"
                   />
                 </label>
+
               </div>
 
-              <div className="grid gap-5 sm:grid-cols-2">
+              <div className="grid sm:grid-cols-2 gap-5">
+
                 <label className="block">
-                  <span className="font-condensed text-sm font-semibold text-[var(--club-navy-deep)]/80">
+                  <span className="text-sm font-condensed font-semibold text-[var(--club-navy-deep)]/80">
                     E-mail
                   </span>
 
@@ -818,7 +851,7 @@ function ContactPage() {
                 </label>
 
                 <label className="block">
-                  <span className="font-condensed text-sm font-semibold text-[var(--club-navy-deep)]/80">
+                  <span className="text-sm font-condensed font-semibold text-[var(--club-navy-deep)]/80">
                     Téléphone
                   </span>
 
@@ -831,24 +864,27 @@ function ContactPage() {
                     placeholder="06..."
                   />
                 </label>
+
               </div>
 
+              {/* CHAMPS INSCRIPTION */}
               {isRegistration && (
-                <div className="space-y-5 rounded-2xl border border-[var(--club-navy)]/10 bg-[var(--club-navy)]/[0.04] p-5">
+                <div className="rounded-2xl bg-[var(--club-navy)]/[0.04] border border-[var(--club-navy)]/10 p-5 space-y-5">
+
                   <div>
                     <h3 className="font-condensed font-bold text-[var(--club-navy-deep)]">
-                      Informations pour l&apos;inscription
+                      Informations pour l'inscription
                     </h3>
 
-                    <p className="mt-1 text-xs text-[var(--club-navy-deep)]/55">
-                      Ces informations aideront le club à orienter la demande
-                      vers la bonne équipe.
+                    <p className="text-xs text-[var(--club-navy-deep)]/55 mt-1">
+                      Ces informations aideront le club à orienter la demande vers la bonne équipe.
                     </p>
                   </div>
 
-                  <div className="grid gap-5 sm:grid-cols-2">
+                  <div className="grid sm:grid-cols-2 gap-5">
+
                     <label className="block">
-                      <span className="font-condensed text-sm font-semibold text-[var(--club-navy-deep)]/80">
+                      <span className="text-sm font-condensed font-semibold text-[var(--club-navy-deep)]/80">
                         Année de naissance
                       </span>
 
@@ -866,7 +902,7 @@ function ContactPage() {
                     </label>
 
                     <label className="block">
-                      <span className="font-condensed text-sm font-semibold text-[var(--club-navy-deep)]/80">
+                      <span className="text-sm font-condensed font-semibold text-[var(--club-navy-deep)]/80">
                         Catégorie souhaitée
                       </span>
 
@@ -875,29 +911,41 @@ function ContactPage() {
                         required={isRegistration}
                         value={fields.category}
                         onChange={handleChange}
-                        className="mt-1.5 w-full rounded-lg border border-black/15 bg-white px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-[var(--club-blue-light)]"
+                        className="mt-1.5 w-full rounded-lg border border-black/15 px-3.5 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--club-blue-light)]"
                       >
-                        <option value="">Choisir une catégorie</option>
+                        <option value="">
+                          Choisir une catégorie
+                        </option>
 
-                        {availableCategories.map((category) => (
-                          <option key={category} value={category}>
-                            {category}
-                          </option>
-                        ))}
+                        {availableCategories.map(
+                          (category) => (
+                            <option
+                              key={category}
+                              value={category}
+                            >
+                              {category}
+                            </option>
+                          ),
+                        )}
 
-                        {!availableCategories.includes('Je ne sais pas') && (
+                        {!availableCategories.includes(
+                          'Je ne sais pas',
+                        ) && (
                           <option value="Je ne sais pas">
                             Je ne sais pas
                           </option>
                         )}
+
                       </select>
                     </label>
+
                   </div>
+
                 </div>
               )}
 
               <label className="block">
-                <span className="font-condensed text-sm font-semibold text-[var(--club-navy-deep)]/80">
+                <span className="text-sm font-condensed font-semibold text-[var(--club-navy-deep)]/80">
                   Message
                   {!isRegistration && ' *'}
                 </span>
@@ -920,7 +968,7 @@ function ContactPage() {
               <button
                 type="submit"
                 disabled={status === 'sending'}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--club-red)] px-7 py-3 font-condensed font-bold text-white transition-colors hover:bg-[var(--club-red-deep)] disabled:opacity-60 sm:w-auto 2xl:gap-3 2xl:px-8 2xl:py-3.5 2xl:text-lg"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 2xl:gap-3 bg-[var(--club-red)] text-white font-condensed font-bold 2xl:text-lg px-7 py-3 2xl:px-8 2xl:py-3.5 rounded-lg hover:bg-[var(--club-red-deep)] transition-colors disabled:opacity-60"
               >
                 {status === 'sending'
                   ? 'Envoi en cours...'
@@ -930,16 +978,18 @@ function ContactPage() {
               </button>
 
               {status === 'error' && formError && (
-                <p role="alert" className="text-sm text-[var(--club-red)]">
+                <p
+                  role="alert"
+                  className="text-sm text-[var(--club-red)]"
+                >
                   {formError}
                 </p>
               )}
 
               <p className="text-xs leading-relaxed text-[var(--club-navy-deep)]/50">
-                Les informations transmises sont utilisées par le PLOUHA
-                Football Club uniquement pour traiter et suivre votre demande.
-                Elles sont conservées pendant 2 mois maximum. Vous pouvez
-                exercer vos droits en écrivant à{' '}
+                Les informations transmises sont utilisées par le PLOUHA Football Club
+                uniquement pour traiter et suivre votre demande. Elles sont conservées
+                pendant 2 mois maximum. Vous pouvez exercer vos droits en écrivant à{' '}
                 <a
                   href="mailto:contact@fcplouha.fr"
                   className="font-semibold text-[var(--club-navy-deep)] hover:text-[var(--club-red)]"
@@ -955,10 +1005,14 @@ function ContactPage() {
                 </a>
                 .
               </p>
+
             </form>
           )}
+
         </div>
+
       </section>
+
     </div>
   )
 }
