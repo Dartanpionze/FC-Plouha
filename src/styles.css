@@ -435,6 +435,39 @@ textarea {
   font-size: 16px;
 }
 
+/* Lien d'évitement visible uniquement lorsqu'il reçoit le focus clavier. */
+.skip-link {
+  position: fixed;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 9999;
+  transform: translateY(-200%);
+  border-radius: 0.5rem;
+  background: var(--club-yellow);
+  color: var(--club-navy-deep);
+  padding: 0.75rem 1rem;
+  font-family: var(--font-condensed, sans-serif);
+  font-weight: 800;
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.25);
+  transition: transform 160ms ease;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+  outline: 3px solid white;
+  outline-offset: 3px;
+}
+
+/* Focus clavier homogène et bien visible sur tout le site. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 3px solid var(--club-yellow);
+  outline-offset: 3px;
+}
+
+#contenu-principal:focus {
+  outline: none;
+}
+
 /* Empêche une longue adresse, un e-mail ou une URL de casser une carte. */
 p,
 li,
@@ -530,5 +563,21 @@ label {
 
   .cms-editor-button {
     padding-inline: 0.6rem;
+  }
+}
+
+/* Respecte le réglage système demandant moins de mouvements. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto !important;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
   }
 }
