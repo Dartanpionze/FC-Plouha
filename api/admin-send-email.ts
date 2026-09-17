@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { checkAdminRateLimit, sendRateLimitError } from './_admin-rate-limit'
 
 const FROM_EMAIL = 'FC Plouha <contact@fcplouha.fr>'
 const REPLY_TO_EMAIL = 'contact@fcplouha.fr'
@@ -167,6 +168,22 @@ export default async function handler(req: any, res: any) {
       return res.status(403).json({
         error: "Vous n'avez pas le droit d'envoyer des e-mails.",
       })
+    }
+
+    const rateLimit = await checkAdminRateLimit(
+      adminClient,
+      callerId,
+      'send_email',
+      10,
+      10 * 60 * 1000,
+    )
+
+    if (!rateLimit.allowed) {
+      return sendRateLimitError(
+        res,
+        rateLimit,
+        'Trop d’e-mails ont été envoyés. Réessayez dans 10 minutes.',
+      )
     }
 
     const requestedThreadId = cleanText(req.body?.thread_id, 64)
