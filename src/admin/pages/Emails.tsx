@@ -176,6 +176,46 @@ function formatBytes(value: number) {
   return `${(value / (1024 * 1024)).toFixed(1)} Mo`
 }
 
+function decodeEmailText(value: string | null | undefined) {
+  if (!value) return ''
+
+  const namedEntities: Record<string, string> = {
+    nbsp: ' ',
+    amp: '&',
+    lt: '<',
+    gt: '>',
+    quot: '"',
+    apos: "'",
+    '#39': "'",
+  }
+
+  return value
+    .replace(/&([a-z]+|#\d+|#x[\da-f]+);/gi, (entity, code: string) => {
+      const normalizedCode = code.toLowerCase()
+
+      if (namedEntities[normalizedCode] !== undefined) {
+        return namedEntities[normalizedCode]
+      }
+
+      if (normalizedCode.startsWith('#x')) {
+        const codePoint = Number.parseInt(normalizedCode.slice(2), 16)
+        return Number.isFinite(codePoint)
+          ? String.fromCodePoint(codePoint)
+          : entity
+      }
+
+      if (normalizedCode.startsWith('#')) {
+        const codePoint = Number.parseInt(normalizedCode.slice(1), 10)
+        return Number.isFinite(codePoint)
+          ? String.fromCodePoint(codePoint)
+          : entity
+      }
+
+      return entity
+    })
+    .replace(/\u00a0/g, ' ')
+}
+
 function normalizeReplySubject(subject: string) {
   return /^re\s*:/i.test(subject) ? subject : `Re: ${subject}`
 }
@@ -520,7 +560,7 @@ export default function Emails() {
             fromName: 'FC Plouha',
             fromEmail: message.from_email,
             toEmail: message.to_email,
-            text: message.body_text || '',
+            text: decodeEmailText(message.body_text),
             uid: null,
             seen: true,
             attachments: [],
@@ -596,6 +636,7 @@ export default function Emails() {
       }
 
       const detail = result.message as ImapMessageDetail
+      detail.text = decodeEmailText(detail.text)
       setSelectedImapMessage(detail)
       await loadImapConversation(detail)
     } catch (error: any) {
@@ -673,7 +714,7 @@ export default function Emails() {
           to: row.to_email || '',
           contactName: row.contact_name || '',
           subject: row.subject || '',
-          body: row.body_text || '',
+          body: decodeEmailText(row.body_text),
           inReplyTo: row.in_reply_to || '',
           references: row.references_header || '',
         },
@@ -2426,7 +2467,8 @@ export default function Emails() {
                         </p>
                       </div>
                       <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-slate-200">
-                        {message.body_text || '(Message sans contenu texte)'}
+                        {decodeEmailText(message.body_text) ||
+                          '(Message sans contenu texte)'}
                       </p>
                     </article>
                   ))
