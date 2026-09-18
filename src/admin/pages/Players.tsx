@@ -4,6 +4,7 @@ import { removeStorageFile } from '@/lib/storage'
 import {
   createImageFileName,
   MAX_IMAGE_SIZE_LABEL,
+  optimizeImageFile,
   validateImageFile,
 } from '@/lib/uploads'
 import { useAdminAccess } from '@/admin/hooks/useAdminAccess'
@@ -298,11 +299,12 @@ export default function Players() {
         return
       }
 
-      const fileName = createImageFileName(photo)
+      const optimizedPhoto = await optimizeImageFile(photo)
+      const fileName = createImageFileName(optimizedPhoto)
 
       const { error: uploadError } = await supabase.storage
         .from('player-images')
-        .upload(fileName, photo)
+        .upload(fileName, optimizedPhoto)
 
       if (uploadError) {
         console.error(uploadError)
