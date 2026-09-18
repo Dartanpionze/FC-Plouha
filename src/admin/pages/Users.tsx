@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useMemo, useState } from 'react'
 import { Check, Power, RefreshCw, Save, ShieldCheck, Trash2, UserPlus, UserRound, X, Search, UsersRound } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import type { AdminModule } from '@/lib/adminPermissions'
+import useAccessibleDialog from '@/hooks/useAccessibleDialog'
 
 type AdminUser = {
   user_id: string
@@ -364,6 +365,11 @@ Cette action supprime aussi son compte de connexion Supabase Auth et ne peut pas
     setInviteEmail('')
     setInvitePermissions(emptyInvitePermissions())
   }
+
+  const inviteDialogRef = useAccessibleDialog<HTMLDivElement>(
+    inviteOpen,
+    closeInvite,
+  )
 
   const inviteUser = async (event: FormEvent) => {
     event.preventDefault()
@@ -728,7 +734,14 @@ Cette action supprime aussi son compte de connexion Supabase Auth et ne peut pas
       </div>
 
       {inviteOpen && (
-        <div className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-slate-950/80 px-3 py-6 backdrop-blur-sm sm:px-6 sm:py-10">
+        <div
+          ref={inviteDialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="invite-dialog-title"
+          tabIndex={-1}
+          className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-slate-950/80 px-3 py-6 backdrop-blur-sm sm:px-6 sm:py-10"
+        >
           <div className="w-full max-w-5xl overflow-hidden rounded-2xl border border-white/10 bg-slate-900 shadow-2xl">
             <form onSubmit={inviteUser}>
               <div className="flex items-start justify-between gap-4 border-b border-white/10 px-4 py-4 sm:px-6">
@@ -737,7 +750,7 @@ Cette action supprime aussi son compte de connexion Supabase Auth et ne peut pas
                     <UserPlus size={18} />
                     Nouvel accès CMS
                   </div>
-                  <h3 className="mt-1 text-xl font-black">Inviter un utilisateur</h3>
+                  <h3 id="invite-dialog-title" className="mt-1 text-xl font-black">Inviter un utilisateur</h3>
                   <p className="mt-1 text-sm text-slate-400">
                     Il recevra un e-mail pour définir son mot de passe.
                   </p>
