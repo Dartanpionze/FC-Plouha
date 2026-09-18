@@ -5,6 +5,7 @@ import { removeStorageFile } from '@/lib/storage'
 import {
   createImageFileName,
   MAX_IMAGE_SIZE_LABEL,
+  optimizeImageFile,
   validateImageFile,
 } from '@/lib/uploads'
 import { useAdminAccess } from '@/admin/hooks/useAdminAccess'
@@ -411,11 +412,12 @@ export default function Club() {
         return
       }
 
-      const fileName = createImageFileName(staffImage)
+      const optimizedStaffImage = await optimizeImageFile(staffImage)
+      const fileName = createImageFileName(optimizedStaffImage)
 
       const { error: uploadError } = await supabase.storage
         .from('staff-images')
-        .upload(fileName, staffImage)
+        .upload(fileName, optimizedStaffImage)
 
       if (uploadError) {
         console.error(uploadError)
