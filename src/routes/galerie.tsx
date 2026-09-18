@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import Seo from '@/components/Seo'
+import useAccessibleDialog from '@/hooks/useAccessibleDialog'
 
 type Album = {
   id: number
@@ -38,6 +39,11 @@ function GalleryPage() {
 
   const [lightboxPhoto, setLightboxPhoto] =
     useState<Photo | null>(null)
+
+  const lightboxRef = useAccessibleDialog<HTMLDivElement>(
+    Boolean(lightboxPhoto),
+    () => setLightboxPhoto(null),
+  )
 
   useEffect(() => {
     if (!lightboxPhoto) return
@@ -531,9 +537,11 @@ function GalleryPage() {
       {/* LIGHTBOX */}
       {lightboxPhoto && (
         <div
+          ref={lightboxRef}
           role="dialog"
           aria-modal="true"
           aria-label="Aperçu de la photo"
+          tabIndex={-1}
           className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4 sm:p-8"
           onClick={() =>
             setLightboxPhoto(null)
