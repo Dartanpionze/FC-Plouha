@@ -4,6 +4,7 @@ import { removeStorageFile, removeStorageFiles } from '@/lib/storage'
 import {
   createImageFileName,
   MAX_IMAGE_SIZE_LABEL,
+  optimizeImageFile,
   validateImageFile,
 } from '@/lib/uploads'
 import { useAdminAccess } from '@/admin/hooks/useAdminAccess'
@@ -237,11 +238,12 @@ export default function Gallery() {
     }
 
     for (const file of photoFiles) {
-      const fileName = createImageFileName(file)
+      const optimizedFile = await optimizeImageFile(file)
+      const fileName = createImageFileName(optimizedFile)
 
       const { error: uploadError } = await supabase.storage
         .from('gallery-images')
-        .upload(fileName, file)
+        .upload(fileName, optimizedFile)
 
       if (uploadError) {
         console.error(uploadError)
