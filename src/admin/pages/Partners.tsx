@@ -4,6 +4,7 @@ import { removeStorageFile } from '@/lib/storage'
 import {
   createImageFileName,
   MAX_IMAGE_SIZE_LABEL,
+  optimizeImageFile,
   validateImageFile,
 } from '@/lib/uploads'
 import { useAdminAccess } from '@/admin/hooks/useAdminAccess'
@@ -201,11 +202,12 @@ export default function Partners() {
         return
       }
 
-      const fileName = createImageFileName(logo)
+      const optimizedLogo = await optimizeImageFile(logo)
+      const fileName = createImageFileName(optimizedLogo)
 
       const { error: uploadError } = await supabase.storage
         .from('partner-logos')
-        .upload(fileName, logo)
+        .upload(fileName, optimizedLogo)
 
       if (uploadError) {
         console.error(uploadError)
