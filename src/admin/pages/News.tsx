@@ -4,6 +4,7 @@ import { removeStorageFile } from '@/lib/storage'
 import {
   createImageFileName,
   MAX_IMAGE_SIZE_LABEL,
+  optimizeImageFile,
   validateImageFile,
 } from '@/lib/uploads'
 import { useAdminAccess } from '@/admin/hooks/useAdminAccess'
@@ -647,11 +648,12 @@ export default function News() {
     setMessage('')
 
     try {
-      const fileName = createImageFileName(file)
+      const optimizedFile = await optimizeImageFile(file)
+      const fileName = createImageFileName(optimizedFile)
 
       const { error: uploadError } = await supabase.storage
         .from('news-images')
-        .upload(fileName, file)
+        .upload(fileName, optimizedFile)
 
       if (uploadError) {
         console.error(uploadError)
@@ -841,11 +843,12 @@ export default function News() {
         return
       }
 
-      const fileName = createImageFileName(image)
+      const optimizedImage = await optimizeImageFile(image)
+      const fileName = createImageFileName(optimizedImage)
 
       const { error: uploadError } = await supabase.storage
         .from('news-images')
-        .upload(fileName, image)
+        .upload(fileName, optimizedImage)
 
       if (uploadError) {
         console.error(uploadError)
