@@ -4,6 +4,7 @@ import { removeStorageFile } from '@/lib/storage'
 import {
   createImageFileName,
   MAX_IMAGE_SIZE_LABEL,
+  optimizeImageFile,
   validateImageFile,
 } from '@/lib/uploads'
 import { useAdminAccess } from '@/admin/hooks/useAdminAccess'
@@ -183,11 +184,12 @@ export default function Teams() {
         return
       }
 
-      const fileName = createImageFileName(image)
+      const optimizedImage = await optimizeImageFile(image)
+      const fileName = createImageFileName(optimizedImage)
 
       const { error: uploadError } = await supabase.storage
         .from('team-images')
-        .upload(fileName, image)
+        .upload(fileName, optimizedImage)
 
       if (uploadError) {
         console.error(uploadError)
