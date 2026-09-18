@@ -21,6 +21,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAdminAccess } from '@/admin/hooks/useAdminAccess'
+import useAccessibleDialog from '@/hooks/useAccessibleDialog'
 
 type EmailThread = {
   id: string
@@ -1549,6 +1550,21 @@ export default function Emails() {
     clearOutgoingAttachments()
   }
 
+  const signatureDialogRef = useAccessibleDialog<HTMLDivElement>(
+    signatureEditorOpen,
+    () => {
+      if (!signatureSaving) setSignatureEditorOpen(false)
+    },
+  )
+  const draftsDialogRef = useAccessibleDialog<HTMLDivElement>(
+    showDrafts,
+    () => setShowDrafts(false),
+  )
+  const composerDialogRef = useAccessibleDialog<HTMLDivElement>(
+    composer.open,
+    closeComposer,
+  )
+
   useEffect(() => {
     if (!composer.open || sending) return
 
@@ -2491,14 +2507,21 @@ export default function Emails() {
       </div>
 
       {signatureEditorOpen && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/70 p-4">
+        <div
+          ref={signatureDialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="signature-dialog-title"
+          tabIndex={-1}
+          className="fixed inset-0 z-[120] flex items-center justify-center bg-black/70 p-4"
+        >
           <div className="w-full max-w-2xl overflow-hidden rounded-2xl border border-white/10 bg-slate-900 shadow-2xl">
             <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--club-yellow)]">
                   Messagerie
                 </p>
-                <h2 className="mt-1 text-xl font-black text-white">
+                <h2 id="signature-dialog-title" className="mt-1 text-xl font-black text-white">
                   Ma signature
                 </h2>
                 <p className="mt-1 text-xs text-slate-500">
@@ -2510,6 +2533,7 @@ export default function Emails() {
                 onClick={() => setSignatureEditorOpen(false)}
                 disabled={signatureSaving}
                 className="rounded-lg p-2 text-slate-400 hover:bg-white/5 hover:text-white disabled:opacity-40"
+                aria-label="Fermer l’éditeur de signature"
               >
                 <X size={20} />
               </button>
@@ -2587,14 +2611,21 @@ export default function Emails() {
       )}
 
       {showDrafts && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/70 p-4">
+        <div
+          ref={draftsDialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="drafts-dialog-title"
+          tabIndex={-1}
+          className="fixed inset-0 z-[110] flex items-center justify-center bg-black/70 p-4"
+        >
           <div className="w-full max-w-3xl overflow-hidden rounded-2xl border border-white/10 bg-slate-900 shadow-2xl">
             <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--club-yellow)]">
                   Messagerie
                 </p>
-                <h2 className="mt-1 text-xl font-black text-white">
+                <h2 id="drafts-dialog-title" className="mt-1 text-xl font-black text-white">
                   Brouillons
                 </h2>
                 <p className="mt-1 text-xs text-slate-500">
@@ -2605,6 +2636,7 @@ export default function Emails() {
                 type="button"
                 onClick={() => setShowDrafts(false)}
                 className="rounded-lg p-2 text-slate-400 hover:bg-white/5 hover:text-white"
+                aria-label="Fermer les brouillons"
               >
                 <X size={20} />
               </button>
@@ -2681,14 +2713,21 @@ export default function Emails() {
       )}
 
       {composer.open && (
-        <div className="fixed inset-0 z-[100] flex min-h-0 items-stretch justify-center bg-black/70 p-0 sm:items-center sm:p-4">
+        <div
+          ref={composerDialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="composer-dialog-title"
+          tabIndex={-1}
+          className="fixed inset-0 z-[100] flex min-h-0 items-stretch justify-center bg-black/70 p-0 sm:items-center sm:p-4"
+        >
           <div className="flex max-h-[100dvh] min-h-0 w-full max-w-3xl flex-col overflow-hidden bg-slate-900 shadow-2xl sm:max-h-[calc(100dvh-2rem)] sm:rounded-2xl sm:border sm:border-white/10">
             <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-3 sm:px-5 sm:py-4">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--club-yellow)]">
                   FC Plouha
                 </p>
-                <h2 className="mt-1 text-xl font-black text-white">
+                <h2 id="composer-dialog-title" className="mt-1 text-xl font-black text-white">
                   {composer.to ? 'Message' : 'Nouveau message'}
                 </h2>
                 {draftSavedAt && (
@@ -2707,6 +2746,7 @@ export default function Emails() {
                 onClick={closeComposer}
                 disabled={sending}
                 className="rounded-lg p-2 text-slate-400 hover:bg-white/5 hover:text-white disabled:opacity-40"
+                aria-label="Fermer la rédaction du message"
               >
                 <X size={20} />
               </button>
