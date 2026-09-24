@@ -343,10 +343,18 @@ export default async function handler(req: any, res: any) {
         },
       )
 
-      const status = await client.status(requestedFolder, {
-        messages: true,
-        unseen: true,
-      })
+      // La boîte est déjà sélectionnée par getMailboxLock(). Certains serveurs
+      // OVH refusent alors une commande STATUS sur cette même boîte avec le
+      // message générique « Command failed ». Une recherche dans la boîte
+      // actuellement ouverte fournit le nombre de messages non lus sans
+      // provoquer ce conflit IMAP.
+      const unseenSearchResult = await client.search(
+        { seen: false },
+        { uid: true },
+      )
+      const unseenCount = Array.isArray(unseenSearchResult)
+        ? unseenSearchResult.length
+        : fetched.filter((message) => !message.flags?.has('\\Seen')).length
 
       const messages = fetched
         .map((message) => {
@@ -375,8 +383,8 @@ export default async function handler(req: any, res: any) {
         folder: requestedFolder,
         folders,
         messages,
-        total: status.messages ?? messages.length,
-        unread: status.unseen ?? messages.filter((message) => !message.seen).length,
+        total: exists,
+        unread: unseenCount,
         readOnly: true,
       })
     } finally {
