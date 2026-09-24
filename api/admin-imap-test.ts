@@ -1,6 +1,6 @@
 import { ImapFlow } from 'imapflow'
 import { createClient } from '@supabase/supabase-js'
-import { checkAdminRateLimit, sendRateLimitError } from './_admin-rate-limit'
+import { checkAdminRateLimit, sendRateLimitError } from './_admin-rate-limit.ts'
 
 function getBearerToken(req: any) {
   const header = req.headers?.authorization
