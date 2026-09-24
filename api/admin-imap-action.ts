@@ -1,6 +1,6 @@
 import { ImapFlow } from 'imapflow'
 import { createClient } from '@supabase/supabase-js'
-import { checkAdminRateLimit, sendRateLimitError } from './_admin-rate-limit'
+import { checkAdminRateLimit, sendRateLimitError } from './_admin-rate-limit.ts'
 
 type RequiredPermission = 'update' | 'delete'
 
