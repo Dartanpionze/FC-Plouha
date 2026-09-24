@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { checkAdminRateLimit, sendRateLimitError } from './_admin-rate-limit'
+import { checkAdminRateLimit, sendRateLimitError } from './_admin-rate-limit.ts'
 
 const FROM_EMAIL = 'FC Plouha <contact@fcplouha.fr>'
 const REPLY_TO_EMAIL = 'contact@fcplouha.fr'
