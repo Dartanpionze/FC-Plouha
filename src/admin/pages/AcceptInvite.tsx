@@ -54,11 +54,7 @@ export default function AcceptInvite() {
       setSessionReady(true)
 
       if (hasSession) {
-        window.history.replaceState(
-          {},
-          document.title,
-          window.location.pathname,
-        )
+        window.history.replaceState({}, document.title, window.location.pathname)
       }
     }
 
@@ -80,7 +76,6 @@ export default function AcceptInvite() {
         }
 
         const currentSession = await supabase.auth.getSession()
-
         if (currentSession.data.session) {
           finishWithSession(true)
           return
@@ -90,11 +85,7 @@ export default function AcceptInvite() {
           const { data, error } = await supabase.auth.exchangeCodeForSession(
             initialInviteParameters.code,
           )
-
-          if (error) {
-            throw error
-          }
-
+          if (error) throw error
           finishWithSession(Boolean(data.session))
           return
         }
@@ -104,11 +95,7 @@ export default function AcceptInvite() {
             token_hash: initialInviteParameters.tokenHash,
             type: 'invite',
           })
-
-          if (error) {
-            throw error
-          }
-
+          if (error) throw error
           finishWithSession(Boolean(data.session))
           return
         }
@@ -121,11 +108,7 @@ export default function AcceptInvite() {
             access_token: initialInviteParameters.accessToken,
             refresh_token: initialInviteParameters.refreshToken,
           })
-
-          if (error) {
-            throw error
-          }
-
+          if (error) throw error
           finishWithSession(Boolean(data.session))
           return
         }
@@ -134,20 +117,17 @@ export default function AcceptInvite() {
         finishWithSession(!error && Boolean(data.session))
       } catch (error) {
         console.error('INVITE SESSION ERROR:', error)
-
         if (mounted) {
           setErrorMessage(
             "Le lien d’invitation est invalide, a expiré ou a déjà été utilisé.",
           )
         }
-
         finishWithSession(false)
       }
     }
 
     const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       if (!mounted) return
-
       if (
         initialInviteParameters.hasInviteMarker ||
         event === 'SIGNED_IN' ||
