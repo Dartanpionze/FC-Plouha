@@ -75,12 +75,6 @@ export default function AcceptInvite() {
           return
         }
 
-        const currentSession = await supabase.auth.getSession()
-        if (currentSession.data.session) {
-          finishWithSession(true)
-          return
-        }
-
         if (initialInviteParameters.code) {
           const { data, error } = await supabase.auth.exchangeCodeForSession(
             initialInviteParameters.code,
@@ -128,11 +122,7 @@ export default function AcceptInvite() {
 
     const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       if (!mounted) return
-      if (
-        initialInviteParameters.hasInviteMarker ||
-        event === 'SIGNED_IN' ||
-        event === 'PASSWORD_RECOVERY'
-      ) {
+      if (event === 'SIGNED_IN' || event === 'PASSWORD_RECOVERY') {
         setHasInviteSession(Boolean(session))
         setSessionReady(true)
       }
@@ -167,10 +157,51 @@ export default function AcceptInvite() {
 
     setSaving(true)
 
+    const { data: sessionData, error: sessionError } =
+      await supabase.auth.getSession()
+
+    if (sessionError || !sessionData.session) {
+      setErrorMessage(
+        "La session d’activation n’est plus disponible. Ouvrez de nouveau le dernier lien d’invitation reçu.",
+      )
+      setSaving(false)
+      return
+    }
+
     const { error } = await supabase.auth.updateUser({ password })
 
     if (error) {
-      setErrorMessage("Impossible d'enregistrer le mot de passe. Le lien d'invitation a peut-être expiré.")
+      console.error('INVITE PASSWORD UPDATE ERROR:', {
+        message: error.message,
+        code: error.code,
+        status: error.status,
+      })
+
+      const normalizedMessage = error.message.toLowerCase()
+
+      if (
+        normalizedMessage.includes('weak') ||
+        normalizedMessage.includes('password') &&
+          (normalizedMessage.includes('character') ||
+            normalizedMessage.includes('strength'))
+      ) {
+        setErrorMessage(
+          'Ce mot de passe est trop faible. Utilisez au moins 12 caractères avec une majuscule, une minuscule, un chiffre et un caractère spécial.',
+        )
+      } else if (
+        normalizedMessage.includes('session') ||
+        normalizedMessage.includes('expired') ||
+        normalizedMessage.includes('jwt')
+      ) {
+        setErrorMessage(
+          "La session d’activation a expiré. Ouvrez de nouveau le dernier lien d’invitation reçu.",
+        )
+      } else {
+        setErrorMessage(
+          `Impossible d’enregistrer le mot de passe : ${error.message}`,
+        )
+      }
+
       setSaving(false)
       return
     }
