@@ -1,22 +1,43 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react'
+import { FormEvent, useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { AlertTriangle, KeyRound, Loader2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
-function hasInviteMarker() {
+function readInviteParameters() {
   const search = new URLSearchParams(window.location.search)
   const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''))
 
   const type = search.get('type') ?? hash.get('type')
-  const hasAccessToken = Boolean(hash.get('access_token'))
-  const hasCode = Boolean(search.get('code'))
+  const code = search.get('code') ?? hash.get('code') ?? ''
+  const tokenHash = search.get('token_hash') ?? hash.get('token_hash') ?? ''
+  const accessToken = hash.get('access_token') ?? search.get('access_token') ?? ''
+  const refreshToken = hash.get('refresh_token') ?? search.get('refresh_token') ?? ''
+  const urlError =
+    search.get('error_description') ??
+    hash.get('error_description') ??
+    search.get('error') ??
+    hash.get('error') ??
+    ''
 
-  return type === 'invite' || (hasAccessToken && type === 'invite') || (hasCode && type === 'invite')
+  return {
+    type,
+    code,
+    tokenHash,
+    accessToken,
+    refreshToken,
+    urlError: urlError.replace(/\+/g, ' '),
+    hasInviteMarker:
+      type === 'invite' ||
+      Boolean(code) ||
+      Boolean(tokenHash) ||
+      Boolean(accessToken && refreshToken),
+  }
 }
+
+const initialInviteParameters = readInviteParameters()
 
 export default function AcceptInvite() {
   const navigate = useNavigate()
-  const inviteMarker = useMemo(() => hasInviteMarker(), [])
   const [sessionReady, setSessionReady] = useState(false)
   const [hasInviteSession, setHasInviteSession] = useState(false)
   const [password, setPassword] = useState('')
@@ -27,27 +48,123 @@ export default function AcceptInvite() {
   useEffect(() => {
     let mounted = true
 
-    const readSession = async () => {
-      const { data, error } = await supabase.auth.getSession()
+    const finishWithSession = (hasSession: boolean) => {
       if (!mounted) return
-
-      setHasInviteSession(inviteMarker && !error && Boolean(data.session))
+      setHasInviteSession(hasSession)
       setSessionReady(true)
+
+      if (hasSession) {
+        window.history.replaceState(
+          {},
+          document.title,
+          window.location.pathname,
+        )
+      }
     }
 
-    void readSession()
+    const readSession = async () => {
+      try {
+        if (initialInviteParameters.urlError) {
+          if (mounted) {
+            setErrorMessage(
+              `Le lien d’invitation est invalide ou a expiré : ${initialInviteParameters.urlError}`,
+            )
+          }
+          finishWithSession(false)
+          return
+        }
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+        if (!initialInviteParameters.hasInviteMarker) {
+          finishWithSession(false)
+          return
+        }
+
+        const currentSession = await supabase.auth.getSession()
+
+        if (currentSession.data.session) {
+          finishWithSession(true)
+          return
+        }
+
+        if (initialInviteParameters.code) {
+          const { data, error } = await supabase.auth.exchangeCodeForSession(
+            initialInviteParameters.code,
+          )
+
+          if (error) {
+            throw error
+          }
+
+          finishWithSession(Boolean(data.session))
+          return
+        }
+
+        if (initialInviteParameters.tokenHash) {
+          const { data, error } = await supabase.auth.verifyOtp({
+            token_hash: initialInviteParameters.tokenHash,
+            type: 'invite',
+          })
+
+          if (error) {
+            throw error
+          }
+
+          finishWithSession(Boolean(data.session))
+          return
+        }
+
+        if (
+          initialInviteParameters.accessToken &&
+          initialInviteParameters.refreshToken
+        ) {
+          const { data, error } = await supabase.auth.setSession({
+            access_token: initialInviteParameters.accessToken,
+            refresh_token: initialInviteParameters.refreshToken,
+          })
+
+          if (error) {
+            throw error
+          }
+
+          finishWithSession(Boolean(data.session))
+          return
+        }
+
+        const { data, error } = await supabase.auth.getSession()
+        finishWithSession(!error && Boolean(data.session))
+      } catch (error) {
+        console.error('INVITE SESSION ERROR:', error)
+
+        if (mounted) {
+          setErrorMessage(
+            "Le lien d’invitation est invalide, a expiré ou a déjà été utilisé.",
+          )
+        }
+
+        finishWithSession(false)
+      }
+    }
+
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       if (!mounted) return
-      setHasInviteSession(inviteMarker && Boolean(session))
-      setSessionReady(true)
+
+      if (
+        initialInviteParameters.hasInviteMarker ||
+        event === 'SIGNED_IN' ||
+        event === 'PASSWORD_RECOVERY'
+      ) {
+        setHasInviteSession(Boolean(session))
+        setSessionReady(true)
+      }
     })
+
+    void readSession()
 
     return () => {
       mounted = false
       listener.subscription.unsubscribe()
     }
-  }, [inviteMarker])
+  }, [])
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
@@ -111,7 +228,8 @@ export default function AcceptInvite() {
               <div>
                 <p className="font-semibold">Aucune invitation valide détectée</p>
                 <p className="mt-1 text-sm">
-                  Utilisez le lien reçu par e-mail pour activer votre compte CMS. Une session déjà connectée ne suffit pas à ouvrir cette page d’activation.
+                  {errorMessage ||
+                    'Utilisez le lien reçu par e-mail pour activer votre compte CMS. Une session déjà connectée ne suffit pas à ouvrir cette page d’activation.'}
                 </p>
               </div>
             </div>
