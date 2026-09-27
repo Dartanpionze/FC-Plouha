@@ -13,7 +13,6 @@ import {
   ArrowRight,
   UserPlus,
 } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
 import { SectionHeading } from '@/components/SectionHeading'
 import Seo from '@/components/Seo'
 
@@ -53,6 +52,19 @@ type Team = {
   active: boolean
 }
 
+type ClubData = {
+  settings: ClubSettings | null
+  history: HistoryItem[]
+  staff: StaffMember[]
+  teams: Team[]
+}
+
+type ClubResponse = {
+  success?: boolean
+  data?: ClubData
+  error?: string
+}
+
 function ClubPage() {
   const [settings, setSettings] = useState<ClubSettings | null>(null)
   const [history, setHistory] = useState<HistoryItem[]>([])
@@ -71,66 +83,25 @@ function ClubPage() {
     setError(false)
 
     try {
-      const [
-        settingsResult,
-        historyResult,
-        staffResult,
-        teamsResult,
-      ] = await Promise.all([
-        supabase
-          .from('club_settings')
-          .select(`
-            club_name,
-            short_name,
-            season,
-            description,
-            founded_year,
-            members_count,
-            volunteers_count,
-            district_titles,
-            city
-          `)
-          .limit(1)
-          .single(),
+      const response = await fetch('/api/public-club', {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+        },
+      })
 
-        supabase
-          .from('club_history')
-          .select('*')
-          .order('display_order', { ascending: true })
-          .order('year', { ascending: true }),
+      const result = (await response.json().catch(() => null)) as ClubResponse | null
 
-        supabase
-          .from('club_staff')
-          .select('*')
-          .eq('active', true)
-          .order('display_order', { ascending: true })
-          .order('name', { ascending: true }),
-
-        supabase
-          .from('teams')
-          .select('id, active')
-          .eq('active', true),
-      ])
-
-      const results = [
-        settingsResult,
-        historyResult,
-        staffResult,
-        teamsResult,
-      ]
-
-      if (results.some((result) => Boolean(result.error))) {
-        results.forEach((result) => {
-          if (result.error) console.error(result.error)
-        })
-
-        setError(true)
+      if (!response.ok || result?.success !== true || !result.data) {
+        throw new Error(
+          result?.error || 'Impossible de charger les informations du club.',
+        )
       }
 
-      setSettings(settingsResult.data || null)
-      setHistory(historyResult.data || [])
-      setStaff(staffResult.data || [])
-      setTeams(teamsResult.data || [])
+      setSettings(result.data.settings)
+      setHistory(result.data.history)
+      setStaff(result.data.staff)
+      setTeams(result.data.teams)
     } catch (fetchError) {
       console.error(fetchError)
       setError(true)
