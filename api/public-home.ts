@@ -10,17 +10,54 @@ function singleRelation<T>(
   return relation ?? null
 }
 
-function sendDatabaseError(res: any, section: 'home' | 'club' | 'contact') {
+function sendDatabaseError(
+  res: any,
+  section: 'home' | 'club' | 'contact' | 'gallery',
+) {
   const label =
     section === 'club'
       ? 'du club'
       : section === 'contact'
         ? 'de contact'
+        : section === 'gallery'
+          ? 'de la galerie'
         : "de l'accueil"
 
   return res.status(502).json({
     success: false,
     error: `Impossible de charger les informations ${label}.`,
+  })
+}
+
+async function loadGalleryData(supabase: any, res: any) {
+  const [albumsResult, photosResult] = await Promise.all([
+    supabase
+      .from('gallery_albums')
+      .select('id, created_at, name, description, cover_url, active')
+      .eq('active', true)
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('gallery_photos')
+      .select('id, created_at, album_id, image_url, caption, active')
+      .eq('active', true)
+      .order('created_at', { ascending: false }),
+  ])
+
+  const errors = [albumsResult.error, photosResult.error].filter((error) =>
+    Boolean(error),
+  )
+
+  if (errors.length > 0) {
+    console.error('PUBLIC GALLERY SUPABASE ERROR:', errors)
+    return sendDatabaseError(res, 'gallery')
+  }
+
+  return res.status(200).json({
+    success: true,
+    data: {
+      albums: albumsResult.data ?? [],
+      photos: photosResult.data ?? [],
+    },
   })
 }
 
@@ -288,7 +325,9 @@ export default async function handler(req: any, res: any) {
 
   const requestedSection = req.query?.section
   const section =
-    requestedSection === 'club' || requestedSection === 'contact'
+    requestedSection === 'club' ||
+    requestedSection === 'contact' ||
+    requestedSection === 'gallery'
       ? requestedSection
       : 'home'
   const supabaseUrl = process.env.VITE_SUPABASE_URL
@@ -322,6 +361,10 @@ export default async function handler(req: any, res: any) {
 
     if (section === 'contact') {
       return await loadContactData(supabase, res)
+    }
+
+    if (section === 'gallery') {
+      return await loadGalleryData(supabase, res)
     }
 
     return await loadHomeData(supabase, res)
