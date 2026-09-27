@@ -8,7 +8,6 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
 import Seo from '@/components/Seo'
 import useAccessibleDialog from '@/hooks/useAccessibleDialog'
 
@@ -28,6 +27,15 @@ type Photo = {
   image_url: string
   caption: string | null
   active: boolean
+}
+
+type GalleryResponse = {
+  success?: boolean
+  data?: {
+    albums: Album[]
+    photos: Photo[]
+  }
+  error?: string
 }
 
 function GalleryPage() {
@@ -76,42 +84,32 @@ function GalleryPage() {
     setLoading(true)
     setError(false)
 
-    const { data: albumsData, error: albumsError } =
-      await supabase
-        .from('gallery_albums')
-        .select('*')
-        .eq('active', true)
-        .order('created_at', {
-          ascending: false,
-        })
+    try {
+      const response = await fetch('/api/public-home?section=gallery', {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+        },
+      })
 
-    if (albumsError) {
-      console.error(albumsError)
+      const result = (await response.json().catch(() => null)) as
+        | GalleryResponse
+        | null
+
+      if (!response.ok || result?.success !== true || !result.data) {
+        throw new Error(
+          result?.error || 'Impossible de charger la galerie.',
+        )
+      }
+
+      setAlbums(result.data.albums)
+      setPhotos(result.data.photos)
+    } catch (fetchError) {
+      console.error(fetchError)
       setError(true)
+    } finally {
       setLoading(false)
-      return
     }
-
-    const { data: photosData, error: photosError } =
-      await supabase
-        .from('gallery_photos')
-        .select('*')
-        .eq('active', true)
-        .order('created_at', {
-          ascending: false,
-        })
-
-    if (photosError) {
-      console.error(photosError)
-      setError(true)
-      setLoading(false)
-      return
-    }
-
-    setAlbums(albumsData || [])
-    setPhotos(photosData || [])
-
-    setLoading(false)
   }
 
   const visiblePhotos = selectedAlbum
