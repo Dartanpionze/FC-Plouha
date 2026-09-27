@@ -15,7 +15,6 @@ import {
   UserPlus,
 } from 'lucide-react'
 import Seo from '@/components/Seo'
-import { supabase } from '@/lib/supabase'
 import preinscriptionRectoPdf from '@/assets/documents/fiche-preinscription-2026-2027-recto.pdf'
 import preinscriptionVersoPdf from '@/assets/documents/fiche-preinscription-2026-2027-verso.pdf'
 import preinscriptionCompletPdf from '@/assets/documents/fiche-preinscription-fc-plouha-2026-2027.pdf'
@@ -29,8 +28,15 @@ type RegistrationFee = {
   display_order: number
 }
 
-type TeamCategory = {
-  category: string | null
+type PublicRegistrationData = {
+  teamCategories: string[]
+  registrationFees: RegistrationFee[]
+}
+
+type PublicRegistrationResponse = {
+  success?: boolean
+  data?: PublicRegistrationData
+  error?: string
 }
 
 type RegistrationForm = {
@@ -121,42 +127,30 @@ function RejoindrePage() {
     let cancelled = false
 
     const fetchPageData = async () => {
-      const [feesResult, teamsResult] = await Promise.all([
-        supabase
-          .from('registration_fees')
-          .select('id, title, amount, description, season, display_order')
-          .eq('active', true)
-          .order('display_order', { ascending: true })
-          .order('title', { ascending: true }),
-        supabase
-          .from('teams')
-          .select('category')
-          .eq('active', true)
-          .order('category', { ascending: true }),
-      ])
+      try {
+        const response = await fetch('/api/public-home?section=contact', {
+          method: 'GET',
+          headers: {
+            Accept: 'application/json',
+          },
+        })
 
-      if (feesResult.error) {
-        console.error(feesResult.error)
-      } else if (!cancelled) {
-        setFees(
-          (feesResult.data ?? []).map((fee) => ({
-            ...fee,
-            amount: Number(fee.amount),
-          })) as RegistrationFee[],
-        )
-      }
+        const result = (await response.json().catch(() => null)) as
+          | PublicRegistrationResponse
+          | null
 
-      if (teamsResult.error) {
-        console.error(teamsResult.error)
-      } else if (!cancelled) {
-        const categories = Array.from(
-          new Set(
-            ((teamsResult.data ?? []) as TeamCategory[])
-              .map((team) => team.category?.trim())
-              .filter((category): category is string => Boolean(category)),
-          ),
-        )
-        setTeamCategories(categories)
+        if (!response.ok || result?.success !== true || !result.data) {
+          throw new Error(
+            result?.error || "Impossible de charger les informations d'inscription.",
+          )
+        }
+
+        if (!cancelled) {
+          setFees(result.data.registrationFees)
+          setTeamCategories(result.data.teamCategories)
+        }
+      } catch (error) {
+        console.error(error)
       }
     }
 
