@@ -15,7 +15,6 @@ import {
   ArrowRight,
   Euro,
 } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
 import Seo from '@/components/Seo'
 
 type ClubSettings = {
@@ -28,10 +27,6 @@ type ClubSettings = {
   phone: string | null
 }
 
-type TeamCategory = {
-  category: string | null
-}
-
 type RegistrationFee = {
   id: string
   title: string
@@ -39,6 +34,18 @@ type RegistrationFee = {
   description: string | null
   season: string | null
   display_order: number
+}
+
+type ContactData = {
+  settings: ClubSettings | null
+  teamCategories: string[]
+  registrationFees: RegistrationFee[]
+}
+
+type ContactResponse = {
+  success?: boolean
+  data?: ContactData
+  error?: string
 }
 
 type FormFields = {
@@ -97,67 +104,26 @@ function ContactPage() {
     setPageDataError(false)
 
     try {
-      const [settingsResult, teamsResult, feesResult] = await Promise.all([
-        supabase
-          .from('club_settings')
-          .select(`
-            club_name,
-            short_name,
-            address,
-            postal_code,
-            city,
-            email,
-            phone
-          `)
-          .limit(1)
-          .single(),
+      const response = await fetch('/api/public-home?section=contact', {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+        },
+      })
 
-        supabase
-          .from('teams')
-          .select('category')
-          .eq('active', true)
-          .order('category', { ascending: true }),
+      const result = (await response.json().catch(() => null)) as
+        | ContactResponse
+        | null
 
-        supabase
-          .from('registration_fees')
-          .select('id, title, amount, description, season, display_order')
-          .eq('active', true)
-          .order('display_order', { ascending: true })
-          .order('title', { ascending: true }),
-      ])
-
-      if (settingsResult.error) {
-        console.error(settingsResult.error)
-        setPageDataError(true)
-      } else {
-        setSettings(settingsResult.data)
-      }
-
-      if (teamsResult.error) {
-        console.error(teamsResult.error)
-        setPageDataError(true)
-      } else {
-        const categories = Array.from(
-          new Set(
-            ((teamsResult.data || []) as TeamCategory[])
-              .map((team) => team.category?.trim())
-              .filter((category): category is string => Boolean(category)),
-          ),
-        )
-
-        setTeamCategories(categories)
-      }
-
-      if (feesResult.error) {
-        console.error(feesResult.error)
-      } else {
-        setRegistrationFees(
-          (feesResult.data ?? []).map((fee) => ({
-            ...fee,
-            amount: Number(fee.amount),
-          })) as RegistrationFee[],
+      if (!response.ok || result?.success !== true || !result.data) {
+        throw new Error(
+          result?.error || 'Impossible de charger les informations de contact.',
         )
       }
+
+      setSettings(result.data.settings)
+      setTeamCategories(result.data.teamCategories)
+      setRegistrationFees(result.data.registrationFees)
     } catch (fetchError) {
       console.error(fetchError)
       setPageDataError(true)
