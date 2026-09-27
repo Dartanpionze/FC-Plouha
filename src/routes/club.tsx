@@ -83,7 +83,7 @@ function ClubPage() {
     setError(false)
 
     try {
-      const response = await fetch('/api/public-club', {
+      const response = await fetch('/api/public-home?section=club', {
         method: 'GET',
         headers: {
           Accept: 'application/json',
