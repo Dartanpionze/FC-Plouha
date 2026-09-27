@@ -2,19 +2,35 @@ import { createClient } from '@supabase/supabase-js'
 
 const SITE_URL = 'https://fcplouha.fr'
 
-const STATIC_PAGES = [
+const ALWAYS_VISIBLE_PAGES = [
   '/',
-  '/club',
-  '/equipes',
-  '/calendrier',
-  '/actualites',
-  '/galerie',
-  '/partenaires',
   '/rejoindre',
-  '/contact',
   '/mentions-legales',
   '/politique-confidentialite',
 ]
+
+const SECTION_PAGES = {
+  club: '/club',
+  teams: '/equipes',
+  calendar: '/calendrier',
+  news: '/actualites',
+  gallery: '/galerie',
+  partners: '/partenaires',
+  contact: '/contact',
+} as const
+
+type PublicSectionKey = keyof typeof SECTION_PAGES
+type SiteVisibility = Record<PublicSectionKey, boolean>
+
+const DEFAULT_VISIBILITY: SiteVisibility = {
+  club: true,
+  teams: true,
+  calendar: true,
+  news: true,
+  gallery: true,
+  partners: true,
+  contact: true,
+}
 
 type SitemapEntry = {
   path: string
@@ -54,13 +70,30 @@ ${urls}
 </urlset>`
 }
 
+function normalizeVisibility(value: unknown): SiteVisibility {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return DEFAULT_VISIBILITY
+  }
+
+  const source = value as Record<string, unknown>
+
+  return Object.fromEntries(
+    Object.keys(DEFAULT_VISIBILITY).map((key) => [
+      key,
+      typeof source[key] === 'boolean'
+        ? source[key]
+        : DEFAULT_VISIBILITY[key as PublicSectionKey],
+    ]),
+  ) as SiteVisibility
+}
+
 export default async function handler(req: any, res: any) {
   if (req.method !== 'GET') {
     res.setHeader('Allow', 'GET')
     return res.status(405).send('Method not allowed')
   }
 
-  const entries: SitemapEntry[] = STATIC_PAGES.map((path) => ({ path }))
+  const entries: SitemapEntry[] = ALWAYS_VISIBLE_PAGES.map((path) => ({ path }))
   const supabaseUrl = process.env.VITE_SUPABASE_URL
   const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY
 
@@ -74,7 +107,12 @@ export default async function handler(req: any, res: any) {
         },
       })
 
-      const [newsResult, teamsResult] = await Promise.all([
+      const [settingsResult, newsResult, teamsResult] = await Promise.all([
+        supabase
+          .from('club_settings')
+          .select('site_visibility')
+          .limit(1)
+          .single(),
         supabase
           .from('news')
           .select('id, created_at')
@@ -87,9 +125,23 @@ export default async function handler(req: any, res: any) {
           .order('created_at', { ascending: true }),
       ])
 
+      const visibility = settingsResult.error
+        ? DEFAULT_VISIBILITY
+        : normalizeVisibility(settingsResult.data?.site_visibility)
+
+      if (settingsResult.error) {
+        console.error('SITEMAP SETTINGS ERROR:', settingsResult.error)
+      }
+
+      for (const [section, path] of Object.entries(SECTION_PAGES)) {
+        if (visibility[section as PublicSectionKey]) {
+          entries.push({ path })
+        }
+      }
+
       if (newsResult.error) {
         console.error('SITEMAP NEWS ERROR:', newsResult.error)
-      } else {
+      } else if (visibility.news) {
         for (const article of newsResult.data ?? []) {
           entries.push({
             path: `/actualites/${encodeURIComponent(String(article.id))}`,
@@ -100,7 +152,7 @@ export default async function handler(req: any, res: any) {
 
       if (teamsResult.error) {
         console.error('SITEMAP TEAMS ERROR:', teamsResult.error)
-      } else {
+      } else if (visibility.teams) {
         for (const team of teamsResult.data ?? []) {
           entries.push({
             path: `/equipes/${encodeURIComponent(String(team.id))}`,
