@@ -13,7 +13,6 @@ import {
   Users,
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
 import { SectionHeading } from '@/components/SectionHeading'
 import { ClubCrest } from '@/components/ClubCrest'
 import Seo from '@/components/Seo'
@@ -75,14 +74,22 @@ type Partner = {
   display_order: number
 }
 
-function singleRelation<T>(
-  relation: T | T[] | null | undefined,
-): T | null {
-  if (Array.isArray(relation)) {
-    return relation[0] ?? null
-  }
+type HomeData = {
+  settings: ClubSettings | null
+  news: any[]
+  teams: Team[]
+  matches: Match[]
+  trainingSlots: TrainingSlot[]
+  trainingExceptions: TrainingException[]
+  homeStoryPhotos: GalleryPhoto[]
+  galleryPhotos: GalleryPhoto[]
+  partners: Partner[]
+}
 
-  return relation ?? null
+type HomeResponse = {
+  success?: boolean
+  data?: HomeData
+  error?: string
 }
 
 function formatDate(value: string) {
@@ -111,145 +118,30 @@ function Home() {
     setError(false)
 
     try {
-      const [
-        settingsResult,
-        newsResult,
-        teamsResult,
-        matchesResult,
-        trainingSlotsResult,
-        trainingExceptionsResult,
-        homeStoryResult,
-        galleryResult,
-        partnersResult,
-      ] = await Promise.all([
-        supabase
-          .from('club_settings')
-          .select('*')
-          .limit(1)
-          .single(),
+      const response = await fetch('/api/public-home', {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+        },
+      })
 
-        supabase
-          .from('news')
-          .select('*')
-          .eq('is_published', true)
-          .order('created_at', { ascending: false })
-          .limit(4),
+      const result = (await response.json().catch(() => null)) as HomeResponse | null
 
-        supabase
-          .from('teams')
-          .select('*')
-          .eq('active', true)
-          .order('created_at', { ascending: true }),
-
-        supabase
-          .from('matches')
-          .select(`
-            id,
-            opponent,
-            match_date,
-            match_time,
-            location,
-            is_home,
-            competition,
-            status,
-            teams (
-              id,
-              name
-            )
-          `)
-          .eq('status', 'scheduled')
-          .order('match_date', { ascending: true })
-          .order('match_time', { ascending: true })
-          .limit(3),
-
-        supabase
-          .from('training_slots')
-          .select(`
-            id,
-            team_id,
-            weekday,
-            start_time,
-            end_time,
-            location,
-            coach,
-            start_date,
-            end_date,
-            active,
-            teams (id, name, category)
-          `)
-          .eq('active', true)
-          .order('weekday', { ascending: true })
-          .order('start_time', { ascending: true }),
-
-        supabase
-          .from('training_exceptions')
-          .select('*')
-          .gte('original_date', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10))
-          .order('original_date', { ascending: true }),
-
-        supabase
-          .from('gallery_photos')
-          .select('*')
-          .eq('active', true)
-          .not('home_slot', 'is', null)
-          .order('home_slot', { ascending: true })
-          .limit(3),
-
-        supabase
-          .from('gallery_photos')
-          .select('*')
-          .eq('active', true)
-          .order('created_at', { ascending: false })
-          .limit(8),
-
-        supabase
-          .from('partners')
-          .select('*')
-          .eq('active', true)
-          .order('display_order', { ascending: true })
-          .limit(12),
-      ])
-
-      const results = [
-        settingsResult,
-        newsResult,
-        teamsResult,
-        matchesResult,
-        trainingSlotsResult,
-        trainingExceptionsResult,
-        homeStoryResult,
-        galleryResult,
-        partnersResult,
-      ]
-
-      const hasError = results.some((result) => Boolean(result.error))
-
-      if (hasError) {
-        results.forEach((result) => {
-          if (result.error) console.error(result.error)
-        })
-        setError(true)
+      if (!response.ok || result?.success !== true || !result.data) {
+        throw new Error(
+          result?.error || "Impossible de charger les informations de l'accueil.",
+        )
       }
 
-      setSettings(settingsResult.data || null)
-      setNews(newsResult.data || [])
-      setTeams(teamsResult.data || [])
-      setMatches(
-        (matchesResult.data || []).map((match) => ({
-          ...match,
-          teams: singleRelation(match.teams),
-        })),
-      )
-      setTrainingSlots(
-        ((trainingSlotsResult.data || []) as any[]).map((slot) => ({
-          ...slot,
-          teams: singleRelation(slot.teams),
-        })) as TrainingSlot[],
-      )
-      setTrainingExceptions((trainingExceptionsResult.data || []) as TrainingException[])
-      setHomeStoryPhotos(homeStoryResult.data || [])
-      setGalleryPhotos(galleryResult.data || [])
-      setPartners(partnersResult.data || [])
+      setSettings(result.data.settings)
+      setNews(result.data.news)
+      setTeams(result.data.teams)
+      setMatches(result.data.matches)
+      setTrainingSlots(result.data.trainingSlots)
+      setTrainingExceptions(result.data.trainingExceptions)
+      setHomeStoryPhotos(result.data.homeStoryPhotos)
+      setGalleryPhotos(result.data.galleryPhotos)
+      setPartners(result.data.partners)
     } catch (fetchError) {
       console.error(fetchError)
       setError(true)
