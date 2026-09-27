@@ -10,12 +10,80 @@ function singleRelation<T>(
   return relation ?? null
 }
 
-function sendDatabaseError(res: any, section: 'home' | 'club') {
-  const label = section === 'club' ? 'du club' : "de l'accueil"
+function sendDatabaseError(res: any, section: 'home' | 'club' | 'contact') {
+  const label =
+    section === 'club'
+      ? 'du club'
+      : section === 'contact'
+        ? 'de contact'
+        : "de l'accueil"
 
   return res.status(502).json({
     success: false,
     error: `Impossible de charger les informations ${label}.`,
+  })
+}
+
+async function loadContactData(supabase: any, res: any) {
+  const [settingsResult, teamsResult, feesResult] = await Promise.all([
+    supabase
+      .from('club_settings')
+      .select(`
+        club_name,
+        short_name,
+        address,
+        postal_code,
+        city,
+        email,
+        phone
+      `)
+      .limit(1)
+      .single(),
+    supabase
+      .from('teams')
+      .select('category')
+      .eq('active', true)
+      .order('category', { ascending: true }),
+    supabase
+      .from('registration_fees')
+      .select('id, title, amount, description, season, display_order')
+      .eq('active', true)
+      .order('display_order', { ascending: true })
+      .order('title', { ascending: true }),
+  ])
+
+  const results = [settingsResult, teamsResult, feesResult]
+  const errors = results
+    .map((result) => result.error)
+    .filter((error) => Boolean(error))
+
+  if (errors.length > 0) {
+    console.error('PUBLIC CONTACT SUPABASE ERROR:', errors)
+    return sendDatabaseError(res, 'contact')
+  }
+
+  const categories = Array.from(
+    new Set(
+      (teamsResult.data ?? [])
+        .map((team: { category: string | null }) => team.category?.trim())
+        .filter((category: string | undefined): category is string =>
+          Boolean(category),
+        ),
+    ),
+  )
+
+  const registrationFees = (feesResult.data ?? []).map((fee: any) => ({
+    ...fee,
+    amount: Number(fee.amount),
+  }))
+
+  return res.status(200).json({
+    success: true,
+    data: {
+      settings: settingsResult.data ?? null,
+      teamCategories: categories,
+      registrationFees,
+    },
   })
 }
 
@@ -218,7 +286,11 @@ export default async function handler(req: any, res: any) {
     return res.status(405).json({ success: false, error: 'Method not allowed' })
   }
 
-  const section = req.query?.section === 'club' ? 'club' : 'home'
+  const requestedSection = req.query?.section
+  const section =
+    requestedSection === 'club' || requestedSection === 'contact'
+      ? requestedSection
+      : 'home'
   const supabaseUrl = process.env.VITE_SUPABASE_URL
   const secretKey = process.env.SUPABASE_SECRET_KEY
 
@@ -246,6 +318,10 @@ export default async function handler(req: any, res: any) {
 
     if (section === 'club') {
       return await loadClubData(supabase, res)
+    }
+
+    if (section === 'contact') {
+      return await loadContactData(supabase, res)
     }
 
     return await loadHomeData(supabase, res)
